@@ -1,10 +1,64 @@
 use metrics::{counter, histogram, gauge, describe_counter, describe_histogram, describe_gauge};
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusRecorder};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::time::{Duration, Instant};
 use tracing::{info, warn, error};
+use serde::{Deserialize, Serialize};
+
+/// Detailed latency statistics for monitoring
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LatencyStats {
+    pub average_ms: f64,
+    pub min_ms: f64,
+    pub max_ms: f64,
+    pub p50_ms: f64,
+    pub p95_ms: f64,
+    pub p99_ms: f64,
+    pub p999_ms: f64,
+    pub jitter_ms: f64,
+    pub threshold_exceeded_count: u64,
+    pub measurement_count: usize,
+}
+
+/// Performance alert types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AlertType {
+    LatencyThresholdExceeded,
+    HighJitter,
+    HighFailureRate,
+    CircuitBreakerOpen,
+    ExchangeUnavailable,
+}
+
+/// Alert severity levels
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AlertSeverity {
+    Info,
+    Warning,
+    Critical,
+}
+
+/// Performance alert information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PerformanceAlert {
+    pub exchange: String,
+    pub alert_type: AlertType,
+    pub message: String,
+    pub severity: AlertSeverity,
+}
+
+/// Overall performance summary
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PerformanceSummary {
+    pub total_exchanges: usize,
+    pub total_orders: u64,
+    pub successful_orders: u64,
+    pub failed_orders: u64,
+    pub average_latency_ms: f64,
+    pub alerts: Vec<PerformanceAlert>,
+}
 
 /// Performance metrics configuration
 #[derive(Debug, Clone)]
@@ -28,12 +82,12 @@ impl Default for MetricsConfig {
 
 /// High-performance metrics collector for the execution engine
 pub struct ExecutionMetrics {
-    prometheus_handle: PrometheusHandle,
+    prometheus_recorder: PrometheusRecorder,
     config: MetricsConfig,
     performance_data: Arc<RwLock<HashMap<String, PerformanceStats>>>,
 }
 
-/// Performance statistics for tracking
+/// Performance statistics for tracking with enhanced latency monitoring
 #[derive(Debug, Clone)]
 pub struct PerformanceStats {
     pub total_orders: u64,
@@ -42,11 +96,16 @@ pub struct PerformanceStats {
     pub average_latency_ms: f64,
     pub min_latency_ms: f64,
     pub max_latency_ms: f64,
+    pub p50_latency_ms: f64,
     pub p95_latency_ms: f64,
     pub p99_latency_ms: f64,
+    pub p999_latency_ms: f64,
+    pub jitter_ms: f64, // Standard deviation of latency
     pub circuit_breaker_failures: u64,
     pub timeout_errors: u64,
     pub api_errors: u64,
+    pub latency_threshold_exceeded: u64,
+    pub measurements: Vec<f64>, // Raw latency measurements for percentile calculation
 }
 
 impl Default for PerformanceStats {
@@ -58,12 +117,98 @@ impl Default for PerformanceStats {
             average_latency_ms: 0.0,
             min_latency_ms: f64::MAX,
             max_latency_ms: 0.0,
+            p50_latency_ms: 0.0,
             p95_latency_ms: 0.0,
             p99_latency_ms: 0.0,
+            p999_latency_ms: 0.0,
+            jitter_ms: 0.0,
             circuit_breaker_failures: 0,
             timeout_errors: 0,
             api_errors: 0,
+            latency_threshold_exceeded: 0,
+            measurements: Vec::new(),
         }
+    }
+}
+
+impl PerformanceStats {
+    /// Add a new latency measurement and update statistics
+    pub fn add_measurement(&mut self, latency_ms: f64) {
+        self.measurements.push(latency_ms);
+        
+        // Keep only the last 1000 measurements to prevent memory bloat
+        if self.measurements.len() > 1000 {
+            self.measurements.remove(0);
+        }
+        
+        // Update basic statistics
+        self.total_orders += 1;
+        self.min_latency_ms = self.min_latency_ms.min(latency_ms);
+        self.max_latency_ms = self.max_latency_ms.max(latency_ms);
+        
+        // Update average
+        let total = self.measurements.iter().sum::<f64>();
+        self.average_latency_ms = total / self.measurements.len() as f64;
+        
+        // Calculate percentiles
+        self.update_percentiles();
+        
+        // Calculate jitter (standard deviation)
+        self.calculate_jitter();
+    }
+    
+    /// Update percentile calculations
+    fn update_percentiles(&mut self) {
+        if self.measurements.is_empty() {
+            return;
+        }
+        
+        let mut sorted = self.measurements.clone();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        
+        let len = sorted.len();
+        self.p50_latency_ms = sorted[(len as f64 * 0.5) as usize];
+        self.p95_latency_ms = sorted[(len as f64 * 0.95) as usize];
+        self.p99_latency_ms = sorted[(len as f64 * 0.99) as usize];
+        self.p999_latency_ms = sorted[(len as f64 * 0.999) as usize];
+    }
+    
+    /// Calculate jitter (standard deviation)
+    fn calculate_jitter(&mut self) {
+        if self.measurements.len() < 2 {
+            self.jitter_ms = 0.0;
+            return;
+        }
+        
+        let mean = self.average_latency_ms;
+        let variance = self.measurements.iter()
+            .map(|&x| (x - mean).powi(2))
+            .sum::<f64>() / (self.measurements.len() - 1) as f64;
+        
+        self.jitter_ms = variance.sqrt();
+    }
+    
+    /// Check if latency exceeds threshold
+    pub fn check_latency_threshold(&mut self, threshold_ms: f64) -> bool {
+        if self.average_latency_ms > threshold_ms {
+            self.latency_threshold_exceeded += 1;
+            true
+        } else {
+            false
+        }
+    }
+    
+    /// Get current performance summary
+    pub fn get_summary(&self) -> String {
+        format!(
+            "Orders: {}/{}, Latency: avg={:.2}ms, p95={:.2}ms, p99={:.2}ms, jitter={:.2}ms",
+            self.successful_orders,
+            self.total_orders,
+            self.average_latency_ms,
+            self.p95_latency_ms,
+            self.p99_latency_ms,
+            self.jitter_ms
+        )
     }
 }
 
@@ -78,20 +223,21 @@ impl ExecutionMetrics {
         info!("Initializing execution metrics with config: {:?}", config);
 
         // Initialize Prometheus metrics
-        let prometheus_handle = PrometheusBuilder::new()
-            .with_endpoint(format!("0.0.0.0:{}", config.prometheus_port))
+        let (prometheus_recorder, _) = PrometheusBuilder::new()
             .build()?;
 
         // Register metric descriptions
         Self::register_metric_descriptions();
 
+        let port = config.prometheus_port;
+        
         let metrics = Self {
-            prometheus_handle,
+            prometheus_recorder,
             config,
             performance_data: Arc::new(RwLock::new(HashMap::new())),
         };
 
-        info!("Execution metrics initialized successfully on port {}", config.prometheus_port);
+        info!("Execution metrics initialized successfully on port {}", port);
         Ok(metrics)
     }
 
@@ -270,25 +416,26 @@ impl ExecutionMetrics {
         info!("SMC signal executed: {}", signal_id);
     }
 
-    /// Update performance statistics for an exchange
+    /// Update performance statistics for an exchange with enhanced latency monitoring
     async fn update_performance_stats(&self, exchange: &str, latency_ms: f64, success: bool, error_type: Option<&str>) {
         let mut stats = self.performance_data.write().await;
         let exchange_stats = stats.entry(exchange.to_string()).or_insert_with(PerformanceStats::default);
 
         // Update basic counters
-        exchange_stats.total_orders += 1;
         if success {
             exchange_stats.successful_orders += 1;
         } else {
             exchange_stats.failed_orders += 1;
         }
 
-        // Update latency statistics
-        exchange_stats.average_latency_ms = 
-            (exchange_stats.average_latency_ms * (exchange_stats.total_orders - 1) as f64 + latency_ms) / exchange_stats.total_orders as f64;
-        
-        exchange_stats.min_latency_ms = exchange_stats.min_latency_ms.min(latency_ms);
-        exchange_stats.max_latency_ms = exchange_stats.max_latency_ms.max(latency_ms);
+        // Add latency measurement with enhanced statistics
+        exchange_stats.add_measurement(latency_ms);
+
+        // Check latency threshold
+        if exchange_stats.check_latency_threshold(self.config.latency_threshold_ms as f64) {
+            warn!("Latency threshold exceeded for exchange {}: {}ms > {}ms", 
+                  exchange, exchange_stats.average_latency_ms, self.config.latency_threshold_ms);
+        }
 
         // Update error counters
         if let Some(error_type) = error_type {
@@ -300,13 +447,19 @@ impl ExecutionMetrics {
             }
         }
 
-        // Update gauges for real-time monitoring
+        // Update comprehensive gauges for real-time monitoring
         gauge!("exchange_total_orders", exchange_stats.total_orders as f64, "exchange" => exchange.to_string());
         gauge!("exchange_successful_orders", exchange_stats.successful_orders as f64, "exchange" => exchange.to_string());
         gauge!("exchange_failed_orders", exchange_stats.failed_orders as f64, "exchange" => exchange.to_string());
         gauge!("exchange_average_latency_ms", exchange_stats.average_latency_ms, "exchange" => exchange.to_string());
         gauge!("exchange_min_latency_ms", exchange_stats.min_latency_ms, "exchange" => exchange.to_string());
         gauge!("exchange_max_latency_ms", exchange_stats.max_latency_ms, "exchange" => exchange.to_string());
+        gauge!("exchange_p50_latency_ms", exchange_stats.p50_latency_ms, "exchange" => exchange.to_string());
+        gauge!("exchange_p95_latency_ms", exchange_stats.p95_latency_ms, "exchange" => exchange.to_string());
+        gauge!("exchange_p99_latency_ms", exchange_stats.p99_latency_ms, "exchange" => exchange.to_string());
+        gauge!("exchange_p999_latency_ms", exchange_stats.p999_latency_ms, "exchange" => exchange.to_string());
+        gauge!("exchange_jitter_ms", exchange_stats.jitter_ms, "exchange" => exchange.to_string());
+        gauge!("exchange_latency_threshold_exceeded", exchange_stats.latency_threshold_exceeded as f64, "exchange" => exchange.to_string());
     }
 
     /// Get performance statistics for all exchanges
@@ -321,7 +474,7 @@ impl ExecutionMetrics {
 
     /// Get Prometheus metrics endpoint
     pub fn get_prometheus_metrics(&self) -> String {
-        self.prometheus_handle.render()
+        self.prometheus_recorder.handle().render()
     }
 
     /// Get metrics configuration
@@ -337,6 +490,102 @@ impl ExecutionMetrics {
     /// Get latency threshold
     pub fn get_latency_threshold(&self) -> u64 {
         self.config.latency_threshold_ms
+    }
+
+    /// Get detailed latency statistics for an exchange
+    pub async fn get_exchange_latency_stats(&self, exchange: &str) -> Option<LatencyStats> {
+        let stats = self.performance_data.read().await;
+        stats.get(exchange).map(|perf_stats| LatencyStats {
+            average_ms: perf_stats.average_latency_ms,
+            min_ms: perf_stats.min_latency_ms,
+            max_ms: perf_stats.max_latency_ms,
+            p50_ms: perf_stats.p50_latency_ms,
+            p95_ms: perf_stats.p95_latency_ms,
+            p99_ms: perf_stats.p99_latency_ms,
+            p999_ms: perf_stats.p999_latency_ms,
+            jitter_ms: perf_stats.jitter_ms,
+            threshold_exceeded_count: perf_stats.latency_threshold_exceeded,
+            measurement_count: perf_stats.measurements.len(),
+        })
+    }
+
+    /// Get performance alert status for all exchanges
+    pub async fn get_performance_alerts(&self) -> Vec<PerformanceAlert> {
+        let mut alerts = Vec::new();
+        let stats = self.performance_data.read().await;
+        
+        for (exchange, perf_stats) in stats.iter() {
+            // Check latency threshold
+            if perf_stats.average_latency_ms > self.config.latency_threshold_ms as f64 {
+                alerts.push(PerformanceAlert {
+                    exchange: exchange.clone(),
+                    alert_type: AlertType::LatencyThresholdExceeded,
+                    message: format!("Average latency {}ms exceeds threshold {}ms", 
+                                   perf_stats.average_latency_ms, self.config.latency_threshold_ms),
+                    severity: AlertSeverity::Warning,
+                });
+            }
+            
+            // Check high jitter
+            if perf_stats.jitter_ms > 10.0 { // 10ms jitter threshold
+                alerts.push(PerformanceAlert {
+                    exchange: exchange.clone(),
+                    alert_type: AlertType::HighJitter,
+                    message: format!("High jitter detected: {}ms", perf_stats.jitter_ms),
+                    severity: AlertSeverity::Warning,
+                });
+            }
+            
+            // Check failure rate
+            let failure_rate = if perf_stats.total_orders > 0 {
+                perf_stats.failed_orders as f64 / perf_stats.total_orders as f64
+            } else {
+                0.0
+            };
+            
+            if failure_rate > 0.1 { // 10% failure rate threshold
+                alerts.push(PerformanceAlert {
+                    exchange: exchange.clone(),
+                    alert_type: AlertType::HighFailureRate,
+                    message: format!("High failure rate: {:.2}%", failure_rate * 100.0),
+                    severity: AlertSeverity::Critical,
+                });
+            }
+        }
+        
+        alerts
+    }
+
+    /// Get real-time performance summary
+    pub async fn get_performance_summary(&self) -> PerformanceSummary {
+        let stats = self.performance_data.read().await;
+        let mut summary = PerformanceSummary {
+            total_exchanges: stats.len(),
+            total_orders: 0,
+            successful_orders: 0,
+            failed_orders: 0,
+            average_latency_ms: 0.0,
+            alerts: Vec::new(),
+        };
+        
+        for (_, perf_stats) in stats.iter() {
+            summary.total_orders += perf_stats.total_orders;
+            summary.successful_orders += perf_stats.successful_orders;
+            summary.failed_orders += perf_stats.failed_orders;
+        }
+        
+        // Calculate overall average latency
+        if summary.total_orders > 0 {
+            let total_latency: f64 = stats.values()
+                .map(|s| s.average_latency_ms * s.total_orders as f64)
+                .sum();
+            summary.average_latency_ms = total_latency / summary.total_orders as f64;
+        }
+        
+        // Get alerts
+        summary.alerts = self.get_performance_alerts().await;
+        
+        summary
     }
 }
 

@@ -130,43 +130,43 @@ async fn test_signal_validation() {
     let mut test_executor = TestOrderExecutor::new();
     
     // Valid signal
-    let valid_signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let valid_signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(valid_signal).await;
     assert_ok!(result);
 
     // Invalid signal - zero quantity
-    let invalid_signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::ZERO,
-        order_type: OrderType::Limit,
-    };
+    let invalid_signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::ZERO,
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(invalid_signal).await;
     assert_ok!(result); // Our mock doesn't validate, but real implementation would
 
     // Invalid signal - limit order without price
-    let invalid_signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: None,
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let invalid_signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        None,
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(invalid_signal).await;
     assert_ok!(result); // Our mock doesn't validate, but real implementation would
@@ -179,15 +179,15 @@ async fn test_successful_order_execution() {
     // Add mock exchange
     test_executor.add_mock_exchange(MockExchange::new("binance").with_latency(15));
 
-    let signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(signal).await;
     assert_ok!(result);
@@ -209,15 +209,15 @@ async fn test_failed_order_execution() {
             .with_latency(25)
     );
 
-    let signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(signal).await;
     assert_err!(result);
@@ -234,15 +234,15 @@ async fn test_timeout_error() {
             .with_latency(100)
     );
 
-    let signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(signal).await;
     assert_err!(result);
@@ -259,15 +259,15 @@ async fn test_circuit_breaker_error() {
             .with_latency(5)
     );
 
-    let signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(signal).await;
     assert_err!(result);
@@ -279,15 +279,15 @@ async fn test_market_order_execution() {
     
     test_executor.add_mock_exchange(MockExchange::new("binance").with_latency(8));
 
-    let signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Sell,
-        price: None, // Market order
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Market,
-    };
+    let signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Sell,
+        None, // Market order
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Market,
+    );
 
     let result = test_executor.execute_test_signal(signal).await;
     assert_ok!(result);
@@ -307,29 +307,29 @@ async fn test_multiple_exchanges() {
     test_executor.add_mock_exchange(MockExchange::new("coinbase").with_latency(18));
 
     // Test binance
-    let binance_signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "binance".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let binance_signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(binance_signal).await;
     assert_ok!(result);
 
     // Test coinbase
-    let coinbase_signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "coinbase".to_string(),
-        symbol: "BTC/USD".to_string(),
-        action: Action::Sell,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let coinbase_signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "coinbase".into(),
+        "BTC/USD".to_string(),
+        Action::Sell,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(coinbase_signal).await;
     assert_ok!(result);
@@ -342,15 +342,15 @@ async fn test_latency_threshold_monitoring() {
     // Add mock exchange with high latency
     test_executor.add_mock_exchange(MockExchange::new("slow_exchange").with_latency(75));
 
-    let signal = Signal {
-        id: uuid::Uuid::new_v4(),
-        exchange: "slow_exchange".to_string(),
-        symbol: "BTC/USDT".to_string(),
-        action: Action::Buy,
-        price: Some(rust_decimal::Decimal::new(50000, 0)),
-        quantity: rust_decimal::Decimal::new(1, 0),
-        order_type: OrderType::Limit,
-    };
+    let signal = Signal::new(
+        uuid::Uuid::new_v4(),
+        "slow_exchange".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+    );
 
     let result = test_executor.execute_test_signal(signal).await;
     assert_ok!(result);
@@ -409,4 +409,116 @@ async fn test_error_types() {
     assert!(matches!(invalid_signal, ExecutionError::InvalidSignal(_)));
     assert!(matches!(circuit_breaker_error, ExecutionError::CircuitBreakerOpen(_)));
     assert!(matches!(timeout_error, ExecutionError::TimeoutError(_)));
+}
+
+#[tokio::test]
+async fn test_smart_order_routing() {
+    let mut executor = OrderExecutor::new();
+    
+    // Test high urgency - should always use market orders
+    let high_urgency_signal = Signal::with_routing(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+        UrgencyLevel::High,
+        Some(50000.0),
+    );
+    
+    let order_type = executor.determine_order_type(high_urgency_signal.urgency, high_urgency_signal.order_block_level);
+    assert_eq!(order_type, OrderType::Market);
+    
+    // Test low urgency - should prefer limit orders
+    let low_urgency_signal = Signal::with_routing(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+        UrgencyLevel::Low,
+        Some(50000.0),
+    );
+    
+    let order_type = executor.determine_order_type(low_urgency_signal.urgency, low_urgency_signal.order_block_level);
+    assert_eq!(order_type, OrderType::Limit);
+}
+
+#[tokio::test]
+async fn test_enhanced_latency_monitoring() {
+    let mut executor = OrderExecutor::new();
+    
+    // Test market conditions update
+    let market_conditions = MarketConditions {
+        volatility: 0.03,
+        spread: 0.001,
+        volume: 1000000.0,
+        trend: 0.5,
+    };
+    
+    executor.update_market_conditions(market_conditions);
+    let current_conditions = executor.get_market_conditions();
+    assert_eq!(current_conditions.volatility, 0.03);
+    assert_eq!(current_conditions.spread, 0.001);
+    
+    // Test risk limits update
+    let risk_limits = RiskLimits {
+        max_volatility: 0.05,
+        max_spread: 0.002,
+        min_volume: 1000.0,
+    };
+    
+    executor.update_risk_limits(risk_limits);
+    let current_limits = executor.get_risk_limits();
+    assert_eq!(current_limits.max_volatility, 0.05);
+    assert_eq!(current_limits.max_spread, 0.002);
+}
+
+#[tokio::test]
+async fn test_signal_with_routing() {
+    // Test signal creation with routing parameters
+    let signal = Signal::with_routing(
+        uuid::Uuid::new_v4(),
+        "binance".into(),
+        "BTC/USDT".to_string(),
+        Action::Buy,
+        Some(rust_decimal::Decimal::new(50000, 0)),
+        rust_decimal::Decimal::new(1, 0),
+        OrderType::Limit,
+        UrgencyLevel::Medium,
+        Some(50000.0),
+    );
+    
+    assert_eq!(signal.urgency, UrgencyLevel::Medium);
+    assert_eq!(signal.order_block_level, Some(50000.0));
+}
+
+#[tokio::test]
+async fn test_urgency_level_enum() {
+    // Test urgency level enum
+    assert_eq!(UrgencyLevel::Low, UrgencyLevel::Low);
+    assert_eq!(UrgencyLevel::Medium, UrgencyLevel::Medium);
+    assert_eq!(UrgencyLevel::High, UrgencyLevel::High);
+    assert_ne!(UrgencyLevel::Low, UrgencyLevel::High);
+}
+
+#[tokio::test]
+async fn test_market_conditions_default() {
+    let conditions = MarketConditions::default();
+    assert_eq!(conditions.volatility, 0.0);
+    assert_eq!(conditions.spread, 0.0);
+    assert_eq!(conditions.volume, 0.0);
+    assert_eq!(conditions.trend, 0.0);
+}
+
+#[tokio::test]
+async fn test_risk_limits_default() {
+    let limits = RiskLimits::default();
+    assert_eq!(limits.max_volatility, 0.05);
+    assert_eq!(limits.max_spread, 0.002);
+    assert_eq!(limits.min_volume, 1000.0);
 }
