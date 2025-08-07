@@ -9,6 +9,17 @@ data_pipeline:
     source: "binance"
     symbols: ["BTC/USDT", "ETH/USDT"]
     timeframe: "1h"
+    batch_size: 100
+    retry_attempts: 3
+    retry_delay: 5.0
+  processing:
+    enable_real_time: true
+    processing_interval: 60  # seconds
+    max_processing_time: 30.0  # seconds
+  storage:
+    database_url: "${DATABASE_URL}"
+    enable_caching: true
+    cache_ttl: 300  # seconds
 
 # SMC Detector configuration
 smc_detector:
@@ -42,6 +53,14 @@ risk_manager:
 monitoring:
   enabled: true
   port: 8008
+  health_check_interval: 30  # seconds
+  metrics_enabled: true
+  prometheus_enabled: true
+  # Data pipeline monitoring (runs on port 8009)
+  data_pipeline:
+    port: 8009
+    health_check_interval: 30
+    metrics_enabled: true
 
 # Logging configuration for dictConfig
 logging:

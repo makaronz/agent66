@@ -15,17 +15,17 @@ from datetime import datetime, timedelta
 # Add the current directory to the path for imports
 sys.path.append('.')
 
-from error_handlers import (
+from .error_handlers import (
     CircuitBreaker, RetryHandler, error_boundary, safe_execute,
     health_monitor, TradingError, ComponentHealthError, ErrorSeverity
 )
-from validators import (
+from .validators import (
     data_validator, DataQualityLevel, DataValidationError
 )
-from data_pipeline.ingestion import MarketDataProcessor
-from smc_detector.indicators import SMCIndicators
-from decision_engine.model_ensemble import AdaptiveModelSelector
-from risk_manager.smc_risk_manager import SMCRiskManager
+from .data_pipeline.ingestion import MarketDataProcessor
+from .smc_detector.indicators import SMCIndicators
+from .decision_engine.model_ensemble import AdaptiveModelSelector
+from .risk_manager.smc_risk_manager import SMCRiskManager
 
 
 def setup_test_logging():

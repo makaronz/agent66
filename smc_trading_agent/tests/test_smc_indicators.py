@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from smc_trading_agent.smc_detector.indicators import SMCIndicators
+from ..smc_detector.indicators import SMCIndicators
 
 
 class TestSMCIndicators:

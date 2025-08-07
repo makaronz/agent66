@@ -18,11 +18,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, MagicMock
 
 # Import the modules to test
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from validators import (
+from ..validators import (
     data_validator, DataQualityLevel, DataValidationError,
     MarketDataModel, TradeSignalModel, OrderBlockModel
 )

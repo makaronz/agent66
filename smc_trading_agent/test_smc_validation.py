@@ -7,7 +7,7 @@ This script tests the functionality without pytest dependencies.
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from smc_detector.indicators import SMCIndicators
+from .smc_detector.indicators import SMCIndicators
 
 
 def create_test_data():

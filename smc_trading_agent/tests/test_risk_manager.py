@@ -1,8 +1,8 @@
 import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock
-from smc_trading_agent.risk_manager.circuit_breaker import CircuitBreaker
-from smc_trading_agent.risk_manager.smc_risk_manager import SMCRiskManager
+from ..risk_manager.circuit_breaker import CircuitBreaker
+from ..risk_manager.smc_risk_manager import SMCRiskManager
 
 class TestCircuitBreaker:
     @pytest.fixture

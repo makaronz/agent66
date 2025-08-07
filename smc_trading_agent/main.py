@@ -3,26 +3,35 @@ import signal
 import logging
 import logging.config
 import time
+import asyncio
 from typing import Dict, Any, Optional
 
 # Secure configuration loading
-from smc_trading_agent.config_loader import load_secure_config, ConfigValidationError, EnvironmentVariableError
-from smc_trading_agent.config_validator import validate_config
+from .config_loader import load_secure_config, ConfigValidationError, EnvironmentVariableError
+from .config_validator import validate_config
 
 # Component Imports
-from smc_trading_agent.data_pipeline.ingestion import MarketDataProcessor
-from smc_trading_agent.smc_detector.indicators import SMCIndicators
-from smc_trading_agent.decision_engine.model_ensemble import AdaptiveModelSelector
-from smc_trading_agent.risk_manager.smc_risk_manager import SMCRiskManager
+from .data_pipeline.ingestion import MarketDataProcessor
+from .smc_detector.indicators import SMCIndicators
+from .decision_engine.model_ensemble import AdaptiveModelSelector
+from .risk_manager.smc_risk_manager import SMCRiskManager
 
 # Error handling and validation imports
-from smc_trading_agent.error_handlers import (
+from .error_handlers import (
     CircuitBreaker, RetryHandler, error_boundary, safe_execute,
     health_monitor, TradingError, ComponentHealthError, ErrorSeverity
 )
-from smc_trading_agent.validators import (
+from .validators import (
     data_validator, DataQualityLevel, DataValidationError
 )
+
+# New service coordination and health monitoring
+from .service_manager import ServiceManager
+from .health_monitor import EnhancedHealthMonitor
+
+# FastAPI and server imports
+from fastapi import FastAPI
+import uvicorn
 
 # Global flag to indicate shutdown
 shutdown_flag = False
@@ -127,51 +136,16 @@ def load_config(config_path: str = "smc_trading_agent/config.yaml") -> Dict[str,
         print(f"Unexpected error loading configuration: {e}", file=sys.stderr)
         sys.exit(1)
 
-def main():
-    signal.signal(signal.SIGINT, handle_shutdown_signal)
-    signal.signal(signal.SIGTERM, handle_shutdown_signal)
-
-    config = load_config()
+async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceManager, logger: logging.Logger):
+    """Run the main trading agent loop with enhanced service coordination."""
     
-    # Validate configuration
-    is_valid, errors, warnings = validate_config(config)
-    if not is_valid:
-        logger.error("Configuration validation failed")
-        for error in errors:
-            logger.error(f"  - {error}")
-        return 1
+    # Get services from service manager
+    data_processor = service_manager.get_service("data_processor")
+    smc_detector = service_manager.get_service("smc_detector")
+    decision_engine = service_manager.get_service("decision_engine")
+    risk_manager = service_manager.get_service("risk_manager")
+    execution_engine = service_manager.get_service("execution_engine")
     
-    if warnings:
-        logger.warning("Configuration validation completed with warnings")
-        for warning in warnings:
-            logger.warning(f"  - {warning}")
-    
-    setup_logging(config)
-    logger = logging.getLogger(__name__)
-
-    logger.info("Initializing SMC Trading Agent services...", extra=config.get('app', {}))
-
-    # Initialize all services with error handling
-    try:
-        data_processor = MarketDataProcessor()
-        smc_detector = SMCIndicators()
-        decision_engine = AdaptiveModelSelector()
-        risk_manager = SMCRiskManager()
-        execution_engine = ExecutionEngine(config)
-        
-        # Register components for health monitoring
-        health_monitor.register_component("data_processor", lambda: True, critical=True)
-        health_monitor.register_component("smc_detector", lambda: True, critical=True)
-        health_monitor.register_component("decision_engine", lambda: True, critical=True)
-        health_monitor.register_component("risk_manager", lambda: True, critical=True)
-        health_monitor.register_component("execution_engine", lambda: True, critical=True)
-        
-    except Exception as e:
-        logger.error(f"Failed to initialize services: {str(e)}", exc_info=True)
-        return 1
-
-    logger.info("All services initialized. Starting main application loop.")
-
     # Initialize circuit breakers and retry handlers for components
     data_circuit_breaker = CircuitBreaker("data_processor", 3, 60.0, logger)
     smc_circuit_breaker = CircuitBreaker("smc_detector", 3, 60.0, logger)
@@ -184,15 +158,15 @@ def main():
     risk_retry_handler = RetryHandler(2, 1.0, 10.0, logger=logger)
 
     # Main application loop with comprehensive error handling
-    while not shutdown_flag:
+    while not service_manager.is_shutdown_requested():
         logger.info("Starting new orchestration cycle.")
         
         try:
             # Check system health before processing
-            system_health = health_monitor.get_system_health()
+            system_health = service_manager.get_service_health()
             if not system_health["overall_healthy"]:
                 logger.warning("System health check failed, skipping cycle", extra=system_health)
-                time.sleep(30)  # Wait before retry
+                await asyncio.sleep(30)  # Wait before retry
                 continue
             
             # 1. Get market data with error handling
@@ -318,14 +292,132 @@ def main():
         try:
             # Sleep for 1 minute before the next cycle
             for _ in range(60):
-                if shutdown_flag:
+                if service_manager.is_shutdown_requested():
                     break
-                time.sleep(1)
+                await asyncio.sleep(1)
         except InterruptedError:
             break
 
     logger.info("SMC Trading Agent has shut down gracefully.")
+
+async def main_async():
+    """Async main function with enhanced service coordination."""
+    
+    # Load and validate configuration
+    config = load_config()
+    
+    # Validate configuration
+    is_valid, errors, warnings = validate_config(config)
+    if not is_valid:
+        print("Configuration validation failed")
+        for error in errors:
+            print(f"  - {error}")
+        return 1
+    
+    if warnings:
+        print("Configuration validation completed with warnings")
+        for warning in warnings:
+            print(f"  - {warning}")
+    
+    # Setup logging
+    setup_logging(config)
+    logger = logging.getLogger(__name__)
+
+    logger.info("Initializing SMC Trading Agent with enhanced service coordination...", extra=config.get('app', {}))
+
+    # Initialize service manager
+    service_manager = ServiceManager(config, logger)
+    
+    # Initialize enhanced health monitor
+    health_monitor = EnhancedHealthMonitor(
+        app_name=config.get('app', {}).get('name', 'smc-trading-agent'),
+        logger=logger
+    )
+    
+    # Initialize all services with error handling
+    try:
+        data_processor = MarketDataProcessor()
+        smc_detector = SMCIndicators()
+        decision_engine = AdaptiveModelSelector()
+        risk_manager = SMCRiskManager()
+        execution_engine = ExecutionEngine(config)
+        
+        # Register services with service manager
+        service_manager.register_service("data_processor", data_processor, lambda: True, critical=True)
+        service_manager.register_service("smc_detector", smc_detector, lambda: True, critical=True)
+        service_manager.register_service("decision_engine", decision_engine, lambda: True, critical=True)
+        service_manager.register_service("risk_manager", risk_manager, lambda: True, critical=True)
+        service_manager.register_service("execution_engine", execution_engine, lambda: True, critical=True)
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize services: {str(e)}", exc_info=True)
+        return 1
+
+    # Start health monitoring
+    await health_monitor.start_background_health_checks()
+    
+    # Get monitoring port from config
+    monitoring_port = config.get('monitoring', {}).get('port', 8008)
+    
+    # Create FastAPI app for health monitoring
+    app = health_monitor.get_fastapi_app()
+    
+    # Start health monitoring server
+    config_uvicorn = uvicorn.Config(
+        app=app,
+        host="0.0.0.0",
+        port=monitoring_port,
+        log_level="info"
+    )
+    server = uvicorn.Server(config_uvicorn)
+    
+    # Run trading agent and health monitoring concurrently
+    try:
+        async with service_manager.service_lifecycle():
+            # Start health monitoring server in background
+            server_task = asyncio.create_task(server.serve())
+            
+            # Run trading agent
+            trading_task = asyncio.create_task(
+                run_trading_agent(config, service_manager, logger)
+            )
+            
+            # Wait for either task to complete
+            done, pending = await asyncio.wait(
+                [server_task, trading_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            # Cancel remaining tasks
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+            
+    except Exception as e:
+        logger.error(f"Service lifecycle failed: {e}", exc_info=True)
+        return 1
+    finally:
+        # Shutdown health monitor
+        await health_monitor.shutdown()
+    
     return 0
+
+def main():
+    """Main entry point with signal handling."""
+    signal.signal(signal.SIGINT, handle_shutdown_signal)
+    signal.signal(signal.SIGTERM, handle_shutdown_signal)
+    
+    try:
+        return asyncio.run(main_async())
+    except KeyboardInterrupt:
+        print("Received keyboard interrupt, shutting down gracefully...")
+        return 0
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())

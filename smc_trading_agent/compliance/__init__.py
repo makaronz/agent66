@@ -1,10 +1,35 @@
 """
-Compliance Module
+Compliance Module - Regulatory Compliance and Reporting
 
-Handles regulatory compliance and reporting requirements for the SMC Trading Agent.
-Includes MiFID reporting and other regulatory compliance features.
+Handles comprehensive regulatory compliance and reporting requirements for the SMC Trading Agent.
+Includes MiFID reporting, regulatory monitoring, and compliance validation features.
+
+Key Features:
+- MiFID II reporting and compliance monitoring
+- Regulatory requirement validation and enforcement
+- Automated compliance reporting and documentation
+- Risk assessment and regulatory risk monitoring
+- Audit trail maintenance and record keeping
+- Compliance alerts and violation detection
+- Regulatory change management and updates
+
+Usage:
+    from smc_trading_agent.compliance import ComplianceEngine
+    
+    engine = ComplianceEngine()
+    report = engine.generate_regulatory_report(period_start, period_end)
 """
 
-from .mifid_reporting import *
+__version__ = "1.0.0"
+__description__ = "Regulatory compliance and reporting features"
+__keywords__ = ["compliance", "mifid", "regulatory", "reporting", "audit"]
 
-__all__ = []
+# Import compliance components
+from .mifid_reporting import ComplianceEngine
+
+# Package-level exports
+__all__ = [
+    'ComplianceEngine',
+    '__version__',
+    '__description__'
+]
