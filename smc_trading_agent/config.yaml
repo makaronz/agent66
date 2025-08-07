@@ -1,0 +1,66 @@
+# Main application settings
+app:
+  name: "SMC Trading Agent"
+  version: "0.1.0"
+
+# Data pipeline configuration
+data_pipeline:
+  ingestion:
+    source: "binance"
+    symbols: ["BTC/USDT", "ETH/USDT"]
+    timeframe: "1h"
+
+# SMC Detector configuration
+smc_detector:
+  indicators:
+    - name: "order_block"
+      params:
+        peak_prominence: 0.1
+    - name: "liquidity_grab"
+      params:
+        relative_volume_threshold: 2.0
+
+# Decision Engine configuration
+decision_engine:
+  model_path: "models/decision_model.pkl"
+  confidence_threshold: 0.75
+
+# Execution Engine (Rust) configuration
+execution_engine:
+  api_keys:
+    binance:
+      key: "${BINANCE_API_KEY}"
+      secret: "${BINANCE_API_SECRET}"
+  max_risk_per_trade: 0.01 # 1% of total capital
+
+# Risk Manager configuration
+risk_manager:
+  max_drawdown: 0.10 # 10%
+  circuit_breaker_threshold: 5 # Number of consecutive losses to trigger circuit breaker
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  port: 8008
+
+# Logging configuration for dictConfig
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    json_formatter:
+      (): pythonjsonlogger.jsonlogger.JsonFormatter
+      format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+      rename_fields:
+        levelname: "level"
+        asctime: "time"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: "json_formatter"
+      level: "INFO"
+      stream: "ext://sys.stdout"
+  root:
+    handlers: ["console"]
+    level: "INFO"
+

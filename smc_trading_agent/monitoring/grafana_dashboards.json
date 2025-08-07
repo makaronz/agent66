@@ -1,0 +1,25 @@
+{
+  "dashboard": {
+    "title": "SMC Trading Agent Dashboard",
+    "panels": [
+      {
+        "title": "Portfolio Performance",
+        "targets": [{"expr": "smc_portfolio_value"}]
+      },
+      {
+        "title": "Drawdown", 
+        "targets": [{"expr": "smc_max_drawdown"}],
+        "alert": {
+          "conditions": [{
+            "evaluator": {"params": [-0.08], "type": "lt"}
+          }]
+        }
+      },
+      {
+        "title": "Signal Latency",
+        "targets": [{"expr": "smc_signal_processing_duration_seconds"}]
+      }
+    ]
+  }
+}
+

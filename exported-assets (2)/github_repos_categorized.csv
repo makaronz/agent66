@@ -1,0 +1,10 @@
+repo,core_tech,licenses,ryzyka_integracji,gwiazdki,ostatni_commit,kategoria
+joshyattridge/smart-money-concepts,"Python, pandas, numpy",MIT,"Zależność od pandas API, potencjalne zmiany w strukturze",813,2025-03-03,SMC Detection
+smtlab/smartmoneyconcepts,"Python, indicators library",MIT,"Beta version, ograniczona dokumentacja",3,2023-11-13,SMC Detection
+ArunKBhaskar/PineScript-ICT-OB,PineScript v5,Mozilla Public License 2.0,"Wymaga TradingView, ograniczona customizacja",N/A,2023-12-12,SMC Detection
+freqtrade/freqtrade,"Python, ccxt, SQLAlchemy",GPL-3.0,"Kompleksna konfiguracja, wysokie wymagania zasobów",20k+,2025-08-04,Backtesting/Execution
+kernc/backtesting.py,"Python, pandas, bokeh",AGPL-3.0,"Ograniczone multi-asset support, brak live trading",5k+,2019-01-02,Backtesting/Execution
+backtestjs/backtestjs,"TypeScript, Node.js",MIT,"Ecosystem JavaScript, mniej bibliotek do analizy",N/A,2024-10-02,Backtesting/Execution
+eomii/reinforcement-trading,"Python, TensorFlow, CCXT",MIT,"Fokus na market making, wymaga adaptacji do SMC",32,2023-03-16,RL/ML Frameworks
+theanh97/Deep-RL-Stock-Trading,"Python, stable-baselines3, gymnasium",N/A,"Academic project, może wymagać productionization",N/A,2024-06-28,RL/ML Frameworks
+D3F4LT4ST/RL-trading,"Python, Gym, TensorFlow",N/A,"Projekt Forex-specific, ograniczone crypto support",N/A,2022-10-30,RL/ML Frameworks
