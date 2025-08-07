@@ -106,6 +106,53 @@ class ExchangeConnector(ABC):
         """
         pass
     
+    async def fetch_ohlcv_async(
+        self, 
+        symbol: str, 
+        timeframe: str = '1m',
+        start_time: Optional[Any] = None,
+        end_time: Optional[Any] = None,
+        limit: int = 1000
+    ) -> Optional[Any]:
+        """
+        Fetch OHLCV data asynchronously (default implementation).
+        
+        Args:
+            symbol: Trading symbol (e.g., 'BTC/USDT')
+            timeframe: Timeframe for data (e.g., '1m', '5m', '1h')
+            start_time: Start time for data fetch
+            end_time: End time for data fetch
+            limit: Maximum number of records to fetch
+            
+        Returns:
+            Optional[pd.DataFrame]: OHLCV data or None if fetch fails
+        """
+        try:
+            # Default implementation using REST API
+            # This can be overridden by specific connectors for better performance
+            import pandas as pd
+            
+            params = {
+                'symbol': symbol.replace('/', ''),
+                'interval': timeframe,
+                'limit': limit
+            }
+            
+            if start_time:
+                params['startTime'] = int(start_time.timestamp() * 1000) if hasattr(start_time, 'timestamp') else start_time
+            if end_time:
+                params['endTime'] = int(end_time.timestamp() * 1000) if hasattr(end_time, 'timestamp') else end_time
+            
+            # This is a placeholder - actual implementation should be in specific connectors
+            logger.warning(f"Using default OHLCV fetch for {self.name} - implement fetch_ohlcv_async for better performance")
+            
+            # Return empty DataFrame as fallback
+            return pd.DataFrame(columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch OHLCV data for {symbol}: {str(e)}")
+            return None
+    
     async def start(self) -> bool:
         """
         Start the exchange connector.
@@ -166,3 +213,45 @@ class RateLimitError(ExchangeConnectorError):
 class DataNormalizationError(ExchangeConnectorError):
     """Exception raised when data normalization fails."""
     pass
+
+
+def get_exchange_connector(exchange_name: str, config: Optional[Dict[str, Any]] = None):
+    """
+    Factory function to create exchange connector instances.
+    
+    Args:
+        exchange_name: Name of the exchange ('binance', 'bybit', etc.)
+        config: Optional configuration dictionary
+        
+    Returns:
+        ExchangeConnector: Initialized exchange connector instance
+        
+    Raises:
+        ValueError: If exchange is not supported
+    """
+    if config is None:
+        config = {}
+    
+    exchange_name = exchange_name.lower()
+    
+    if exchange_name == 'binance':
+        from .binance_connector import BinanceConnector
+        return BinanceConnector(config)
+    elif exchange_name == 'bybit':
+        from .bybit_connector import ByBitConnector
+        return ByBitConnector(config)
+    else:
+        supported_exchanges = ['binance', 'bybit']
+        raise ValueError(f"Unsupported exchange: {exchange_name}. Supported exchanges: {supported_exchanges}")
+
+
+# Package exports
+__all__ = [
+    'ExchangeConnector',
+    'ExchangeConnectorError',
+    'WebSocketConnectionError', 
+    'RESTAPIError',
+    'RateLimitError',
+    'DataNormalizationError',
+    'get_exchange_connector'
+]

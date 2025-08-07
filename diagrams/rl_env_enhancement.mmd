@@ -1,0 +1,93 @@
+graph TD
+    %% Data Sources
+    OHLCV[OHLCV Data<br/>Multi-Timeframe] --> DataPipeline
+    MarketData[Market Data<br/>Bid/Ask/Volume] --> DataPipeline
+    
+    %% Core Data Pipeline
+    subgraph DataPipeline[Data Pipeline]
+        DataAligner[Multi-TF Data Aligner<br/>1m, 5m, 15m, 1h]
+        VolatilityCalc[Volatility Calculator<br/>ATR, Rolling Std]
+        LiquidityMetrics[Liquidity Metrics<br/>Spread, Depth]
+    end
+    
+    %% Feature Extraction Layer
+    subgraph FeatureExtraction[SMC Feature Extraction]
+        SMC1m[SMC Features 1m<br/>Order Blocks, CHOCH/BOS, FVG]
+        SMC5m[SMC Features 5m<br/>Order Blocks, CHOCH/BOS, FVG]
+        SMC15m[SMC Features 15m<br/>Order Blocks, CHOCH/BOS, FVG]
+        SMC1h[SMC Features 1h<br/>Order Blocks, CHOCH/BOS, FVG]
+        LiquiditySweeps[Liquidity Sweeps<br/>Equal Highs/Lows]
+    end
+    
+    %% Market Analysis Layer
+    subgraph MarketAnalysis[Market Analysis]
+        RegimeDetector[Market Regime Detector<br/>K-means on Vol/Trend]
+        ConfluenceCalculator[Confluence Calculator<br/>Pattern Confirmation Count]
+        KellySizer[Kelly Position Sizer<br/>Sharpe-based Allocation]
+    end
+    
+    %% Cost & Slippage Layer
+    subgraph CostModeling[Cost & Slippage Modeling]
+        SlippageModel[Slippage Model<br/>Volatility-scaled Normal]
+        SpreadModel[Variable Spread Model<br/>ATR-based Dynamic]
+        TransactionCosts[Transaction Costs<br/>Commission + Spread]
+    end
+    
+    %% Enhanced Environment
+    subgraph EnhancedEnv[Enhanced SMCTradingEnv]
+        ObservationBuilder[Observation Builder<br/>Concatenated Multi-TF Features]
+        RewardCalculator[Reward Calculator<br/>PnL - Costs × Confluence × Regime]
+        RiskAdjuster[Risk Adjuster<br/>Sharpe-adjusted Returns]
+        ActionExecutor[Action Executor<br/>Position Management]
+    end
+    
+    %% Data Flow
+    DataPipeline --> FeatureExtraction
+    DataPipeline --> MarketAnalysis
+    DataPipeline --> CostModeling
+    
+    FeatureExtraction --> ObservationBuilder
+    MarketAnalysis --> ObservationBuilder
+    MarketAnalysis --> RewardCalculator
+    MarketAnalysis --> KellySizer
+    
+    CostModeling --> RewardCalculator
+    CostModeling --> ActionExecutor
+    
+    KellySizer --> ActionExecutor
+    RiskAdjuster --> RewardCalculator
+    
+    %% Environment Interface
+    ObservationBuilder --> |observation_space| GymAPI[Gymnasium API<br/>Backward Compatible]
+    RewardCalculator --> |reward| GymAPI
+    ActionExecutor --> |step()| GymAPI
+    
+    %% External Dependencies
+    subgraph Dependencies[External Dependencies]
+        SmartMoneyLib[smartmoneyconcepts<br/>SMC Pattern Detection]
+        PandasTA[pandas-ta<br/>Technical Indicators]
+        ScikitLearn[scikit-learn<br/>Regime Detection]
+        NumPy[NumPy<br/>Vectorized Operations]
+    end
+    
+    FeatureExtraction -.-> SmartMoneyLib
+    MarketAnalysis -.-> ScikitLearn
+    CostModeling -.-> PandasTA
+    EnhancedEnv -.-> NumPy
+    
+    %% Styling
+    classDef dataSource fill:#e1f5fe
+    classDef processing fill:#f3e5f5
+    classDef feature fill:#e8f5e8
+    classDef analysis fill:#fff3e0
+    classDef cost fill:#ffebee
+    classDef env fill:#f1f8e9
+    classDef deps fill:#fce4ec
+    
+    class OHLCV,MarketData dataSource
+    class DataPipeline processing
+    class FeatureExtraction feature
+    class MarketAnalysis analysis
+    class CostModeling cost
+    class EnhancedEnv env
+    class Dependencies deps

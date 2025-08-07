@@ -31,6 +31,9 @@ __all__ = [
     'RegimeSpecificBacktester',
     'MonteCarloSimulator',
     'EnhancedOOSTester',
+    'MannWhitneyTest',
+    'SPATest',
+    'DieboldMarianoTest',
     '__version__',
     '__description__'
 ]
@@ -66,6 +69,54 @@ def get_statistical_test_suite(config: dict):
     """
     from .statistical_tests.test_suite import StatisticalTestSuite
     return StatisticalTestSuite(config)
+
+def get_mann_whitney_test(config: dict):
+    """Get Mann-Whitney U test functionality.
+    
+    Args:
+        config: Configuration dictionary with test parameters
+        
+    Returns:
+        MannWhitneyTest: Initialized Mann-Whitney test
+        
+    Example:
+        test = get_mann_whitney_test(config)
+        result = await test.test(strategy_returns, benchmark_returns)
+    """
+    from .statistical_tests.mann_whitney import MannWhitneyTest
+    return MannWhitneyTest(config)
+
+def get_spa_test(config: dict):
+    """Get Superior Predictive Ability test functionality.
+    
+    Args:
+        config: Configuration dictionary with SPA test parameters
+        
+    Returns:
+        SPATest: Initialized SPA test
+        
+    Example:
+        test = get_spa_test(config)
+        result = await test.test(strategy_dict, benchmark_name)
+    """
+    from .statistical_tests.spa_test import SPATest
+    return SPATest(config)
+
+def get_diebold_mariano_test(config: dict):
+    """Get Diebold-Mariano test functionality.
+    
+    Args:
+        config: Configuration dictionary with DM test parameters
+        
+    Returns:
+        DieboldMarianoTest: Initialized Diebold-Mariano test
+        
+    Example:
+        test = get_diebold_mariano_test(config)
+        result = await test.test(forecast1, forecast2, actual)
+    """
+    from .statistical_tests.diebold_mariano import DieboldMarianoTest
+    return DieboldMarianoTest(config)
 
 def get_regime_backtester(config: dict):
     """Get regime-specific backtesting functionality.
