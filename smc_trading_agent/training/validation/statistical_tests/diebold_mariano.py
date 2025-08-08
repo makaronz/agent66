@@ -20,9 +20,12 @@ logger = logging.getLogger(__name__)
 try:
     from statsmodels.stats.diagnostic import acorr_ljungbox
     HAS_STATSMODELS = True
-except ImportError:
+except ImportError as e:
     HAS_STATSMODELS = False
-    logger.warning("statsmodels not available - using basic autocorrelation detection")
+    logger.warning(
+        "statsmodels not available - using basic autocorrelation detection",
+        exc_info=True
+    )
 
 
 @dataclass
@@ -318,23 +321,22 @@ class DieboldMarianoTest:
         centered_diff = loss_diff - mean_diff
         
         # Test for autocorrelation
-        try:
-            if HAS_STATSMODELS:
+        if not HAS_STATSMODELS:
+            # Explicitly skip statsmodels usage when unavailable and use fallback
+            significant_autocorr = self._simple_autocorr_test(centered_diff)
+        else:
+            try:
                 ljung_box_result = acorr_ljungbox(
-                    centered_diff, 
-                    lags=min(self.max_lags, max(1, n // 4)), 
+                    centered_diff,
+                    lags=min(self.max_lags, max(1, n // 4)),
                     return_df=True
                 )
-                
                 # Check if there's significant autocorrelation
                 significant_autocorr = (ljung_box_result['lb_pvalue'] < 0.05).any()
-            else:
-                # Fallback: simple autocorrelation test
+            except Exception as e:
+                # On any failure, fall back to simple test to avoid NameError or API issues
+                logger.warning(f"Autocorrelation test failed, using fallback: {str(e)}")
                 significant_autocorr = self._simple_autocorr_test(centered_diff)
-            
-        except Exception as e:
-            logger.warning(f"Autocorrelation test failed: {str(e)}")
-            significant_autocorr = True  # Assume autocorrelation to be safe
         
         if not significant_autocorr:
             # No significant autocorrelation, use simple variance

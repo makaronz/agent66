@@ -75,7 +75,7 @@ class NotificationService:
     rate limiting, and delivery confirmation.
     """
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], http_session: Optional[aiohttp.ClientSession] = None):
         """
         Initialize notification service.
         
@@ -117,7 +117,9 @@ class NotificationService:
         )
         
         # HTTP session for API calls
-        self.http_session = None
+        # If a session is injected, we will not manage its lifecycle (do not close)
+        self.http_session: Optional[aiohttp.ClientSession] = http_session
+        self._owns_session: bool = http_session is None
         
         logger.info("Initialized notification service with multi-channel support")
     
@@ -303,6 +305,7 @@ class NotificationService:
             # Prepare HTTP session
             if not self.http_session:
                 self.http_session = aiohttp.ClientSession()
+                self._owns_session = True
             
             # Prepare email data
             email_data = {
@@ -420,6 +423,7 @@ class NotificationService:
             # Prepare HTTP session
             if not self.http_session:
                 self.http_session = aiohttp.ClientSession()
+                self._owns_session = True
             
             # Send SMS to each recipient
             successful_sends = 0
@@ -500,6 +504,7 @@ class NotificationService:
             # Prepare HTTP session
             if not self.http_session:
                 self.http_session = aiohttp.ClientSession()
+                self._owns_session = True
             
             # Prepare Slack message
             slack_message = {
@@ -692,7 +697,7 @@ class NotificationService:
     async def close(self):
         """Close notification service and cleanup resources."""
         try:
-            if self.http_session:
+            if self.http_session and self._owns_session:
                 await self.http_session.close()
             logger.info("Notification service closed")
         except Exception as e:

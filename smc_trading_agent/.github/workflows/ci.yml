@@ -40,7 +40,9 @@ jobs:
       run: black --check .
       
     - name: Run tests
-      run: pytest tests/
+      env:
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      run: pytest -q tests/
       
   build:
     needs: test

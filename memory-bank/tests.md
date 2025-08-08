@@ -26,3 +26,24 @@ Testing is a core part of the development process, not an afterthought. The goal
 - **Goal:** Ensure the system can handle real-time data flow without significant latency.
 - **Tools:** Use profiling tools to identify and optimize bottlenecks, particularly in the data ingestion and execution paths.
 
+
+## 6. Replicating CI pytest behavior locally
+
+To mirror the CI test environment and avoid failures caused by third‑party pytest plugins autoloaded in your local environment, run tests with plugin autoload disabled. This isolates validation to repository code only.
+
+Recommended commands (macOS/Linux):
+
+```bash
+cd smc_trading_agent
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q
+```
+
+Notes:
+- The repository includes a pytest configuration at `smc_trading_agent/pytest.ini` that disables a known problematic plugin via:
+  ```ini
+  [pytest]
+  addopts = -p no:opik
+  ```
+- The environment variable `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` prevents autoloading of external plugins that may be present in your Python environment.
+- Combined, these settings reproduce CI isolation locally and help ensure deterministic, repo‑scoped test runs.
+

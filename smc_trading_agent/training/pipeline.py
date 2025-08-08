@@ -35,6 +35,14 @@ from ..decision_engine.model_ensemble import ModelEnsemble
 logger = logging.getLogger(__name__)
 
 
+class MissingNumericColumnError(Exception):
+    """Raised when no numeric columns are found in a DataFrame required for validation.
+
+    This exception is used in statistical and traditional validation paths
+    when `strategy_data` lacks numeric columns necessary to compute returns.
+    """
+
+
 def create_strict_time_series_split(data, n_splits=5, gap=0):
     """
     Creates a time-series cross-validator that enforces a gap between train and test sets.
@@ -100,7 +108,12 @@ def walk_forward_backtest(model, X, y, n_splits=5, gap=0):
 
     # Align predictions with original index
     final_preds = pd.Series(np.concatenate(all_preds), index=X.iloc[all_true_indices].index)
+    # Ensure chronological order to avoid misalignment in return calculations
+    final_preds = final_preds.sort_index()
+
+    # Align true values to predictions and ensure the same chronological ordering
     final_true = y.loc[final_preds.index]
+    final_true = final_true.sort_index()
 
     # Assume predictions are signals (+1 for buy, -1 for sell, 0 for hold)
     # This is a simplified assumption. A real implementation would be more complex.
@@ -361,7 +374,17 @@ class EnhancedTrainingPipeline:
                 if len(numeric_cols) > 0:
                     strategy_returns = strategy_data[numeric_cols[0]].pct_change().dropna()
                 else:
-                    raise ValueError("No suitable data for statistical validation")
+                    raise MissingNumericColumnError(
+                        (
+                            f"No numeric columns found in DataFrame 'strategy_data' "
+                            f"(shape={strategy_data.shape}). Present columns: "
+                            f"{list(strategy_data.columns)}. Unable to perform statistical validation."
+                        )
+                    )
+            
+            # Normalize index to avoid alignment issues in downstream processing
+            # Ensures a contiguous 0..N-1 RangeIndex regardless of source indexing or dropna effects
+            strategy_returns.index = pd.RangeIndex(len(strategy_returns))
             
             # Prepare benchmark returns
             if benchmark_data is not None:
@@ -455,7 +478,13 @@ class EnhancedTrainingPipeline:
                 if len(numeric_cols) > 0:
                     returns = strategy_data[numeric_cols[0]].pct_change().dropna()
                 else:
-                    raise ValueError("No suitable data for traditional validation")
+                    raise MissingNumericColumnError(
+                        (
+                            f"No numeric columns found in DataFrame 'strategy_data' "
+                            f"(shape={strategy_data.shape}). Present columns: "
+                            f"{list(strategy_data.columns)}. Unable to perform traditional validation."
+                        )
+                    )
             
             # Calculate traditional performance metrics
             traditional_metrics = calculate_performance_metrics(returns)
