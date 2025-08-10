@@ -1,0 +1,15 @@
+{
+  "buildCommand": "cd smc_trading_agent && npm run build",
+  "outputDirectory": "smc_trading_agent/dist",
+  "installCommand": "cd smc_trading_agent && npm install",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
