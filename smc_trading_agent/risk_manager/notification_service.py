@@ -266,25 +266,49 @@ class NotificationService:
         """Send email notification."""
         try:
             start_time = time.time()
+            last_error_message = ""
             
-            # Try SendGrid first
-            if self.email_config.get('sendgrid_api_key'):
-                result = await self._send_email_sendgrid(request)
-                if result.success:
-                    return result
+            # Total attempts include the first try
+            total_attempts = max(int(self.max_retry_attempts), 1)
             
-            # Fallback to SMTP
-            if self.email_config.get('smtp'):
-                result = await self._send_email_smtp(request)
-                if result.success:
-                    return result
+            for attempt in range(1, total_attempts + 1):
+                # Throttle before each attempt to space out requests
+                try:
+                    await asyncio.sleep(float(self.throttle_delay))
+                except Exception:
+                    # Ignore sleep errors and continue with sending attempt
+                    pass
+                
+                # Try SendGrid first
+                if self.email_config.get('sendgrid_api_key'):
+                    result = await self._send_email_sendgrid(request)
+                    if result.success:
+                        result.retry_count = attempt - 1
+                        return result
+                    last_error_message = result.error_message or "SendGrid attempt failed"
+                
+                # Fallback to SMTP within the same attempt
+                if self.email_config.get('smtp'):
+                    result = await self._send_email_smtp(request)
+                    if result.success:
+                        result.retry_count = attempt - 1
+                        return result
+                    last_error_message = result.error_message or "SMTP attempt failed"
+                
+                # If not successful and attempts remain, wait before retrying
+                if attempt < total_attempts:
+                    try:
+                        await asyncio.sleep(float(self.retry_delay))
+                    except Exception:
+                        pass
             
-            # If both failed
+            # All attempts exhausted
             return NotificationResult(
                 channel=NotificationChannel.EMAIL,
                 success=False,
-                error_message="All email methods failed",
+                error_message=f"All email methods failed after {total_attempts} attempt(s): {last_error_message}",
                 delivery_time=time.time() - start_time,
+                retry_count=total_attempts - 1,
                 timestamp=time.time()
             )
             
@@ -425,58 +449,73 @@ class NotificationService:
                 self.http_session = aiohttp.ClientSession()
                 self._owns_session = True
             
-            # Send SMS to each recipient
-            successful_sends = 0
-            error_messages = []
+            total_attempts = max(int(self.max_retry_attempts), 1)
+            last_error = ""
             
-            for recipient in request.recipients:
+            for attempt in range(1, total_attempts + 1):
                 try:
-                    # Prepare SMS data
-                    sms_data = {
-                        "To": recipient,
-                        "From": self.sms_config.get('from_number', ''),
-                        "Body": f"{request.subject}: {request.message[:150]}"  # Truncate for SMS
-                    }
-                    
-                    # Send via Twilio API
-                    auth = aiohttp.BasicAuth(
-                        self.sms_config['twilio_account_sid'],
-                        self.sms_config['twilio_auth_token']
+                    await asyncio.sleep(float(self.throttle_delay))
+                except Exception:
+                    pass
+                
+                successful_sends = 0
+                error_messages: List[str] = []
+                
+                for recipient in request.recipients:
+                    try:
+                        sms_data = {
+                            "To": recipient,
+                            "From": self.sms_config.get('from_number', ''),
+                            "Body": f"{request.subject}: {request.message[:150]}"
+                        }
+                        
+                        auth = aiohttp.BasicAuth(
+                            self.sms_config['twilio_account_sid'],
+                            self.sms_config['twilio_auth_token']
+                        )
+                        
+                        url = f"https://api.twilio.com/2010-04-01/Accounts/{self.sms_config['twilio_account_sid']}/Messages.json"
+                        
+                        async with self.http_session.post(
+                            url,
+                            auth=auth,
+                            data=sms_data,
+                            timeout=30
+                        ) as response:
+                            if response.status == 201:
+                                successful_sends += 1
+                            else:
+                                error_text = await response.text()
+                                error_messages.append(f"Twilio API error: {response.status} - {error_text}")
+                    except Exception as e:
+                        error_messages.append(f"SMS send error: {str(e)}")
+                
+                if successful_sends == len(request.recipients):
+                    return NotificationResult(
+                        channel=NotificationChannel.SMS,
+                        success=True,
+                        message_id=f"twilio_{int(time.time())}",
+                        delivery_time=time.time() - start_time,
+                        retry_count=attempt - 1,
+                        timestamp=time.time()
                     )
-                    
-                    url = f"https://api.twilio.com/2010-04-01/Accounts/{self.sms_config['twilio_account_sid']}/Messages.json"
-                    
-                    async with self.http_session.post(
-                        url,
-                        auth=auth,
-                        data=sms_data,
-                        timeout=30
-                    ) as response:
-                        if response.status == 201:
-                            successful_sends += 1
-                        else:
-                            error_text = await response.text()
-                            error_messages.append(f"Twilio API error: {response.status} - {error_text}")
-                            
-                except Exception as e:
-                    error_messages.append(f"SMS send error: {str(e)}")
+                
+                last_error = f"Partial SMS failure: {', '.join(error_messages)}"
+                
+                if attempt < total_attempts:
+                    try:
+                        await asyncio.sleep(float(self.retry_delay))
+                    except Exception:
+                        pass
             
-            if successful_sends == len(request.recipients):
-                return NotificationResult(
-                    channel=NotificationChannel.SMS,
-                    success=True,
-                    message_id=f"twilio_{int(time.time())}",
-                    delivery_time=time.time() - start_time,
-                    timestamp=time.time()
-                )
-            else:
-                return NotificationResult(
-                    channel=NotificationChannel.SMS,
-                    success=False,
-                    error_message=f"Partial SMS failure: {', '.join(error_messages)}",
-                    delivery_time=time.time() - start_time,
-                    timestamp=time.time()
-                )
+            return NotificationResult(
+                channel=NotificationChannel.SMS,
+                success=False,
+                error_message=f"SMS failed after {total_attempts} attempt(s): {last_error}",
+                delivery_time=time.time() - start_time,
+                retry_count=total_attempts - 1,
+                timestamp=time.time()
+            )
                 
         except Exception as e:
             logger.error(f"SMS sending failed: {e}")
@@ -516,52 +555,62 @@ class NotificationService:
             
             # Add priority color
             priority_colors = {
-                NotificationPriority.LOW: "#36a64f",      # Green
-                NotificationPriority.MEDIUM: "#ffa500",   # Orange
-                NotificationPriority.HIGH: "#ff8c00",     # Dark Orange
-                NotificationPriority.CRITICAL: "#ff0000"  # Red
+                NotificationPriority.LOW: "#36a64f",
+                NotificationPriority.MEDIUM: "#ffa500",
+                NotificationPriority.HIGH: "#ff8c00",
+                NotificationPriority.CRITICAL: "#ff0000"
             }
             
             if request.priority in priority_colors:
                 slack_message["attachments"] = [{
                     "color": priority_colors[request.priority],
                     "fields": [
-                        {
-                            "title": "Priority",
-                            "value": request.priority.value.upper(),
-                            "short": True
-                        },
-                        {
-                            "title": "Timestamp",
-                            "value": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(request.timestamp)),
-                            "short": True
-                        }
+                        {"title": "Priority", "value": request.priority.value.upper(), "short": True},
+                        {"title": "Timestamp", "value": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(request.timestamp)), "short": True}
                     ]
                 }]
             
-            # Send via Slack webhook
-            async with self.http_session.post(
-                webhook_url,
-                json=slack_message,
-                timeout=30
-            ) as response:
-                if response.status == 200:
-                    return NotificationResult(
-                        channel=NotificationChannel.SLACK,
-                        success=True,
-                        message_id=f"slack_{int(time.time())}",
-                        delivery_time=time.time() - start_time,
-                        timestamp=time.time()
-                    )
-                else:
-                    error_text = await response.text()
-                    return NotificationResult(
-                        channel=NotificationChannel.SLACK,
-                        success=False,
-                        error_message=f"Slack webhook error: {response.status} - {error_text}",
-                        delivery_time=time.time() - start_time,
-                        timestamp=time.time()
-                    )
+            total_attempts = max(int(self.max_retry_attempts), 1)
+            last_error = ""
+            
+            for attempt in range(1, total_attempts + 1):
+                try:
+                    await asyncio.sleep(float(self.throttle_delay))
+                except Exception:
+                    pass
+                
+                async with self.http_session.post(
+                    webhook_url,
+                    json=slack_message,
+                    timeout=30
+                ) as response:
+                    if response.status == 200:
+                        return NotificationResult(
+                            channel=NotificationChannel.SLACK,
+                            success=True,
+                            message_id=f"slack_{int(time.time())}",
+                            delivery_time=time.time() - start_time,
+                            retry_count=attempt - 1,
+                            timestamp=time.time()
+                        )
+                    else:
+                        error_text = await response.text()
+                        last_error = f"Slack webhook error: {response.status} - {error_text}"
+                
+                if attempt < total_attempts:
+                    try:
+                        await asyncio.sleep(float(self.retry_delay))
+                    except Exception:
+                        pass
+            
+            return NotificationResult(
+                channel=NotificationChannel.SLACK,
+                success=False,
+                error_message=f"Slack notification failed after {total_attempts} attempt(s): {last_error}",
+                delivery_time=time.time() - start_time,
+                retry_count=total_attempts - 1,
+                timestamp=time.time()
+            )
                     
         except Exception as e:
             logger.error(f"Slack notification failed: {e}")

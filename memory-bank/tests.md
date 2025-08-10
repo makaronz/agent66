@@ -35,7 +35,11 @@ Recommended commands (macOS/Linux):
 
 ```bash
 cd smc_trading_agent
+# CI-like isolation (plugins disabled) — async tests will be skipped unless plugin enabled explicitly
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q
+
+# CI-like isolation but run asyncio tests by enabling plugin explicitly
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q -p pytest_asyncio
 ```
 
 Notes:
@@ -43,6 +47,9 @@ Notes:
   ```ini
   [pytest]
   addopts = -p no:opik
+  markers =
+      asyncio: mark a test as asyncio
+  asyncio_mode = auto
   ```
 - The environment variable `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` prevents autoloading of external plugins that may be present in your Python environment.
 - Combined, these settings reproduce CI isolation locally and help ensure deterministic, repo‑scoped test runs.

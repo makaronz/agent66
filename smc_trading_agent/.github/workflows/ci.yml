@@ -42,7 +42,7 @@ jobs:
     - name: Run tests
       env:
         PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
-      run: pytest -q tests/
+      run: pytest -q -p pytest_asyncio tests/
       
   build:
     needs: test
