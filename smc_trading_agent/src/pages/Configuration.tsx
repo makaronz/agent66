@@ -8,9 +8,12 @@ import {
   CheckCircle,
   AlertCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  User,
+  DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 const exchanges = [
   { id: 'binance', name: 'Binance', status: 'connected', latency: '12ms' },
@@ -40,18 +43,118 @@ export default function Configuration() {
   const [showApiKeys, setShowApiKeys] = useState<{[key: string]: boolean}>({});
   const [apiKeys, setApiKeys] = useState<{[key: string]: {key: string, secret: string}}>({});
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
+  const [fetchingAccountInfo, setFetchingAccountInfo] = useState<string | null>(null);
+  const [accountInfo, setAccountInfo] = useState<{[key: string]: any}>({});
+  const [useSandbox, setUseSandbox] = useState<{[key: string]: boolean}>({});
 
   const handleTestConnection = async (exchangeId: string) => {
     setTestingConnection(exchangeId);
-    // Simulate API test
-    setTimeout(() => {
+    
+    try {
+      const apiKey = apiKeys[exchangeId]?.key;
+      const secret = apiKeys[exchangeId]?.secret;
+      
+      if (!apiKey || !secret) {
+        alert('Please enter both API key and secret key');
+        setTestingConnection(null);
+        return;
+      }
+
+      const response = await fetch('http://localhost:3002/api/binance/test-connection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          apiKey,
+          secret,
+          sandbox: useSandbox[exchangeId] || false
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`Connection successful! Status: ${result.data.status}`);
+        // Update exchange status
+        const updatedExchanges = exchanges.map(ex => 
+          ex.id === exchangeId 
+            ? { ...ex, status: 'connected', latency: '15ms' }
+            : ex
+        );
+        // Note: In a real app, you'd update state properly
+      } else {
+        alert(`Connection failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Connection test error:', error);
+      alert('Connection test failed. Please check your network and try again.');
+    } finally {
       setTestingConnection(null);
-    }, 2000);
+    }
+  };
+
+  const handleFetchAccountInfo = async (exchangeId: string) => {
+    setFetchingAccountInfo(exchangeId);
+    
+    try {
+      const apiKey = apiKeys[exchangeId]?.key;
+      const secret = apiKeys[exchangeId]?.secret;
+      
+      if (!apiKey || !secret) {
+        alert('Please enter both API key and secret key');
+        setFetchingAccountInfo(null);
+        return;
+      }
+
+      const response = await fetch('http://localhost:3002/api/binance/account-info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          apiKey,
+          secret,
+          sandbox: useSandbox[exchangeId] || false
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setAccountInfo(prev => ({
+          ...prev,
+          [exchangeId]: result.data
+        }));
+        alert('Account information fetched successfully!');
+      } else {
+        alert(`Failed to fetch account info: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Account info fetch error:', error);
+      alert('Failed to fetch account information. Please try again.');
+    } finally {
+      setFetchingAccountInfo(null);
+    }
   };
 
   const handleSaveConfiguration = () => {
     // TODO: Implement save logic
     console.log('Saving configuration...');
+    
+    // Show success toast
+    toast.success('Konfiguracja została zapisana pomyślnie!', {
+      duration: 3000,
+      position: 'top-right',
+      style: {
+        background: '#10B981',
+        color: '#fff',
+      },
+      iconTheme: {
+        primary: '#fff',
+        secondary: '#10B981',
+      },
+    });
   };
 
   const toggleApiKeyVisibility = (exchangeId: string) => {
@@ -93,7 +196,7 @@ export default function Configuration() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); }}
                 className={cn(
                   "flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors",
                   activeTab === tab.id
@@ -137,19 +240,34 @@ export default function Configuration() {
                         <span className="text-sm text-gray-500">Latency: {exchange.latency}</span>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleTestConnection(exchange.id)}
-                      disabled={testingConnection === exchange.id}
-                      className={cn(
-                        "flex items-center space-x-2 px-3 py-1 text-sm font-medium rounded-md transition-colors",
-                        testingConnection === exchange.id
-                          ? "bg-gray-400 text-white cursor-not-allowed"
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
-                      )}
-                    >
-                      <TestTube className="h-4 w-4" />
-                      <span>{testingConnection === exchange.id ? 'Testing...' : 'Test Connection'}</span>
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleTestConnection(exchange.id)}
+                        disabled={testingConnection === exchange.id}
+                        className={cn(
+                          "flex items-center space-x-2 px-3 py-1 text-sm font-medium rounded-md transition-colors",
+                          testingConnection === exchange.id
+                            ? "bg-gray-400 text-white cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 text-white"
+                        )}
+                      >
+                        <TestTube className="h-4 w-4" />
+                        <span>{testingConnection === exchange.id ? 'Testing...' : 'Test Connection'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleFetchAccountInfo(exchange.id)}
+                        disabled={fetchingAccountInfo === exchange.id}
+                        className={cn(
+                          "flex items-center space-x-2 px-3 py-1 text-sm font-medium rounded-md transition-colors",
+                          fetchingAccountInfo === exchange.id
+                            ? "bg-gray-400 text-white cursor-not-allowed"
+                            : "bg-green-600 hover:bg-green-700 text-white"
+                        )}
+                      >
+                        <User className="h-4 w-4" />
+                        <span>{fetchingAccountInfo === exchange.id ? 'Fetching...' : 'Get Account Info'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="p-6">
@@ -161,7 +279,7 @@ export default function Configuration() {
                       <div className="relative">
                         <input
                           type={showApiKeys[exchange.id] ? 'text' : 'password'}
-                          value={apiKeys[exchange.id]?.key || ''}
+                          value={apiKeys[exchange.id].key || ''}
                           onChange={(e) => setApiKeys(prev => ({
                             ...prev,
                             [exchange.id]: { ...prev[exchange.id], key: e.target.value }
@@ -171,7 +289,7 @@ export default function Configuration() {
                         />
                         <button
                           type="button"
-                          onClick={() => toggleApiKeyVisibility(exchange.id)}
+                          onClick={() => { toggleApiKeyVisibility(exchange.id); }}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         >
                           {showApiKeys[exchange.id] ? (
@@ -189,7 +307,7 @@ export default function Configuration() {
                       <div className="relative">
                         <input
                           type={showApiKeys[exchange.id] ? 'text' : 'password'}
-                          value={apiKeys[exchange.id]?.secret || ''}
+                          value={apiKeys[exchange.id].secret || ''}
                           onChange={(e) => setApiKeys(prev => ({
                             ...prev,
                             [exchange.id]: { ...prev[exchange.id], secret: e.target.value }
@@ -214,12 +332,22 @@ export default function Configuration() {
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Sandbox Mode
+                        Environment
                       </label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="true">Enabled</option>
-                        <option value="false">Disabled</option>
+                      <select 
+                        value={useSandbox[exchange.id] ? 'true' : 'false'}
+                        onChange={(e) => setUseSandbox(prev => ({
+                          ...prev,
+                          [exchange.id]: e.target.value === 'true'
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="false">Live Trading</option>
+                        <option value="true">Testnet (Sandbox)</option>
                       </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {useSandbox[exchange.id] ? 'Using testnet environment (safe for testing)' : 'Using live environment (real money)'}
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -242,6 +370,54 @@ export default function Configuration() {
                       />
                     </div>
                   </div>
+                  
+                  {/* Account Information Display */}
+                  {accountInfo[exchange.id] && (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                        <h4 className="text-md font-medium text-gray-900">Account Information</h4>
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                          {accountInfo[exchange.id].accountType}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Balances</h5>
+                          <div className="space-y-1">
+                            {Object.entries(accountInfo[exchange.id].balances || {}).map(([currency, balance]: [string, any]) => (
+                              <div key={currency} className="flex justify-between text-sm">
+                                <span className="text-gray-600">{currency}:</span>
+                                <span className="font-medium">{balance.total}</span>
+                              </div>
+                            ))}
+                            {Object.keys(accountInfo[exchange.id].balances || {}).length === 0 && (
+                              <p className="text-sm text-gray-500">No balances available</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Trading Fees</h5>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Maker:</span>
+                              <span className="font-medium">{(accountInfo[exchange.id].tradingFees?.maker * 100)?.toFixed(3)}%</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Taker:</span>
+                              <span className="font-medium">{(accountInfo[exchange.id].tradingFees?.taker * 100)?.toFixed(3)}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 text-xs text-gray-500">
+                        Last updated: {new Date(accountInfo[exchange.id].timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

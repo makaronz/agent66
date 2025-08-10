@@ -130,7 +130,7 @@ export default function Monitoring() {
         <div className="flex items-center space-x-4">
           <select
             value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            onChange={(e) => { setSelectedTimeframe(e.target.value); }}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="1h">Last Hour</option>

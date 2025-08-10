@@ -170,7 +170,7 @@ export default function RiskManagement() {
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Auto Risk Management</span>
             <button
-              onClick={() => setAutoRiskManagement(!autoRiskManagement)}
+              onClick={() => { setAutoRiskManagement(!autoRiskManagement); }}
               className={cn(
                 "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                 autoRiskManagement ? "bg-blue-600" : "bg-gray-200"
@@ -186,7 +186,7 @@ export default function RiskManagement() {
           </div>
           <select
             value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            onChange={(e) => { setSelectedTimeframe(e.target.value); }}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="1D">1 Day</option>

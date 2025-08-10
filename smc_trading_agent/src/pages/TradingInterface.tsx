@@ -108,7 +108,7 @@ export default function TradingInterface() {
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Auto Trading</span>
             <button
-              onClick={() => setAutoTrading(!autoTrading)}
+              onClick={() => { setAutoTrading(!autoTrading); }}
               className={cn(
                 "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                 autoTrading ? "bg-green-600" : "bg-gray-200"
@@ -146,7 +146,7 @@ export default function TradingInterface() {
                 <h3 className="text-lg font-medium text-gray-900">Price Chart & SMC Patterns</h3>
                 <select
                   value={selectedSymbol}
-                  onChange={(e) => setSelectedSymbol(e.target.value)}
+                  onChange={(e) => { setSelectedSymbol(e.target.value); }}
                   className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="BTCUSDT">BTC/USDT</option>
@@ -233,7 +233,7 @@ export default function TradingInterface() {
               {/* Order Side */}
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setOrderSide('BUY')}
+                  onClick={() => { setOrderSide('BUY'); }}
                   className={cn(
                     "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
                     orderSide === 'BUY'
@@ -245,7 +245,7 @@ export default function TradingInterface() {
                   BUY
                 </button>
                 <button
-                  onClick={() => setOrderSide('SELL')}
+                  onClick={() => { setOrderSide('SELL'); }}
                   className={cn(
                     "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
                     orderSide === 'SELL'
@@ -261,7 +261,7 @@ export default function TradingInterface() {
               {/* Order Type */}
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setOrderType('MARKET')}
+                  onClick={() => { setOrderType('MARKET'); }}
                   className={cn(
                     "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
                     orderType === 'MARKET'
@@ -272,7 +272,7 @@ export default function TradingInterface() {
                   Market
                 </button>
                 <button
-                  onClick={() => setOrderType('LIMIT')}
+                  onClick={() => { setOrderType('LIMIT'); }}
                   className={cn(
                     "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
                     orderType === 'LIMIT'
@@ -292,7 +292,7 @@ export default function TradingInterface() {
                 <input
                   type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
+                  onChange={(e) => { setQuantity(e.target.value); }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -307,7 +307,7 @@ export default function TradingInterface() {
                   <input
                     type="number"
                     value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    onChange={(e) => { setPrice(e.target.value); }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0.00"
                   />
@@ -322,7 +322,7 @@ export default function TradingInterface() {
                 <input
                   type="number"
                   value={stopLoss}
-                  onChange={(e) => setStopLoss(e.target.value)}
+                  onChange={(e) => { setStopLoss(e.target.value); }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Optional"
                 />
@@ -336,8 +336,7 @@ export default function TradingInterface() {
                 <input
                   type="number"
                   value={takeProfit}
-                  onChange={(e) => setTakeProfit(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => { setTakeProfit(e.target.value); }}                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Optional"
                 />
               </div>

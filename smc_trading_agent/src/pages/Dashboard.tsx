@@ -10,6 +10,11 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealtime } from '@/hooks/useRealtime';
+import LiveSignals from '@/components/realtime/LiveSignals';
+import LiveTrades from '@/components/realtime/LiveTrades';
+import RealtimeStatus from '@/components/realtime/RealtimeStatus';
 
 // Mock data - replace with real API calls
 const mockMarketData = [
@@ -33,13 +38,23 @@ const mockSystemHealth = [
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { user, profile } = useAuth();
+  const { trades, signals, isConnected } = useRealtime();
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => { setCurrentTime(new Date()); }, 1000);
+    return () => { clearInterval(timer); };
   }, []);
 
-  const totalPnL = mockPositions.reduce((sum, pos) => sum + pos.pnl, 0);
+  // Calculate real P&L from live trades if available, otherwise use mock data
+  const realTrades = trades.filter(trade => trade.status === 'filled');
+  const totalPnL = realTrades.length > 0 
+    ? realTrades.reduce((sum, trade) => {
+        // Simple P&L calculation - in real app this would be more complex
+        const pnl = trade.side === 'buy' ? (trade.price * trade.quantity * 0.01) : (trade.price * trade.quantity * -0.01);
+        return sum + pnl;
+      }, 0)
+    : mockPositions.reduce((sum, pos) => sum + pos.pnl, 0);
 
   return (
     <div className="space-y-6">
@@ -47,11 +62,16 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Trading Dashboard</h1>
-          <p className="text-gray-600">Real-time market overview and performance metrics</p>
+          <p className="text-gray-600">
+            Witaj {profile?.full_name || user?.email || 'Trader'}! Real-time market overview and performance metrics
+          </p>
         </div>
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
-          <Clock className="h-4 w-4" />
-          <span>{currentTime.toLocaleTimeString()}</span>
+        <div className="flex items-center space-x-4">
+          <RealtimeStatus />
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <Clock className="h-4 w-4" />
+            <span>{currentTime.toLocaleTimeString()}</span>
+          </div>
         </div>
       </div>
 
@@ -111,12 +131,21 @@ export default function Dashboard() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Win Rate</dt>
-                <dd className="text-lg font-medium text-gray-900">68.5%</dd>
+                <dt className="text-sm font-medium text-gray-500 truncate">Aktywne sygnały</dt>
+                <dd className="text-lg font-medium text-gray-900">{signals.length}</dd>
               </dl>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Real-time Data Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Live Signals */}
+        <LiveSignals className="" maxSignals={10} />
+        
+        {/* Live Trades */}
+        <LiveTrades className="" maxTrades={10} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

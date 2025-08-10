@@ -15,6 +15,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
@@ -25,11 +26,17 @@ const navigation = [
   { name: 'Research', href: '/research', icon: BookOpen },
   { name: 'Risk Management', href: '/risk', icon: Shield },
   { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'MFA Security', href: '/mfa', icon: Shield },
 ];
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { user, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
@@ -38,13 +45,13 @@ export default function Layout() {
         'fixed inset-0 flex z-40 md:hidden',
         sidebarOpen ? 'block' : 'hidden'
       )}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => { setSidebarOpen(false); }} />
         <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
           <div className="absolute top-0 right-0 -mr-12 pt-2">
             <button
               type="button"
               className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => { setSidebarOpen(false); }}
             >
               <X className="h-6 w-6 text-white" />
             </button>
@@ -128,7 +135,7 @@ export default function Layout() {
           <button
             type="button"
             className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => { setSidebarOpen(true); }}
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -138,7 +145,7 @@ export default function Layout() {
                 <div className="relative w-full text-gray-400 focus-within:text-gray-600">
                   <div className="flex items-center h-16">
                     <h2 className="text-lg font-semibold text-gray-900">
-                      {navigation.find(item => item.href === location.pathname)?.name || 'Dashboard'}
+                      {navigation.find(item => item.href === location.pathname)?.name ?? 'Dashboard'}
                     </h2>
                   </div>
                 </div>
@@ -163,12 +170,18 @@ export default function Layout() {
                     <User className="h-8 w-8 rounded-full text-gray-400" />
                   </button>
                   <div className="hidden md:block">
-                    <div className="text-sm font-medium text-gray-700">Trader</div>
-                    <div className="text-xs text-gray-500">trader@smc.com</div>
+                    <div className="text-sm font-medium text-gray-700">
+                      {profile?.full_name || 'Użytkownik'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {user?.email || 'Brak e-maila'}
+                    </div>
                   </div>
                   <button
                     type="button"
+                    onClick={handleSignOut}
                     className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    title="Wyloguj się"
                   >
                     <LogOut className="h-5 w-5" />
                   </button>

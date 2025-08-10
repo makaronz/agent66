@@ -16,3 +16,5 @@ diagrams/system_architecture.mmd
 diagrams/system_architecture.png
 diagrams/user_workflow.mmd
 diagrams/user_workflow.png
+smc_trading_agent/.env
+smc_trading_agent/api/.env

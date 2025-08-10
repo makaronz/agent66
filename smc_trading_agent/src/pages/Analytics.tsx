@@ -54,7 +54,7 @@ export default function Analytics() {
   const handleRunBacktest = () => {
     setBacktestRunning(true);
     // Simulate backtest running
-    setTimeout(() => setBacktestRunning(false), 3000);
+    setTimeout(() => { setBacktestRunning(false); }, 3000);
   };
 
   return (
@@ -68,7 +68,7 @@ export default function Analytics() {
         <div className="flex items-center space-x-3">
           <select
             value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value)}
+            onChange={(e) => { setSelectedTimeframe(e.target.value); }}
             className="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="1M">1 Month</option>

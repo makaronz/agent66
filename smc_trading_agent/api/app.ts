@@ -5,6 +5,12 @@
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import binanceRoutes from './routes/binance.js';
+import userRoutes from './routes/users.js';
+import mfaRoutes from './routes/mfa.js';
+import webauthnRoutes from './routes/webauthn.js';
+import smsRoutes from './routes/sms.js';
+import securityRoutes from './routes/security.js';
 
 // load env
 dotenv.config();
@@ -23,6 +29,13 @@ app.use('/api/auth', (req, res) => {
   console.log('Auth route accessed');
   res.json({ message: 'Auth endpoint' });
 });
+
+app.use('/api/binance', binanceRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/mfa', mfaRoutes);
+app.use('/api/webauthn', webauthnRoutes);
+app.use('/api/sms', smsRoutes);
+app.use('/api/security', securityRoutes);
 
 /**
  * health

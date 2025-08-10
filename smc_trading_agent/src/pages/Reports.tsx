@@ -159,7 +159,7 @@ export default function Reports() {
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Auto Reports</span>
             <button
-              onClick={() => setAutoReports(!autoReports)}
+              onClick={() => { setAutoReports(!autoReports); }}
               className={cn(
                 "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                 autoReports ? "bg-blue-600" : "bg-gray-200"
@@ -197,7 +197,7 @@ export default function Reports() {
                 </label>
                 <select
                   value={selectedReportType}
-                  onChange={(e) => setSelectedReportType(e.target.value)}
+                  onChange={(e) => { setSelectedReportType(e.target.value); }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {reportTypes.map((type) => (
@@ -220,7 +220,7 @@ export default function Reports() {
                     <input
                       type="date"
                       value={dateRange.start}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      onChange={(e) => { setDateRange(prev => ({ ...prev, start: e.target.value })); }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -231,7 +231,7 @@ export default function Reports() {
                     <input
                       type="date"
                       value={dateRange.end}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      onChange={(e) => { setDateRange(prev => ({ ...prev, end: e.target.value })); }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

@@ -225,7 +225,7 @@ export default function Research() {
               type="text"
               placeholder="Search patterns, courses..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); }}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
             />
           </div>
@@ -240,7 +240,7 @@ export default function Research() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); }}
                 className={cn(
                   "flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors",
                   activeTab === tab.id
@@ -266,7 +266,7 @@ export default function Research() {
               {categories.map((category) => (
                 <button
                   key={category}
-                  onClick={() => setSelectedCategory(category)}
+                  onClick={() => { setSelectedCategory(category); }}
                   className={cn(
                     "px-3 py-1 text-sm font-medium rounded-full transition-colors",
                     selectedCategory === category
@@ -329,7 +329,7 @@ export default function Research() {
 
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setSelectedPattern(pattern.id)}
+                      onClick={() => { setSelectedPattern(pattern.id); }}
                       className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors"
                     >
                       <Play className="h-4 w-4" />
