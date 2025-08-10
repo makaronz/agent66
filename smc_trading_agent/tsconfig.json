@@ -24,9 +24,12 @@
     "forceConsistentCasingInFileNames": false,
     "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/pages/*": ["./src/pages/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/utils/*": ["./src/utils/*"]
     },
     "types": [
       "node",
