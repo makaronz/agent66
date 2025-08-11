@@ -1,8 +1,7 @@
 # TODO:
 
-- [x] analyze-api-structure: Analyze API directory structure and identify missing lib files (priority: High)
-- [x] fix-mfa-imports: Fix all relative imports in src/components/mfa/ directory from '../../supabase' to '@/lib/supabase' (priority: High)
-- [x] fix-api-imports: Fix import in api/middleware/auth.ts from '../supabase.js' to '@/lib/supabase' (priority: High)
-- [x] deploy-vercel: Successfully deployed to Vercel - all import issues resolved (priority: High)
-- [x] create-missing-files: Created missing encryption.ts file with proper crypto functions (priority: Medium)
-- [x] verify-build: Build completed successfully - all TypeScript errors resolved (priority: Medium)
+- [x] analyze-session-persistence: Analyze session persistence mechanism in useAuth hook (priority: High)
+- [x] check-auth-state-management: Check authentication state management across component re-renders (priority: High)
+- [x] examine-supabase-session-handling: Examine Supabase session handling and storage (priority: High)
+- [x] fix-session-loss-navigation: Fix session loss during page navigation (priority: High)
+- [x] test-auth-persistence: Test authentication persistence across different pages (priority: Medium)

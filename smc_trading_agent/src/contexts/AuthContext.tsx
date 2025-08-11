@@ -1,23 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { auth, db } from '../supabase';
 import { User as DatabaseUser } from '../types/database.types';
 import toast from 'react-hot-toast';
-
-// Global state cache to persist auth state across component re-renders
-let globalAuthState: AuthState | null = null;
-let globalAuthStateListeners: Set<(state: AuthState) => void> = new Set();
-
-// Helper functions for global state management
-const updateGlobalAuthState = (newState: AuthState) => {
-  globalAuthState = newState;
-  globalAuthStateListeners.forEach(listener => listener(newState));
-};
-
-const subscribeToGlobalAuthState = (listener: (state: AuthState) => void) => {
-  globalAuthStateListeners.add(listener);
-  return () => globalAuthStateListeners.delete(listener);
-};
 
 interface AuthState {
   user: User | null;
@@ -39,70 +24,47 @@ interface AuthActions {
   refreshProfile: () => Promise<void>;
 }
 
-export const useAuth = (): AuthState & AuthActions => {
-  console.log('🔐 useAuth hook initializing...');
-  
-  // Initialize state from global cache if available, otherwise use default
-  const [state, setState] = useState<AuthState>(() => {
-    if (globalAuthState) {
-      console.log('🔐 Using cached global auth state:', globalAuthState);
-      return globalAuthState;
-    }
-    return {
-      user: null,
-      profile: null,
-      session: null,
-      loading: true,
-      initialized: false,
-      connectionError: null,
-      isOffline: false
-    };
-  });
-  
-  const isInitializing = useRef(false);
-  
-  console.log('🔐 useAuth state initialized:', state);
-  
-  // Enhanced setState that also updates global state
-  const setStateAndGlobal = useCallback((updater: AuthState | ((prev: AuthState) => AuthState)) => {
-    setState(prev => {
-      const newState = typeof updater === 'function' ? updater(prev) : updater;
-      updateGlobalAuthState(newState);
-      return newState;
-    });
-  }, []);
-  
-  // Update local state when global state changes
-  useEffect(() => {
-    const unsubscribe = subscribeToGlobalAuthState((newState) => {
-      console.log('🔐 Global auth state updated, syncing local state:', newState);
-      setState(newState);
-    });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [setStateAndGlobal]);
+type AuthContextType = AuthState & AuthActions;
 
-  // Initialize auth state
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuthContext = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuthContext must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  console.log('🔐 AuthProvider initializing...');
+  
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    loading: true,
+    initialized: false,
+    connectionError: null,
+    isOffline: false
+  });
+
+  // Initialize auth state on mount
   useEffect(() => {
     let mounted = true;
     let initializationTimeout: NodeJS.Timeout;
 
-    // Skip initialization if already initialized or currently initializing
-    if (state.initialized || isInitializing.current) {
-      console.log('🔐 Auth already initialized or initializing, skipping...');
-      return;
-    }
-
-    isInitializing.current = true;
-    console.log('🔐 Starting auth initialization...');
+    console.log('🔐 AuthProvider starting initialization...');
     
-    // Set a shorter fallback timeout to ensure we never get stuck loading
+    // Set fallback timeout
     initializationTimeout = setTimeout(() => {
       if (mounted) {
-        console.warn('🔐 Auth initialization fallback timeout - completing without auth');
-        setStateAndGlobal(prev => ({
+        console.warn('🔐 AuthProvider initialization timeout - completing without auth');
+        setState(prev => ({
           ...prev,
           user: null,
           profile: null,
@@ -110,15 +72,14 @@ export const useAuth = (): AuthState & AuthActions => {
           loading: false,
           initialized: true,
           connectionError: null,
-          isOffline: false // Don't assume offline, just no session
+          isOffline: false
         }));
-        isInitializing.current = false;
       }
-    }, 1000); // Reduced to 1 second timeout
+    }, 2000); // 2 second timeout for provider
 
     const initializeAuth = async () => {
       try {
-        console.log('🔐 Getting current session...');
+        console.log('🔐 AuthProvider getting current session...');
         const { session, error: sessionError } = await auth.getCurrentSession();
         
         if (!mounted) return;
@@ -126,9 +87,8 @@ export const useAuth = (): AuthState & AuthActions => {
         clearTimeout(initializationTimeout);
         
         if (sessionError) {
-          console.error('🔐 Session error:', sessionError);
-          // Don't treat session errors as fatal - just proceed without auth
-          setStateAndGlobal(prev => ({
+          console.error('🔐 AuthProvider session error:', sessionError);
+          setState(prev => ({
             ...prev,
             user: null,
             profile: null,
@@ -138,14 +98,12 @@ export const useAuth = (): AuthState & AuthActions => {
             connectionError: null,
             isOffline: false
           }));
-          isInitializing.current = false;
           return;
         }
         
         if (session?.user) {
-          console.log('🔐 User session found:', session.user.email);
-          // Set user immediately, fetch profile in background
-          setStateAndGlobal(prev => ({
+          console.log('🔐 AuthProvider user session found:', session.user.email);
+          setState(prev => ({
             ...prev,
             user: session.user,
             session,
@@ -154,16 +112,15 @@ export const useAuth = (): AuthState & AuthActions => {
             connectionError: null,
             isOffline: false
           }));
-          isInitializing.current = false;
           
-          // Fetch profile in background - don't block UI
+          // Fetch profile in background
           try {
             const { data: profile } = await db.users.get(session.user.id);
             
             if (!mounted) return;
             
             if (!profile) {
-              console.log('🔐 Creating new user profile...');
+              console.log('🔐 AuthProvider creating new user profile...');
               const { data: newProfile } = await db.users.upsert({
                 id: session.user.id,
                 email: session.user.email || '',
@@ -171,24 +128,23 @@ export const useAuth = (): AuthState & AuthActions => {
                 avatar_url: session.user.user_metadata?.avatar_url || null
               });
               
-              setStateAndGlobal(prev => ({
+              setState(prev => ({
                 ...prev,
                 profile: newProfile
               }));
             } else {
-              console.log('🔐 User profile loaded');
-              setStateAndGlobal(prev => ({
+              console.log('🔐 AuthProvider user profile loaded');
+              setState(prev => ({
                 ...prev,
                 profile
               }));
             }
           } catch (profileError) {
-            console.error('🔐 Profile handling error:', profileError);
-            // Profile errors don't affect authentication - user can still use the app
+            console.error('🔐 AuthProvider profile handling error:', profileError);
           }
         } else {
-          console.log('🔐 No user session found');
-          setStateAndGlobal(prev => ({
+          console.log('🔐 AuthProvider no user session found');
+          setState(prev => ({
             ...prev,
             user: null,
             profile: null,
@@ -198,13 +154,12 @@ export const useAuth = (): AuthState & AuthActions => {
             connectionError: null,
             isOffline: false
           }));
-          isInitializing.current = false;
         }
       } catch (error) {
-        console.error('🔐 Error initializing auth:', error);
+        console.error('🔐 AuthProvider error initializing auth:', error);
         if (mounted) {
           clearTimeout(initializationTimeout);
-          setStateAndGlobal(prev => ({
+          setState(prev => ({
             ...prev,
             user: null,
             profile: null,
@@ -214,7 +169,6 @@ export const useAuth = (): AuthState & AuthActions => {
             connectionError: null,
             isOffline: false
           }));
-          isInitializing.current = false;
         }
       }
     };
@@ -226,10 +180,10 @@ export const useAuth = (): AuthState & AuthActions => {
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      console.log('🔐 Auth state change:', event, session?.user?.email);
+      console.log('🔐 AuthProvider auth state change:', event, session?.user?.email);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        setStateAndGlobal(prev => ({
+        setState(prev => ({
           ...prev,
           user: session.user,
           session,
@@ -239,7 +193,7 @@ export const useAuth = (): AuthState & AuthActions => {
           isOffline: false
         }));
         
-        // Get or create user profile in background
+        // Get or create user profile
         try {
           const { data: profile } = await db.users.get(session.user.id);
           
@@ -253,21 +207,21 @@ export const useAuth = (): AuthState & AuthActions => {
               avatar_url: session.user.user_metadata?.avatar_url || null
             });
             
-            setStateAndGlobal(prev => ({
+            setState(prev => ({
               ...prev,
               profile: newProfile
             }));
           } else {
-            setStateAndGlobal(prev => ({
+            setState(prev => ({
               ...prev,
               profile
             }));
           }
         } catch (error) {
-          console.error('🔐 Profile error on sign in:', error);
+          console.error('🔐 AuthProvider profile error on sign in:', error);
         }
       } else if (event === 'SIGNED_OUT') {
-        setStateAndGlobal(prev => ({
+        setState(prev => ({
           ...prev,
           user: null,
           profile: null,
@@ -278,7 +232,7 @@ export const useAuth = (): AuthState & AuthActions => {
           isOffline: false
         }));
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        setStateAndGlobal(prev => ({
+        setState(prev => ({
           ...prev,
           session,
           user: session.user
@@ -293,12 +247,12 @@ export const useAuth = (): AuthState & AuthActions => {
       }
       subscription.unsubscribe();
     };
-  }, [state.initialized, setStateAndGlobal]);
+  }, []);
 
-  // Sign up
-  const signUp = useCallback(async (email: string, password: string, metadata?: any) => {
+  // Auth actions
+  const signUp = async (email: string, password: string, metadata?: any) => {
     try {
-      setStateAndGlobal(prev => ({ ...prev, loading: true }));
+      setState(prev => ({ ...prev, loading: true }));
       
       const { data, error } = await auth.signUp(email, password, metadata);
       
@@ -317,14 +271,13 @@ export const useAuth = (): AuthState & AuthActions => {
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
-      setStateAndGlobal(prev => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false }));
     }
-  }, [setStateAndGlobal]);
+  };
 
-  // Sign in
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      setStateAndGlobal(prev => ({ ...prev, loading: true }));
+      setState(prev => ({ ...prev, loading: true }));
       
       const { data, error } = await auth.signIn(email, password);
       
@@ -340,14 +293,13 @@ export const useAuth = (): AuthState & AuthActions => {
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
-      setStateAndGlobal(prev => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false }));
     }
-  }, [setStateAndGlobal]);
+  };
 
-  // Sign out
-  const signOut = useCallback(async () => {
+  const signOut = async () => {
     try {
-      setStateAndGlobal(prev => ({ ...prev, loading: true }));
+      setState(prev => ({ ...prev, loading: true }));
       
       const { error } = await auth.signOut();
       
@@ -359,12 +311,11 @@ export const useAuth = (): AuthState & AuthActions => {
     } catch (error: any) {
       toast.error(error.message || 'Błąd podczas wylogowywania');
     } finally {
-      setStateAndGlobal(prev => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false }));
     }
-  }, [setStateAndGlobal]);
+  };
 
-  // Reset password
-  const resetPassword = useCallback(async (email: string) => {
+  const resetPassword = async (email: string) => {
     try {
       const { data, error } = await auth.resetPassword(email);
       
@@ -380,10 +331,9 @@ export const useAuth = (): AuthState & AuthActions => {
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
-  }, []);
+  };
 
-  // Update password
-  const updatePassword = useCallback(async (password: string) => {
+  const updatePassword = async (password: string) => {
     try {
       const { data, error } = await auth.updatePassword(password);
       
@@ -399,10 +349,9 @@ export const useAuth = (): AuthState & AuthActions => {
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
-  }, []);
+  };
 
-  // Update profile
-  const updateProfile = useCallback(async (updates: Partial<DatabaseUser>) => {
+  const updateProfile = async (updates: Partial<DatabaseUser>) => {
     try {
       const { user } = await auth.getCurrentUser();
       if (!user) {
@@ -416,7 +365,7 @@ export const useAuth = (): AuthState & AuthActions => {
         return { success: false, error: error.message };
       }
       
-      setStateAndGlobal(prev => ({ ...prev, profile: data }));
+      setState(prev => ({ ...prev, profile: data }));
       toast.success('Profil został zaktualizowany');
       return { success: true };
     } catch (error: any) {
@@ -424,10 +373,9 @@ export const useAuth = (): AuthState & AuthActions => {
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
-  }, []);
+  };
 
-  // Refresh profile
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = async () => {
     try {
       const { user } = await auth.getCurrentUser();
       if (!user) return;
@@ -435,14 +383,14 @@ export const useAuth = (): AuthState & AuthActions => {
       const { data } = await db.users.get(user.id);
       
       if (data) {
-        setStateAndGlobal(prev => ({ ...prev, profile: data }));
+        setState(prev => ({ ...prev, profile: data }));
       }
     } catch (error) {
       console.error('Error refreshing profile:', error);
     }
-  }, [setStateAndGlobal]);
+  };
 
-  return {
+  const contextValue: AuthContextType = {
     ...state,
     signUp,
     signIn,
@@ -452,6 +400,12 @@ export const useAuth = (): AuthState & AuthActions => {
     updateProfile,
     refreshProfile
   };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export default useAuth;
+export default AuthProvider;

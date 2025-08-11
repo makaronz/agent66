@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthContext } from '../../contexts/AuthContext';
 import AuthModal from './AuthModal';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
@@ -16,7 +16,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({
 }) => {
   console.log('🛡️ AuthGuard rendering...');
   
-  const { user, loading, initialized, connectionError, isOffline } = useAuth();
+  const { user, loading, initialized, connectionError, isOffline } = useAuthContext();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTimeout, setAuthTimeout] = useState(false);
 

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils';
 import toast from 'react-hot-toast';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const exchanges = [
   { id: 'binance', name: 'Binance', status: 'connected', latency: '12ms' },
@@ -39,6 +40,7 @@ const riskParameters = {
 };
 
 export default function Configuration() {
+  const { session } = useAuthContext();
   const [activeTab, setActiveTab] = useState('exchanges');
   const [showApiKeys, setShowApiKeys] = useState<{[key: string]: boolean}>({});
   const [apiKeys, setApiKeys] = useState<{[key: string]: {key: string, secret: string}}>({});
@@ -60,10 +62,17 @@ export default function Configuration() {
         return;
       }
 
+      if (!session?.access_token) {
+        alert('Please log in to test connection');
+        setTestingConnection(null);
+        return;
+      }
+
       const response = await fetch('http://localhost:3002/api/binance/test-connection', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           apiKey,
@@ -107,10 +116,17 @@ export default function Configuration() {
         return;
       }
 
+      if (!session?.access_token) {
+        alert('Please log in to fetch account info');
+        setFetchingAccountInfo(null);
+        return;
+      }
+
       const response = await fetch('http://localhost:3002/api/binance/account-info', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           apiKey,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { realtime } from '../supabase';
-import { useAuth } from './useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 import { Trade, SmcSignal, TradingSession } from '../types/database.types';
 import toast from 'react-hot-toast';
 
@@ -21,7 +21,7 @@ interface RealtimeActions {
 }
 
 export const useRealtime = (): RealtimeState & RealtimeActions => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [state, setState] = useState<RealtimeState>({
     trades: [],
     signals: [],

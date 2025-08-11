@@ -378,6 +378,13 @@ Removed two unused imports (`Dict`, `Any`) from the `typing` module at the top o
 
 **Status:** ✅ COMPLETED (Awaiting Review)
 
+## Task Log - Mon Aug 11 02:47:00 CEST 2025
+
+**Task Started:** Retrieve list of all bugs (Codacy category: errorprone) via Codacy MCP for repository `makaronz/agent66`
+
+**Summary:**
+Initiated a Codacy MCP query task to fetch all code issues classified as bugs (error-prone). Plan: detect provider/org/repo from git remotes, run Codacy list repository issues filtered by `errorprone` and severities `Error`/`Warning`, and present results. Will log completion upon successful retrieval.
+
 ## Task Log - 2025-08-08 10:23:33 CEST
 
 **Task Started & Implemented:** Add async test for no-alert case when metric value is below threshold in `smc_trading_agent/tests/test_risk_metrics_monitor.py`

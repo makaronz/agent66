@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import {
   TrendingUp,
   TrendingDown,
@@ -7,9 +9,11 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  Loader2
 } from 'lucide-react';
 import { cn } from '../utils';
+import { useAuthContext } from '../contexts/AuthContext';
 
 // Mock SMC patterns data
 const mockSMCPatterns = [
@@ -73,7 +77,27 @@ const mockOrders = [
   }
 ];
 
+// Types for order data and API responses
+interface OrderData {
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  type: 'MARKET' | 'LIMIT';
+  quantity: number;
+  price?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+}
+
+interface OrderResponse {
+  success: boolean;
+  orderId?: string;
+  message?: string;
+  error?: string;
+}
+
 export default function TradingInterface() {
+  const { user } = useAuthContext();
+  const isAuthenticated = !!user;
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [orderSide, setOrderSide] = useState<'BUY' | 'SELL'>('BUY');
   const [orderType, setOrderType] = useState<'MARKET' | 'LIMIT'>('LIMIT');
@@ -82,18 +106,103 @@ export default function TradingInterface() {
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [autoTrading, setAutoTrading] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  const handlePlaceOrder = () => {
-    // TODO: Implement order placement logic
-    console.log('Placing order:', {
-      symbol: selectedSymbol,
-      side: orderSide,
-      type: orderType,
-      quantity,
-      price,
-      stopLoss,
-      takeProfit
-    });
+  const handlePlaceOrder = async () => {
+    // Authentication check
+    if (!user) {
+      toast.error('Please log in to place orders');
+      return;
+    }
+
+    // Form validation
+    if (!quantity || parseFloat(quantity) <= 0) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
+
+    if (orderType === 'LIMIT' && (!price || parseFloat(price) <= 0)) {
+      toast.error('Please enter a valid price for limit orders');
+      return;
+    }
+
+    // Prevent multiple submissions
+    if (isPlacingOrder) {
+      return;
+    }
+
+    setIsPlacingOrder(true);
+
+    try {
+      // Prepare order data
+      const orderData: OrderData = {
+        symbol: selectedSymbol,
+        side: orderSide,
+        type: orderType,
+        quantity: parseFloat(quantity),
+      };
+
+      // Add price for limit orders
+      if (orderType === 'LIMIT' && price) {
+        orderData.price = parseFloat(price);
+      }
+
+      // Add optional stop loss and take profit
+      if (stopLoss && parseFloat(stopLoss) > 0) {
+        orderData.stopLoss = parseFloat(stopLoss);
+      }
+
+      if (takeProfit && parseFloat(takeProfit) > 0) {
+        orderData.takeProfit = parseFloat(takeProfit);
+      }
+
+      // Make API call to place order
+      const response = await axios.post<OrderResponse>('/api/binance/place-order', orderData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 second timeout
+      });
+
+      if (response.data.success) {
+        // Success handling
+        toast.success(`${orderSide} order placed successfully! Order ID: ${response.data.orderId}`);
+        
+        // Clear form fields after successful order placement
+        setQuantity('');
+        setPrice('');
+        setStopLoss('');
+        setTakeProfit('');
+        
+        // TODO: Update recent orders list with new order
+        console.log('Order placed successfully:', response.data);
+      } else {
+        // Handle API error response
+        toast.error(response.data.message || response.data.error || 'Failed to place order');
+      }
+    } catch (error) {
+      // Comprehensive error handling
+      console.error('Order placement error:', error);
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Server responded with error status
+          const errorMessage = error.response.data?.message || error.response.data?.error || 'Server error occurred';
+          toast.error(`Order failed: ${errorMessage}`);
+        } else if (error.request) {
+          // Network error
+          toast.error('Network error: Unable to connect to trading server');
+        } else {
+          // Request setup error
+          toast.error('Request error: Failed to send order');
+        }
+      } else {
+        // Non-Axios error
+        toast.error('Unexpected error occurred while placing order');
+      }
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   return (
@@ -344,14 +453,25 @@ export default function TradingInterface() {
               {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
+                disabled={isPlacingOrder || !isAuthenticated}
                 className={cn(
-                  "w-full py-3 px-4 text-sm font-medium rounded-md transition-colors",
-                  orderSide === 'BUY'
+                  "w-full py-3 px-4 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2",
+                  isPlacingOrder || !isAuthenticated
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : orderSide === 'BUY'
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "bg-red-600 hover:bg-red-700 text-white"
                 )}
               >
-                Place {orderSide} Order
+                {isPlacingOrder && <Loader2 className="h-4 w-4 animate-spin" />}
+                <span>
+                  {isPlacingOrder 
+                    ? 'Placing Order...' 
+                    : !isAuthenticated 
+                    ? 'Login Required' 
+                    : `Place ${orderSide} Order`
+                  }
+                </span>
               </button>
             </div>
           </div>

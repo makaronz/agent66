@@ -10,7 +10,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '../utils';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 import { useRealtime } from '../hooks/useRealtime';
 import LiveSignals from '../components/realtime/LiveSignals';
 import LiveTrades from '../components/realtime/LiveTrades';
@@ -38,7 +38,7 @@ const mockSystemHealth = [
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { user, profile } = useAuth();
+  const { user, profile } = useAuthContext();
   const { trades, signals, isConnected } = useRealtime();
 
   useEffect(() => {

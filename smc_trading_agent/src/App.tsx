@@ -14,7 +14,7 @@ import Login from "@/pages/Login";
 import MFASettings from "@/pages/MFASettings";
 import AuthGuard from "@/components/auth/AuthGuard";
 import SimpleAuthGuard from "@/components/auth/SimpleAuthGuard";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 console.log('📱 App component loading...');
 
@@ -38,8 +38,9 @@ export default function App() {
   
   try {
     return (
-      <Router>
-        <Routes>
+      <AuthProvider>
+        <Router>
+          <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           
@@ -59,8 +60,8 @@ export default function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="mfa" element={<MFASettings />} />
           </Route>
-        </Routes>
-        <Toaster 
+          </Routes>
+          <Toaster 
           position="top-right"
           toastOptions={{
             duration: 4000,
@@ -104,7 +105,8 @@ export default function App() {
             <div key={index}>{info}</div>
           ))}
         </div>
-      </Router>
+        </Router>
+      </AuthProvider>
     );
   } catch (error) {
     console.error('❌ Error in App component:', error);

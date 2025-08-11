@@ -15,7 +15,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '../utils';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
@@ -32,7 +32,7 @@ const navigation = [
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuthContext();
 
   const handleSignOut = async () => {
     await signOut();
