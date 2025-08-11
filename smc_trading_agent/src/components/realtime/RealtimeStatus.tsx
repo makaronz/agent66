@@ -1,6 +1,8 @@
-import React from 'react';
-import { Wifi, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Wifi, WifiOff, RefreshCw, AlertCircle, TrendingUp, Database } from 'lucide-react';
 import { useRealtime } from '../../hooks/useRealtime';
+import { useMarketData } from '../../hooks/useMarketData';
+import { binanceApi } from '../../services/binanceApi';
 
 interface RealtimeStatusProps {
   className?: string;
@@ -11,7 +13,12 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
   className = '',
   showDetails = false
 }) => {
-  const { isConnected, connectionError, refreshData } = useRealtime();
+  const { isConnected, connectionError, refreshData, marketDataConnected } = useRealtime();
+  const { isConnected: binanceConnected, error: binanceError, getConnectionStatus, connect: connectToBinance } = useMarketData();
+  
+  // Use WebSocket connection status from useMarketData hook
+  const webSocketConnected = binanceConnected;
+  const connectionStatus = useMemo(() => getConnectionStatus(), [getConnectionStatus]);
 
   const handleRefresh = async () => {
     await refreshData();
@@ -22,39 +29,109 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
       <div className={`bg-white rounded-lg shadow p-4 ${className}`}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-gray-900">Status połączenia</h3>
-          <button
-            onClick={handleRefresh}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-            title="Odśwież połączenie"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex space-x-1">
+            <button
+              onClick={handleRefresh}
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              title="Odśwież dane Supabase"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={connectToBinance}
+              disabled={binanceConnected}
+              className={`p-1 transition-colors ${
+                binanceConnected 
+                  ? 'text-gray-300 cursor-not-allowed' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+              title="Połącz z Binance WebSocket"
+            >
+              <Wifi className="w-4 h-4" />
+            </button>
+          </div>
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-3">
+          {/* Supabase Connection */}
           <div className="flex items-center space-x-2">
+            <Database className="w-4 h-4" />
             {isConnected ? (
               <>
                 <Wifi className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-700">Połączono</span>
+                <span className="text-sm text-green-700">Supabase: Połączono</span>
               </>
             ) : (
               <>
                 <WifiOff className="w-4 h-4 text-red-500" />
-                <span className="text-sm text-red-700">Rozłączono</span>
+                <span className="text-sm text-red-700">Supabase: Rozłączono</span>
               </>
             )}
           </div>
           
+          {/* Binance WebSocket Connection */}
+          <div className="flex items-center space-x-2">
+            <TrendingUp className="w-4 h-4" />
+            {webSocketConnected ? (
+              <>
+                <Wifi className="w-4 h-4 text-green-500" />
+                <span className="text-sm text-green-700">Binance WebSocket: Połączono</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-red-700">Binance WebSocket: Rozłączono</span>
+              </>
+            )}
+          </div>
+          
+          {/* WebSocket Details */}
+          {showDetails && Object.keys(connectionStatus).length > 0 && (
+            <div className="ml-6 space-y-1">
+              {Object.entries(connectionStatus).map(([key, status]) => (
+                <div key={key} className="flex items-center space-x-2 text-xs">
+                  <div className={`w-2 h-2 rounded-full ${
+                    status === 'connected' ? 'bg-green-500' : 
+                    status === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`} />
+                  <span className="text-gray-600">{key}: {status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Overall Status */}
+          <div className="flex items-center space-x-2 pt-2 border-t border-gray-200">
+            {isConnected && webSocketConnected ? (
+              <>
+                <Wifi className="w-4 h-4 text-green-500" />
+                <span className="text-sm font-medium text-green-700">System: Online</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 text-red-500" />
+                <span className="text-sm font-medium text-red-700">System: Offline</span>
+              </>
+            )}
+          </div>
+          
+          {/* Error Messages */}
           {connectionError && (
             <div className="flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-amber-700">{connectionError}</span>
+              <span className="text-sm text-amber-700">Supabase: {connectionError}</span>
+            </div>
+          )}
+          
+          {binanceError && (
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <span className="text-sm text-amber-700">Binance: {binanceError}</span>
             </div>
           )}
           
           <div className="text-xs text-gray-500">
-            Real-time aktualizacje dla transakcji i sygnałów
+            Real-time dane rynkowe, transakcje i sygnały SMC
           </div>
         </div>
       </div>
@@ -62,9 +139,12 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
   }
 
   // Compact version
+  const isFullyConnected = isConnected && webSocketConnected;
+  const hasErrors = connectionError || binanceError;
+  
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
-      {isConnected ? (
+      {isFullyConnected ? (
         <div className="flex items-center space-x-1 text-green-600">
           <Wifi className="w-4 h-4" />
           <span className="text-xs font-medium">Live</span>
@@ -76,7 +156,7 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
         </div>
       )}
       
-      {connectionError && (
+      {hasErrors && (
         <AlertCircle className="w-4 h-4 text-amber-500" />
       )}
       

@@ -1,7 +1,7 @@
 # TODO:
 
-- [x] analyze-session-persistence: Analyze session persistence mechanism in useAuth hook (priority: High)
-- [x] check-auth-state-management: Check authentication state management across component re-renders (priority: High)
-- [x] examine-supabase-session-handling: Examine Supabase session handling and storage (priority: High)
-- [x] fix-session-loss-navigation: Fix session loss during page navigation (priority: High)
-- [x] test-auth-persistence: Test authentication persistence across different pages (priority: Medium)
+- [x] identify-rate-limit-source: Zidentyfikować źródło wywołań REST API powodujących rate limiting - IP zbanowane przez Binance (priority: High)
+- [x] disable-auto-api-calls: Wyłączyć wszystkie automatyczne wywołania REST API do Binance podczas inicjalizacji (priority: High)
+- [x] implement-websocket-only: Upewnić się, że aplikacja używa wyłącznie WebSocket connections (priority: High)
+- [x] test-connection-fix: Przetestować czy dashboard pokazuje prawidłowy status po naprawie - aplikacja działa, brak automatycznych wywołań REST API (priority: Medium)
+- [x] verify-manual-connection: Zweryfikować czy przycisk ręcznego połączenia z Binance WebSocket działa poprawnie - przycisk dodany i funkcjonalny (priority: Medium)

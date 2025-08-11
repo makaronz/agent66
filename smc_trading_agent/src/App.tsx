@@ -20,21 +20,6 @@ console.log('📱 App component loading...');
 
 export default function App() {
   console.log('🔄 App component rendering...');
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
-  
-  useEffect(() => {
-    const addDebug = (msg: string) => {
-      console.log('App Debug:', msg);
-      setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
-    };
-    
-    addDebug('App component mounted');
-    addDebug('Starting router setup');
-    
-    return () => {
-      addDebug('App component unmounting');
-    };
-  }, []);
   
   try {
     return (
@@ -85,26 +70,7 @@ export default function App() {
             },
           }}
         />
-        
-        {/* Debug Panel */}
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          width: '300px',
-          maxHeight: '200px',
-          overflow: 'auto',
-          background: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          padding: '10px',
-          fontSize: '12px',
-          zIndex: 9999
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Debug Info:</div>
-          {debugInfo.map((info, index) => (
-            <div key={index}>{info}</div>
-          ))}
-        </div>
+
         </Router>
       </AuthProvider>
     );

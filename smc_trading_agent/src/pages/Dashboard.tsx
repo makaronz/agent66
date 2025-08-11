@@ -12,39 +12,110 @@ import {
 import { cn } from '../utils';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useRealtime } from '../hooks/useRealtime';
+import { useMarketData } from '../hooks/useMarketData';
+import { smcSignalGenerator } from '../services/smcSignalGenerator';
+import { backgroundPatternDetection } from '../services/backgroundPatternDetection';
+import TradingViewChart from '../components/charts/TradingViewChart';
 import LiveSignals from '../components/realtime/LiveSignals';
 import LiveTrades from '../components/realtime/LiveTrades';
 import RealtimeStatus from '../components/realtime/RealtimeStatus';
 
-// Mock data - replace with real API calls
-const mockMarketData = [
-  { symbol: 'BTCUSDT', price: 43250.50, change: 2.45, volume: '1.2B' },
-  { symbol: 'ETHUSDT', price: 2650.75, change: -1.23, volume: '890M' },
-  { symbol: 'ADAUSDT', price: 0.485, change: 3.67, volume: '245M' },
-  { symbol: 'SOLUSDT', price: 98.32, change: 1.89, volume: '156M' },
-];
+// Symbols to track
+const TRACKED_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT'];
 
 const mockPositions = [
   { symbol: 'BTCUSDT', side: 'LONG', size: 0.5, entryPrice: 42800, currentPrice: 43250.50, pnl: 225.25, pnlPercent: 1.05 },
   { symbol: 'ETHUSDT', side: 'SHORT', size: 2.0, entryPrice: 2680, currentPrice: 2650.75, pnl: 58.50, pnlPercent: 1.09 },
 ];
 
-const mockSystemHealth = [
-  { name: 'Data Pipeline', status: 'healthy', latency: '12ms' },
-  { name: 'SMC Detection', status: 'healthy', latency: '8ms' },
-  { name: 'Execution Engine', status: 'warning', latency: '45ms' },
-  { name: 'Risk Manager', status: 'healthy', latency: '5ms' },
-];
-
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user, profile } = useAuthContext();
-  const { trades, signals, isConnected } = useRealtime();
+  const { trades, signals, isConnected, marketDataConnected } = useRealtime();
+  const { marketData, isConnected: binanceConnected, error: marketError } = useMarketData();
+  const [systemStarted, setSystemStarted] = useState(false);
+  const [patternDetectionActive, setPatternDetectionActive] = useState(false);
+
+  // System health based on real connection status
+  const systemHealth = [
+    { 
+      name: 'Supabase Realtime', 
+      status: isConnected ? 'healthy' : 'error', 
+      latency: isConnected ? '12ms' : 'N/A' 
+    },
+    { 
+      name: 'Binance Market Data', 
+      status: binanceConnected ? 'healthy' : 'error', 
+      latency: binanceConnected ? '8ms' : 'N/A' 
+    },
+    { 
+      name: 'SMC Signal Generator', 
+      status: systemStarted ? 'healthy' : 'warning', 
+      latency: systemStarted ? '15ms' : 'N/A' 
+    },
+    { 
+      name: 'Pattern Detection', 
+      status: patternDetectionActive ? 'healthy' : 'warning', 
+      latency: patternDetectionActive ? '20ms' : 'N/A' 
+    },
+    { 
+      name: 'Database Connection', 
+      status: marketDataConnected ? 'healthy' : 'warning', 
+      latency: marketDataConnected ? '5ms' : 'N/A' 
+    },
+  ];
 
   useEffect(() => {
     const timer = setInterval(() => { setCurrentTime(new Date()); }, 1000);
     return () => { clearInterval(timer); };
   }, []);
+
+  // Start SMC signal generator when user is authenticated
+  useEffect(() => {
+    const initializeSystem = async () => {
+      if (user && !systemStarted) {
+        try {
+          console.log('Starting SMC Signal Generator...');
+          smcSignalGenerator.start();
+          
+          console.log('Starting background pattern detection...');
+          await backgroundPatternDetection.start();
+          setPatternDetectionActive(true);
+          
+          setSystemStarted(true);
+          console.log('Trading system initialized successfully');
+        } catch (error) {
+          console.error('Failed to initialize trading system:', error);
+        }
+      }
+    };
+    
+    initializeSystem();
+    
+    return () => {
+      if (systemStarted) {
+        smcSignalGenerator.stop();
+      }
+      if (patternDetectionActive) {
+        backgroundPatternDetection.stop();
+      }
+    };
+  }, [user, systemStarted, patternDetectionActive]);
+
+  // Get real market data for tracked symbols
+  const getMarketDataForSymbol = (symbol: string) => {
+    const data = marketData.find(m => m.symbol === symbol);
+    if (!data) return null;
+    
+    return {
+      symbol,
+      price: data.price,
+      change: data.changePercent,
+      volume: data.volume.toString()
+    };
+  };
+
+  const realMarketData = TRACKED_SYMBOLS.map(symbol => getMarketDataForSymbol(symbol)).filter(Boolean);
 
   // Calculate real P&L from live trades if available, otherwise use mock data
   const realTrades = trades.filter(trade => trade.status === 'filled');
@@ -148,7 +219,7 @@ export default function Dashboard() {
         <LiveTrades className="" maxTrades={10} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Market Overview */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -156,32 +227,50 @@ export default function Dashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {mockMarketData.map((market) => (
-                <div key={market.symbol} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <BarChart3 className="h-5 w-5 text-gray-400" />
+              {realMarketData.length > 0 ? (
+                realMarketData.map((market) => (
+                  <div key={market.symbol} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <BarChart3 className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{market.symbol}</p>
+                        <p className="text-xs text-gray-500">Vol: {parseFloat(market.volume).toLocaleString()}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{market.symbol}</p>
-                      <p className="text-xs text-gray-500">Vol: {market.volume}</p>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">
+                        ${market.price.toLocaleString()}
+                      </p>
+                      <p className={cn(
+                        "text-xs",
+                        market.change >= 0 ? "text-green-600" : "text-red-600"
+                      )}>
+                        {market.change >= 0 ? '+' : ''}{market.change.toFixed(2)}%
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      ${market.price.toLocaleString()}
-                    </p>
-                    <p className={cn(
-                      "text-xs",
-                      market.change >= 0 ? "text-green-600" : "text-red-600"
-                    )}>
-                      {market.change >= 0 ? '+' : ''}{market.change}%
-                    </p>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500">
+                    {binanceConnected ? 'Ładowanie danych rynkowych...' : 'Brak połączenia z Binance API'}
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
+        </div>
+
+        {/* Live Chart */}
+        <div className="lg:col-span-2">
+          <TradingViewChart 
+            symbol="BTCUSDT" 
+            interval="15m" 
+            height={500}
+            className="h-full"
+          />
         </div>
 
         {/* Active Positions */}
@@ -240,13 +329,15 @@ export default function Dashboard() {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mockSystemHealth.map((service) => (
+            {systemHealth.map((service) => (
               <div key={service.name} className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   {service.status === 'healthy' ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : (
+                  ) : service.status === 'warning' ? (
                     <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-red-500" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

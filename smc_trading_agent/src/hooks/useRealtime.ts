@@ -3,6 +3,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { realtime } from '../supabase';
 import { useAuthContext } from '../contexts/AuthContext';
 import { Trade, SmcSignal, TradingSession } from '../types/database.types';
+import { useMarketData } from './useMarketData';
 import toast from 'react-hot-toast';
 
 interface RealtimeState {
@@ -11,6 +12,7 @@ interface RealtimeState {
   sessions: TradingSession[];
   isConnected: boolean;
   connectionError: string | null;
+  marketDataConnected: boolean;
 }
 
 interface RealtimeActions {
@@ -22,12 +24,15 @@ interface RealtimeActions {
 
 export const useRealtime = (): RealtimeState & RealtimeActions => {
   const { user } = useAuthContext();
+  const { isConnected: marketDataConnected, error: marketDataError } = useMarketData();
+  
   const [state, setState] = useState<RealtimeState>({
     trades: [],
     signals: [],
     sessions: [],
     isConnected: false,
-    connectionError: null
+    connectionError: null,
+    marketDataConnected: false
   });
   
   const [channels, setChannels] = useState<Map<string, RealtimeChannel>>(new Map());
@@ -160,12 +165,18 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
       // Handle connection status
       channel.on('system', { event: '*' }, (payload) => {
         if (payload.type === 'connected') {
-          setState(prev => ({ ...prev, isConnected: true, connectionError: null }));
+          setState(prev => ({ 
+            ...prev, 
+            isConnected: true, 
+            connectionError: null,
+            marketDataConnected 
+          }));
         } else if (payload.type === 'error') {
           setState(prev => ({ 
             ...prev, 
             isConnected: false, 
-            connectionError: payload.message || 'Connection error' 
+            connectionError: payload.message || 'Connection error',
+            marketDataConnected: false
           }));
         }
       });
@@ -225,6 +236,15 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
       toast.error('Błąd podczas odświeżania danych');
     }
   }, [user]);
+
+  // Update market data connection status
+  useEffect(() => {
+    setState(prev => ({
+      ...prev,
+      marketDataConnected,
+      connectionError: marketDataError || prev.connectionError
+    }));
+  }, [marketDataConnected, marketDataError]);
 
   // Auto-subscribe to all tables when user is available
   useEffect(() => {

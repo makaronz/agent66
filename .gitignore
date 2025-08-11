@@ -22,3 +22,4 @@ smc_trading_agent/api/.env
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+.vercel
