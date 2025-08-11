@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { auth, db } from '../lib/supabase';
+import { auth, db } from '../supabase';
 import { User as DatabaseUser } from '../types/database.types';
 import toast from 'react-hot-toast';
 

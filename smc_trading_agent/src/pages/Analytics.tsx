@@ -9,7 +9,7 @@ import {
   Settings,
   Target
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 
 // Mock backtest results
 const mockBacktestResults = {

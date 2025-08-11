@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { realtime } from '../lib/supabase';
+import { realtime } from '../supabase';
 import { useAuth } from './useAuth';
 import { Trade, SmcSignal, TradingSession } from '../types/database.types';
 import toast from 'react-hot-toast';

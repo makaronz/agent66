@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import supabase from '../lib/supabase.js';
+import supabaseAdmin from '../supabase.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -25,7 +25,7 @@ export async function authenticateToken(
     }
 
     // Verify the token with Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
     if (error || !user) {
       res.status(403).json({ error: 'Invalid or expired token' });
@@ -59,7 +59,7 @@ export async function requireMFA(
     }
 
     // Check if user has any MFA method enabled
-    const { data: mfaData, error } = await supabase
+    const { data: mfaData, error } = await supabaseAdmin
       .from('user_mfa_methods')
       .select('totp_enabled, webauthn_enabled, sms_enabled')
       .eq('user_id', userId)

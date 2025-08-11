@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Smartphone, AlertCircle, Check, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabase';
 
 interface SMSSetupProps {
   enabled: boolean;

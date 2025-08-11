@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Smartphone, Key, MessageSquare, FileText, BookOpen, Activity, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../supabase';
 import TOTPSetup from '../components/mfa/TOTPSetup';
 import WebAuthnSetup from '../components/mfa/WebAuthnSetup';
 import SMSSetup from '../components/mfa/SMSSetup';

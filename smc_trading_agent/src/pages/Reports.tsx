@@ -17,7 +17,7 @@ import {
   Mail,
   Settings
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 
 const reportTypes = [
   { id: 'daily', name: 'Daily Summary', description: 'Daily trading performance and activity' },

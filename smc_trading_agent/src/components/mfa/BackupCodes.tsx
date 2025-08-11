@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Download, RefreshCw, AlertTriangle, Check, Copy, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabase';
 
 interface BackupCodesProps {
   enabled: boolean;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Shield, AlertCircle, Check, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabase';
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 
 interface WebAuthnSetupProps {

@@ -14,8 +14,8 @@ import {
   User,
   LogOut
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { cn } from '../utils';
+import { useAuth } from '../hooks/useAuth';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },

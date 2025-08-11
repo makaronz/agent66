@@ -9,12 +9,12 @@ import {
   Clock,
   BarChart3
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
-import { useRealtime } from '@/hooks/useRealtime';
-import LiveSignals from '@/components/realtime/LiveSignals';
-import LiveTrades from '@/components/realtime/LiveTrades';
-import RealtimeStatus from '@/components/realtime/RealtimeStatus';
+import { cn } from '../utils';
+import { useAuth } from '../hooks/useAuth';
+import { useRealtime } from '../hooks/useRealtime';
+import LiveSignals from '../components/realtime/LiveSignals';
+import LiveTrades from '../components/realtime/LiveTrades';
+import RealtimeStatus from '../components/realtime/RealtimeStatus';
 
 // Mock data - replace with real API calls
 const mockMarketData = [

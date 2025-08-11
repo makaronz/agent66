@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '../types/database.types';
+import { Database } from './types/database.types';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://fqhuoszrysapxrvyaqao.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxaHVvc3pyeXNhcHhydnlhcWFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDgyMzAxMiwiZXhwIjoyMDcwMzk5MDEyfQ.jKJuos3KqupDwVSswUbDE-xZMiCDAFgz6vnth-ZhA7Q';

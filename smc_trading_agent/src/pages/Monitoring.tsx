@@ -13,7 +13,7 @@ import {
   TrendingDown,
   RefreshCw
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 
 const systemMetrics = {
   cpu: { usage: 45, status: 'healthy' },

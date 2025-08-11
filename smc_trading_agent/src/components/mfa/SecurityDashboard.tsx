@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, Activity, TrendingUp, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabase';
 
 interface ComplianceData {
   complianceLevel: 'critical' | 'low' | 'medium' | 'high';

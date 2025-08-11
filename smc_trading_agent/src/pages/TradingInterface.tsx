@@ -9,7 +9,7 @@ import {
   Clock,
   BarChart3
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 
 // Mock SMC patterns data
 const mockSMCPatterns = [

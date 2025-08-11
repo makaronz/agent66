@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QrCode, Smartphone, Copy, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../supabase';
 
 interface TOTPSetupProps {
   enabled: boolean;

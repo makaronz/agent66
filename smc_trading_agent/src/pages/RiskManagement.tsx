@@ -11,7 +11,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 
 const portfolioMetrics = {
   totalValue: 125000,

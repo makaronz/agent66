@@ -12,7 +12,7 @@ import {
   User,
   DollarSign
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 import toast from 'react-hot-toast';
 
 const exchanges = [
@@ -279,7 +279,7 @@ export default function Configuration() {
                       <div className="relative">
                         <input
                           type={showApiKeys[exchange.id] ? 'text' : 'password'}
-                          value={apiKeys[exchange.id].key || ''}
+                          value={apiKeys[exchange.id]?.key || ''}
                           onChange={(e) => setApiKeys(prev => ({
                             ...prev,
                             [exchange.id]: { ...prev[exchange.id], key: e.target.value }
@@ -307,7 +307,7 @@ export default function Configuration() {
                       <div className="relative">
                         <input
                           type={showApiKeys[exchange.id] ? 'text' : 'password'}
-                          value={apiKeys[exchange.id].secret || ''}
+                          value={apiKeys[exchange.id]?.secret || ''}
                           onChange={(e) => setApiKeys(prev => ({
                             ...prev,
                             [exchange.id]: { ...prev[exchange.id], secret: e.target.value }

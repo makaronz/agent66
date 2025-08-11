@@ -13,7 +13,7 @@ import {
   Users,
   ExternalLink
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../utils';
 
 const smcPatterns = [
   {
