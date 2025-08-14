@@ -80,7 +80,8 @@ spec:
         configMap:
           name: vault-config
       - name: vault-data
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: vault-data-pvc
 ---
 apiVersion: v1
 kind: Service

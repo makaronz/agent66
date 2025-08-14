@@ -43,7 +43,8 @@ spec:
             cpu: "200m"
       volumes:
       - name: consul-data
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: consul-data-pvc
 ---
 apiVersion: v1
 kind: Service

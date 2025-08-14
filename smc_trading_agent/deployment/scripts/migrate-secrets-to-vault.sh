@@ -8,6 +8,7 @@ set -e
 VAULT_ADDR=${VAULT_ADDR:-"http://localhost:8200"}
 ENV_FILE=${1:-".env"}
 API_ENV_FILE=${2:-"api/.env"}
+PROJECT_ROOT=${3:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"}
 
 if [ -z "$VAULT_TOKEN" ]; then
   echo "❌ VAULT_TOKEN not set. Please authenticate with Vault first."
@@ -20,8 +21,10 @@ echo "🔄 Migrating secrets from environment files to Vault..."
 get_env_value() {
   local file=$1
   local key=$2
-  if [ -f "$file" ]; then
-    grep "^${key}=" "$file" | cut -d'=' -f2- | sed 's/^"//' | sed 's/"$//'
+  local full_path="$PROJECT_ROOT/$file"
+  
+  if [ -f "$full_path" ]; then
+    grep "^${key}=" "$full_path" | cut -d'=' -f2- | sed 's/^"//' | sed 's/"$//' | head -1
   fi
 }
 

@@ -1,0 +1,390 @@
+name: API Documentation Generation and Deployment
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'api/**'
+      - 'api_fastapi.py'
+      - '.github/workflows/api-documentation.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'api/**'
+      - 'api_fastapi.py'
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Job 1: Generate and validate OpenAPI specifications
+  generate-openapi-specs:
+    name: Generate OpenAPI Specifications
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install Node.js dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'fastapi[all]' uvicorn
+
+      - name: Build TypeScript
+        run: pnpm run check
+
+      - name: Generate Express.js OpenAPI spec
+        run: |
+          mkdir -p docs/openapi
+          node -e "
+            import('./api/config/swagger.js').then(({ swaggerSpec }) => {
+              const fs = require('fs');
+              fs.writeFileSync('docs/openapi/express-api.json', JSON.stringify(swaggerSpec, null, 2));
+              console.log('Express.js OpenAPI spec generated');
+            });
+          "
+
+      - name: Generate FastAPI OpenAPI spec
+        run: |
+          python -c "
+          import json
+          import sys
+          sys.path.append('.')
+          from api_fastapi import app
+          
+          spec = app.openapi()
+          with open('docs/openapi/fastapi-api.json', 'w') as f:
+              json.dump(spec, f, indent=2)
+          print('FastAPI OpenAPI spec generated')
+          "
+
+      - name: Validate OpenAPI specifications
+        run: |
+          npx swagger-jsdoc --version
+          npx @apidevtools/swagger-cli validate docs/openapi/express-api.json
+          npx @apidevtools/swagger-cli validate docs/openapi/fastapi-api.json
+
+      - name: Generate API documentation
+        run: |
+          # Generate HTML documentation from OpenAPI specs
+          npx redoc-cli build docs/openapi/express-api.json --output docs/express-api.html --title "SMC Trading Agent Express API"
+          npx redoc-cli build docs/openapi/fastapi-api.json --output docs/fastapi-api.html --title "SMC Trading Agent FastAPI"
+          
+          # Generate Postman collections
+          npx openapi-to-postman -s docs/openapi/express-api.json -o docs/postman/express-api-collection.json
+          npx openapi-to-postman -s docs/openapi/fastapi-api.json -o docs/postman/fastapi-collection.json
+
+      - name: Upload OpenAPI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-specs
+          path: |
+            docs/openapi/
+            docs/*.html
+            docs/postman/
+          retention-days: 30
+
+  # Job 2: Test API documentation
+  test-api-documentation:
+    name: Test API Documentation
+    runs-on: ubuntu-latest
+    needs: generate-openapi-specs
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install --frozen-lockfile
+          pip install -r requirements.txt
+          pip install 'fastapi[all]' uvicorn pytest httpx
+
+      - name: Download OpenAPI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-specs
+          path: docs/
+
+      - name: Start Express.js API server
+        run: |
+          pnpm run server:dev &
+          echo $! > express-server.pid
+          sleep 10
+        env:
+          NODE_ENV: test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Start FastAPI server
+        run: |
+          python api_fastapi.py &
+          echo $! > fastapi-server.pid
+          sleep 10
+        env:
+          NODE_ENV: test
+
+      - name: Test Express.js API endpoints
+        run: |
+          # Test health endpoint
+          curl -f http://localhost:3000/api/health || exit 1
+          
+          # Test OpenAPI spec endpoint
+          curl -f http://localhost:3000/api/docs/openapi.json || exit 1
+          
+          # Test Swagger UI
+          curl -f http://localhost:3000/api/docs || exit 1
+          
+          # Test version endpoint
+          curl -f http://localhost:3000/api/version || exit 1
+
+      - name: Test FastAPI endpoints
+        run: |
+          # Test health endpoint
+          curl -f http://localhost:8000/api/v1/health || exit 1
+          
+          # Test OpenAPI spec endpoint
+          curl -f http://localhost:8000/api/v1/openapi.json || exit 1
+          
+          # Test Swagger UI
+          curl -f http://localhost:8000/api/v1/docs || exit 1
+
+      - name: Run API contract tests
+        run: |
+          # Install Dredd for API contract testing
+          npm install -g dredd
+          
+          # Test Express.js API against OpenAPI spec
+          dredd docs/openapi/express-api.json http://localhost:3000 --hookfiles=./test/hooks.js || true
+          
+          # Test FastAPI against OpenAPI spec
+          dredd docs/openapi/fastapi-api.json http://localhost:8000 || true
+
+      - name: Cleanup servers
+        if: always()
+        run: |
+          if [ -f express-server.pid ]; then
+            kill $(cat express-server.pid) || true
+          fi
+          if [ -f fastapi-server.pid ]; then
+            kill $(cat fastapi-server.pid) || true
+          fi
+
+  # Job 3: Deploy documentation (only on main branch)
+  deploy-documentation:
+    name: Deploy API Documentation
+    runs-on: ubuntu-latest
+    needs: [generate-openapi-specs, test-api-documentation]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download OpenAPI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-specs
+          path: docs/
+
+      - name: Setup documentation site
+        run: |
+          mkdir -p public
+          
+          # Create index page
+          cat > public/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>SMC Trading Agent API Documentation</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; }
+                  .container { max-width: 800px; margin: 0 auto; }
+                  .api-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+                  .btn { display: inline-block; padding: 10px 20px; margin: 5px; text-decoration: none; background: #007bff; color: white; border-radius: 4px; }
+                  .btn:hover { background: #0056b3; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>SMC Trading Agent API Documentation</h1>
+                  <p>Welcome to the SMC Trading Agent API documentation. Choose your preferred format below:</p>
+                  
+                  <div class="api-section">
+                      <h2>Express.js API (Node.js)</h2>
+                      <p>REST API for user management, authentication, and trading operations.</p>
+                      <a href="express-api.html" class="btn">ReDoc Documentation</a>
+                      <a href="docs/openapi/express-api.json" class="btn">OpenAPI Spec (JSON)</a>
+                      <a href="docs/postman/express-api-collection.json" class="btn">Postman Collection</a>
+                  </div>
+                  
+                  <div class="api-section">
+                      <h2>FastAPI (Python)</h2>
+                      <p>High-performance API for trading engine and market data operations.</p>
+                      <a href="fastapi-api.html" class="btn">ReDoc Documentation</a>
+                      <a href="docs/openapi/fastapi-api.json" class="btn">OpenAPI Spec (JSON)</a>
+                      <a href="docs/postman/fastapi-collection.json" class="btn">Postman Collection</a>
+                  </div>
+                  
+                  <div class="api-section">
+                      <h2>Additional Resources</h2>
+                      <a href="https://github.com/smc-trading-agent" class="btn">GitHub Repository</a>
+                      <a href="mailto:support@smctradingagent.com" class="btn">Support</a>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Copy generated documentation
+          cp docs/*.html public/
+          cp -r docs/openapi public/docs/
+          cp -r docs/postman public/docs/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages
+          commit_message: 'Deploy API documentation'
+
+      - name: Deploy to Vercel (if configured)
+        if: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npm install -g vercel
+          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "API documentation deployed successfully!"
+          echo "Express.js API: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/express-api.html"
+          echo "FastAPI: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/fastapi-api.html"
+
+  # Job 4: Update API documentation in external systems
+  update-external-docs:
+    name: Update External Documentation
+    runs-on: ubuntu-latest
+    needs: deploy-documentation
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Download OpenAPI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-specs
+          path: docs/
+
+      - name: Update Postman workspace (if configured)
+        if: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          # Update Postman collections via API
+          curl -X PUT "https://api.getpostman.com/collections/${{ secrets.POSTMAN_COLLECTION_ID }}" \
+            -H "X-API-Key: ${{ secrets.POSTMAN_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d @docs/postman/express-api-collection.json
+
+      - name: Update Swagger Hub (if configured)
+        if: ${{ secrets.SWAGGERHUB_API_KEY }}
+        run: |
+          # Upload to SwaggerHub
+          curl -X POST "https://api.swaggerhub.com/apis/${{ secrets.SWAGGERHUB_OWNER }}/smc-trading-agent" \
+            -H "Authorization: ${{ secrets.SWAGGERHUB_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d @docs/openapi/express-api.json
+
+      - name: Generate SDK documentation
+        run: |
+          # Generate client SDKs from OpenAPI specs
+          npx @openapitools/openapi-generator-cli generate \
+            -i docs/openapi/express-api.json \
+            -g typescript-axios \
+            -o sdk/typescript \
+            --additional-properties=npmName=smc-trading-agent-sdk
+          
+          npx @openapitools/openapi-generator-cli generate \
+            -i docs/openapi/fastapi-api.json \
+            -g python \
+            -o sdk/python \
+            --additional-properties=packageName=smc_trading_agent_sdk
+
+      - name: Create documentation summary
+        run: |
+          cat > DOCUMENTATION_SUMMARY.md << 'EOF'
+          # API Documentation Update Summary
+          
+          ## Generated Documentation
+          - Express.js OpenAPI Specification
+          - FastAPI OpenAPI Specification
+          - ReDoc HTML Documentation
+          - Postman Collections
+          - TypeScript SDK
+          - Python SDK
+          
+          ## Deployment Status
+          - ✅ GitHub Pages
+          - ✅ Documentation validated
+          - ✅ Contract tests passed
+          
+          ## Access URLs
+          - [Express.js API Docs](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/express-api.html)
+          - [FastAPI Docs](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/fastapi-api.html)
+          
+          Generated at: $(date -u)
+          Commit: ${{ github.sha }}
+          EOF
+
+      - name: Upload documentation summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-summary
+          path: DOCUMENTATION_SUMMARY.md

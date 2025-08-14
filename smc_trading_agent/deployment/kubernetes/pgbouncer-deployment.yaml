@@ -1,0 +1,238 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-config
+  namespace: smc-trading
+data:
+  pgbouncer.ini: |
+    [databases]
+    smc_trading_agent = host=postgresql-primary port=5432 dbname=smc_trading_agent pool_size=20 max_db_connections=50
+    smc_trading_agent_read = host=postgresql-replica port=5432 dbname=smc_trading_agent pool_size=15 max_db_connections=30
+    smc_trading_hft = host=postgresql-primary port=5432 dbname=smc_trading_agent pool_size=30 max_db_connections=60
+    smc_trading_jobs = host=postgresql-primary port=5432 dbname=smc_trading_agent pool_size=10 max_db_connections=20
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 6432
+    auth_type = md5
+    auth_file = /etc/pgbouncer/userlist.txt
+    admin_users = postgres
+    stats_users = postgres
+
+    pool_mode = transaction
+    max_client_conn = 1000
+    default_pool_size = 25
+    min_pool_size = 5
+    reserve_pool_size = 5
+    reserve_pool_timeout = 5
+
+    max_db_connections = 100
+    max_user_connections = 100
+
+    server_reset_query = DISCARD ALL
+    server_check_delay = 30
+    server_check_query = SELECT 1
+    server_lifetime = 3600
+    server_idle_timeout = 600
+    client_idle_timeout = 0
+
+    log_connections = 1
+    log_disconnections = 1
+    log_pooler_errors = 1
+    verbose = 0
+
+    tcp_keepalive = 1
+    tcp_keepcnt = 3
+    tcp_keepidle = 600
+    tcp_keepintvl = 30
+
+    ignore_startup_parameters = extra_float_digits
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pgbouncer-secret
+  namespace: smc-trading
+type: Opaque
+data:
+  userlist.txt: |
+    IyBQZ0JvdW5jZXIgdXNlciBhdXRoZW50aWNhdGlvbiBmaWxlCiMgRm9ybWF0OiAidXNlcm5hbWUiICJwYXNzd29yZF9oYXNoIgojIFVzZSBtZDUgaGFzaCBmb3JtYXQ6IG1kNSArIG1kNShwYXNzd29yZCArIHVzZXJuYW1lKQoKIyBFeGFtcGxlIGVudHJpZXMgKHJlcGxhY2Ugd2l0aCBhY3R1YWwgaGFzaGVkIHBhc3N3b3JkcykKInBvc3RncmVzIiAibWQ1ZDQxZDhjZDk4ZjAwYjIwNGU5ODAwOTk4ZWNmODQyN2UiCiJzbWNfYXBwX3VzZXIiICJtZDVkNDFkOGNkOThmMDBiMjA0ZTk4MDA5OThlY2Y4NDI3ZSIKInNtY19yZWFkX3VzZXIiICJtZDVkNDFkOGNkOThmMDBiMjA0ZTk4MDA5OThlY2Y4NDI3ZSI=
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  namespace: smc-trading
+  labels:
+    app: pgbouncer
+    component: database-proxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+        component: database-proxy
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9127"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: pgbouncer
+        image: pgbouncer/pgbouncer:1.21.0
+        ports:
+        - containerPort: 6432
+          name: pgbouncer
+        - containerPort: 9127
+          name: metrics
+        env:
+        - name: DATABASES_HOST
+          value: "postgresql-primary"
+        - name: DATABASES_PORT
+          value: "5432"
+        - name: DATABASES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: username
+        - name: DATABASES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        volumeMounts:
+        - name: pgbouncer-config
+          mountPath: /etc/pgbouncer/pgbouncer.ini
+          subPath: pgbouncer.ini
+        - name: pgbouncer-secret
+          mountPath: /etc/pgbouncer/userlist.txt
+          subPath: userlist.txt
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      
+      # PgBouncer Exporter for Prometheus metrics
+      - name: pgbouncer-exporter
+        image: prometheuscommunity/pgbouncer-exporter:v0.7.0
+        ports:
+        - containerPort: 9127
+          name: metrics
+        env:
+        - name: PGBOUNCER_EXPORTER_HOST
+          value: "localhost"
+        - name: PGBOUNCER_EXPORTER_PORT
+          value: "6432"
+        - name: PGBOUNCER_EXPORTER_USER
+          value: "postgres"
+        - name: PGBOUNCER_EXPORTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      
+      volumes:
+      - name: pgbouncer-config
+        configMap:
+          name: pgbouncer-config
+      - name: pgbouncer-secret
+        secret:
+          secretName: pgbouncer-secret
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - pgbouncer
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgbouncer
+  namespace: smc-trading
+  labels:
+    app: pgbouncer
+    component: database-proxy
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9127"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6432
+    targetPort: 6432
+    protocol: TCP
+    name: pgbouncer
+  - port: 9127
+    targetPort: 9127
+    protocol: TCP
+    name: metrics
+  selector:
+    app: pgbouncer
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pgbouncer-pdb
+  namespace: smc-trading
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: pgbouncer

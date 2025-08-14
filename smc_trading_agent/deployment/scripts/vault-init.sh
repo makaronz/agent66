@@ -206,41 +206,49 @@ echo "🔐 Configuring transit encryption..."
 vault write -f transit/keys/smc-trading
 vault write -f transit/keys/execution-engine
 
-# Store initial secrets (these should be replaced with actual values)
-echo "🗝️  Storing initial secrets..."
+# Store initial secrets from environment files
+echo "🗝️  Migrating secrets from environment files..."
 
-# Database secrets
-vault kv put secret/smc-trading/database \
-  url="postgresql://smc_user:CHANGE_ME@timescaledb:5432/smc_db" \
-  password="CHANGE_ME_DATABASE_PASSWORD"
+# Run the migration script to populate Vault with actual values
+if [ -f "$PROJECT_ROOT/deployment/scripts/migrate-secrets-to-vault.sh" ]; then
+  echo "Running secret migration script..."
+  bash "$PROJECT_ROOT/deployment/scripts/migrate-secrets-to-vault.sh" "$PROJECT_ROOT/.env" "$PROJECT_ROOT/api/.env"
+else
+  echo "⚠️  Migration script not found, storing placeholder secrets..."
+  
+  # Database secrets
+  vault kv put secret/smc-trading/database \
+    url="postgresql://smc_user:CHANGE_ME@timescaledb:5432/smc_db" \
+    password="CHANGE_ME_DATABASE_PASSWORD"
 
-# JWT secrets
-vault kv put secret/smc-trading/jwt \
-  secret="CHANGE_ME_JWT_SECRET_KEY_32_CHARS_MIN" \
-  encryption_key="CHANGE_ME_ENCRYPTION_KEY_32_CHARS"
+  # JWT secrets
+  vault kv put secret/smc-trading/jwt \
+    secret="CHANGE_ME_JWT_SECRET_KEY_32_CHARS_MIN" \
+    encryption_key="CHANGE_ME_ENCRYPTION_KEY_32_CHARS"
 
-# Exchange API keys (placeholders - replace with actual keys)
-vault kv put secret/smc-trading/exchanges/binance \
-  api_key="CHANGE_ME_BINANCE_API_KEY" \
-  api_secret="CHANGE_ME_BINANCE_API_SECRET"
+  # Exchange API keys (placeholders - replace with actual keys)
+  vault kv put secret/smc-trading/exchanges/binance \
+    api_key="CHANGE_ME_BINANCE_API_KEY" \
+    api_secret="CHANGE_ME_BINANCE_API_SECRET"
 
-vault kv put secret/smc-trading/exchanges/bybit \
-  api_key="CHANGE_ME_BYBIT_API_KEY" \
-  api_secret="CHANGE_ME_BYBIT_API_SECRET"
+  vault kv put secret/smc-trading/exchanges/bybit \
+    api_key="CHANGE_ME_BYBIT_API_KEY" \
+    api_secret="CHANGE_ME_BYBIT_API_SECRET"
 
-vault kv put secret/smc-trading/exchanges/oanda \
-  api_key="CHANGE_ME_OANDA_API_KEY" \
-  account_id="CHANGE_ME_OANDA_ACCOUNT_ID"
+  vault kv put secret/smc-trading/exchanges/oanda \
+    api_key="CHANGE_ME_OANDA_API_KEY" \
+    account_id="CHANGE_ME_OANDA_ACCOUNT_ID"
 
-# Redis secrets
-vault kv put secret/smc-trading/redis \
-  password="CHANGE_ME_REDIS_PASSWORD"
+  # Redis secrets
+  vault kv put secret/smc-trading/redis \
+    password="CHANGE_ME_REDIS_PASSWORD"
 
-# Supabase secrets
-vault kv put secret/smc-trading/supabase \
-  url="https://fqhuoszrysapxrvyaqao.supabase.co" \
-  service_role_key="CHANGE_ME_SUPABASE_SERVICE_ROLE_KEY" \
-  anon_key="CHANGE_ME_SUPABASE_ANON_KEY"
+  # Supabase secrets
+  vault kv put secret/smc-trading/supabase \
+    url="https://fqhuoszrysapxrvyaqao.supabase.co" \
+    service_role_key="CHANGE_ME_SUPABASE_SERVICE_ROLE_KEY" \
+    anon_key="CHANGE_ME_SUPABASE_ANON_KEY"
+fi
 
 echo "✅ Vault configuration completed!"
 echo ""

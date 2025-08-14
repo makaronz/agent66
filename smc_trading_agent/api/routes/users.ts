@@ -5,7 +5,25 @@ import { authenticateToken } from '../middleware/auth.js';
 const router = Router();
 
 /**
- * Get current user profile
+ * @swagger
+ * /users/profile:
+ *   get:
+ *     summary: Get user profile
+ *     description: Retrieve the current user's profile information
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/profile', authenticateToken, async (req: Request, res: Response) => {
   try {
@@ -31,7 +49,50 @@ router.get('/profile', authenticateToken, async (req: Request, res: Response) =>
 });
 
 /**
- * Update user profile
+ * @swagger
+ * /users/profile:
+ *   put:
+ *     summary: Update user profile
+ *     description: Update the current user's profile information
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *                 example: John Doe
+ *               avatar_url:
+ *                 type: string
+ *                 format: uri
+ *                 example: https://example.com/avatar.jpg
+ *           examples:
+ *             update_name:
+ *               summary: Update full name
+ *               value:
+ *                 full_name: John Smith
+ *             update_avatar:
+ *               summary: Update avatar
+ *               value:
+ *                 avatar_url: https://example.com/new-avatar.jpg
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.put('/profile', authenticateToken, async (req: Request, res: Response) => {
   try {
@@ -52,7 +113,51 @@ router.put('/profile', authenticateToken, async (req: Request, res: Response) =>
 });
 
 /**
- * Store API keys for exchange
+ * @swagger
+ * /users/api-keys:
+ *   post:
+ *     summary: Store exchange API keys
+ *     description: Securely store encrypted API keys for exchange integration
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ApiKeyRequest'
+ *           examples:
+ *             binance_testnet:
+ *               summary: Binance testnet keys
+ *               value:
+ *                 exchange: binance
+ *                 apiKey: your-binance-testnet-key
+ *                 secret: your-binance-testnet-secret
+ *                 isTestnet: true
+ *             bybit_mainnet:
+ *               summary: Bybit mainnet keys
+ *               value:
+ *                 exchange: bybit
+ *                 apiKey: your-bybit-mainnet-key
+ *                 secret: your-bybit-mainnet-secret
+ *                 isTestnet: false
+ *     responses:
+ *       200:
+ *         description: API keys stored successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               success: true
+ *               message: API keys stored successfully
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.post('/api-keys', authenticateToken, async (req: Request, res: Response) => {
   try {
@@ -82,7 +187,37 @@ router.post('/api-keys', authenticateToken, async (req: Request, res: Response) 
 });
 
 /**
- * Get user's API keys (without sensitive data)
+ * @swagger
+ * /users/api-keys:
+ *   get:
+ *     summary: Get user's API keys
+ *     description: Retrieve user's stored API keys (without sensitive data)
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/ExchangeParam'
+ *     responses:
+ *       200:
+ *         description: API keys retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ApiKeyInfo'
+ *             example:
+ *               - id: 123e4567-e89b-12d3-a456-426614174000
+ *                 exchange: binance
+ *                 is_testnet: true
+ *                 is_active: true
+ *                 has_api_key: true
+ *                 has_secret: true
+ *                 created_at: 2024-01-15T10:30:00.000Z
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/api-keys', authenticateToken, async (req: Request, res: Response) => {
   try {

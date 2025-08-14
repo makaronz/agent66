@@ -14,7 +14,6 @@ const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD,
-  retryDelayOnFailover: 100,
   maxRetriesPerRequest: 3,
   lazyConnect: true
 });
@@ -34,18 +33,18 @@ export const validateRequest = (schema: {
 
       // Validate query parameters
       if (schema.query) {
-        req.query = await schema.query.parseAsync(req.query);
+        req.query = await schema.query.parseAsync(req.query) as any;
       }
 
       // Validate URL parameters
       if (schema.params) {
-        req.params = await schema.params.parseAsync(req.params);
+        req.params = await schema.params.parseAsync(req.params) as any;
       }
 
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const validationErrors = error.errors.map(err => ({
+        const validationErrors = (error as any).errors.map((err: any) => ({
           field: err.path.join('.'),
           message: err.message,
           code: err.code,
@@ -126,7 +125,7 @@ export const createRateLimit = (options: {
 }) => {
   return rateLimit({
     store: new RedisStore({
-      sendCommand: (...args: string[]) => redis.call(...args),
+      sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
     }),
     windowMs: options.windowMs,
     max: options.max,

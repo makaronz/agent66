@@ -6,6 +6,9 @@ import time
 import asyncio
 from typing import Dict, Any, Optional
 
+# Vault client for secure secret management
+from vault_client import get_vault_client, VaultClientError, get_database_url, get_exchange_credentials
+
 # Secure configuration loading
 from .config_loader import load_secure_config, ConfigValidationError, EnvironmentVariableError
 from .config_validator import validate_config
@@ -105,32 +108,80 @@ def handle_shutdown_signal(signum, frame):
         logging.getLogger().warning("Received second shutdown signal. Forcing exit.")
         sys.exit(1)
 
-def load_config(config_path: str = "smc_trading_agent/config.yaml") -> Dict[str, Any]:
+async def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
     """
-    Load configuration using secure configuration loader with environment variable substitution.
+    Load configuration using secure configuration loader with Vault integration.
     
     Args:
         config_path: Path to the configuration file
         
     Returns:
-        Configuration dictionary with environment variables substituted
+        Configuration dictionary with secrets from Vault
         
     Raises:
         SystemExit: If configuration loading fails
     """
     try:
-        # Try to load from .env file first, then fall back to system environment
+        # Load base configuration from file
         env_file = ".env"
-        return load_secure_config(config_path, env_file)
+        config = load_secure_config(config_path, env_file)
+        
+        # Initialize Vault client and load secrets
+        try:
+            vault_client = get_vault_client()
+            logger = logging.getLogger(__name__)
+            logger.info("Vault client initialized successfully")
+            
+            # Load database configuration from Vault
+            try:
+                db_config = await asyncio.to_thread(vault_client.get_database_config)
+                config.setdefault('database', {}).update({
+                    'url': db_config['DATABASE_URL'],
+                    'password': db_config['DATABASE_PASSWORD']
+                })
+                logger.info("Database configuration loaded from Vault")
+            except Exception as e:
+                logger.warning(f"Failed to load database config from Vault: {e}")
+            
+            # Load exchange configurations from Vault
+            exchanges = ['binance', 'bybit', 'oanda']
+            for exchange in exchanges:
+                try:
+                    exchange_config = await asyncio.to_thread(vault_client.get_exchange_config, exchange)
+                    config.setdefault('exchanges', {}).setdefault(exchange, {}).update(exchange_config)
+                    logger.info(f"{exchange.title()} configuration loaded from Vault")
+                except Exception as e:
+                    logger.warning(f"Failed to load {exchange} config from Vault: {e}")
+            
+            # Load JWT configuration from Vault
+            try:
+                jwt_config = await asyncio.to_thread(vault_client.get_jwt_config)
+                config.setdefault('security', {}).update(jwt_config)
+                logger.info("JWT configuration loaded from Vault")
+            except Exception as e:
+                logger.warning(f"Failed to load JWT config from Vault: {e}")
+            
+            # Load Redis configuration from Vault
+            try:
+                redis_config = await asyncio.to_thread(vault_client.get_redis_config)
+                config.setdefault('redis', {}).update(redis_config)
+                logger.info("Redis configuration loaded from Vault")
+            except Exception as e:
+                logger.warning(f"Failed to load Redis config from Vault: {e}")
+                
+        except VaultClientError as e:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Vault integration failed, falling back to environment variables: {e}")
+            # Continue with environment variables as fallback
+        
+        return config
+        
     except FileNotFoundError:
         print(f"Error: Configuration file not found at {config_path}", file=sys.stderr)
         sys.exit(1)
     except (ConfigValidationError, EnvironmentVariableError) as e:
         print(f"Configuration error: {e}", file=sys.stderr)
-        print("Please ensure all required environment variables are set.", file=sys.stderr)
-        print("You can create a .env file with the following variables:", file=sys.stderr)
-        print("  BINANCE_API_KEY=your_api_key_here", file=sys.stderr)
-        print("  BINANCE_API_SECRET=your_api_secret_here", file=sys.stderr)
+        print("Please ensure all required environment variables are set or Vault is configured.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"Unexpected error loading configuration: {e}", file=sys.stderr)
@@ -303,8 +354,8 @@ async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceMana
 async def main_async():
     """Async main function with enhanced service coordination."""
     
-    # Load and validate configuration
-    config = load_config()
+    # Load and validate configuration with Vault integration
+    config = await load_config()
     
     # Validate configuration
     is_valid, errors, warnings = validate_config(config)

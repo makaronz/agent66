@@ -61,6 +61,9 @@ phonenumbers==8.13.27
 bleach==6.1.0
 html5lib==1.1
 
+# HashiCorp Vault client
+hvac==2.1.0
+
 # Rate limiting
 slowapi==0.1.9
 limits==3.6.0

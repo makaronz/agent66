@@ -206,7 +206,7 @@ class AuditLogger {
         resource_type: resourceType,
         details: this.sanitizeForLogging(details),
         risk_score: RISK_SCORES[eventType] || 5,
-        session_id: req.sessionID,
+        session_id: (req as any).sessionID || null,
         request_id: req.headers['x-request-id'] as string || this.generateRequestId(),
         geolocation: await this.getGeolocation(this.getClientIP(req))
       };

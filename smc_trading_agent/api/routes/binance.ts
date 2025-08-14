@@ -11,8 +11,82 @@ import supabaseAdmin from '../supabase.js';
 const router = Router();
 
 /**
- * Test Binance API Connection
- * POST /api/binance/test-connection
+ * @swagger
+ * /binance/test-connection:
+ *   post:
+ *     summary: Test Binance API connection
+ *     description: Verify Binance API credentials and connection status
+ *     tags: [Trading]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             allOf:
+ *               - $ref: '#/components/schemas/ExchangeCredentials'
+ *               - type: object
+ *                 properties:
+ *                   saveKeys:
+ *                     type: boolean
+ *                     example: false
+ *                     description: Whether to save API keys for future use
+ *           examples:
+ *             testnet:
+ *               summary: Testnet connection test
+ *               value:
+ *                 apiKey: your-testnet-api-key
+ *                 secret: your-testnet-secret
+ *                 sandbox: true
+ *                 saveKeys: false
+ *             mainnet:
+ *               summary: Mainnet connection test
+ *               value:
+ *                 apiKey: your-mainnet-api-key
+ *                 secret: your-mainnet-secret
+ *                 sandbox: false
+ *                 saveKeys: true
+ *     responses:
+ *       200:
+ *         description: Connection test successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ConnectionTestResponse'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         description: Invalid API credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error: Invalid API key or secret. Please check your credentials.
+ *               code: INVALID_API_KEY
+ *       403:
+ *         description: API permissions or IP restrictions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               ip_restriction:
+ *                 summary: IP not whitelisted
+ *                 value:
+ *                   success: false
+ *                   error: IP address not whitelisted. Please add your IP to Binance API settings.
+ *                   code: IP_RESTRICTION
+ *               insufficient_permissions:
+ *                 summary: Insufficient permissions
+ *                 value:
+ *                   success: false
+ *                   error: Insufficient API permissions. Please enable spot trading permissions.
+ *                   code: INSUFFICIENT_PERMISSIONS
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.post('/test-connection', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -94,8 +168,50 @@ router.post('/test-connection', authenticateToken, async (req: Request, res: Res
 });
 
 /**
- * Get Binance Account Information
- * POST /api/binance/account-info
+ * @swagger
+ * /binance/account-info:
+ *   post:
+ *     summary: Get Binance account information
+ *     description: Retrieve account balance, trading fees, and account status
+ *     tags: [Trading]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ExchangeCredentials'
+ *           examples:
+ *             testnet:
+ *               summary: Testnet account info
+ *               value:
+ *                 apiKey: your-testnet-api-key
+ *                 secret: your-testnet-secret
+ *                 sandbox: true
+ *     responses:
+ *       200:
+ *         description: Account information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AccountInfo'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         description: Invalid API credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: API permissions or IP restrictions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.post('/account-info', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -182,8 +298,46 @@ router.post('/account-info', authenticateToken, async (req: Request, res: Respon
 });
 
 /**
- * Get Market Data
- * GET /api/binance/market-data/:symbol
+ * @swagger
+ * /binance/market-data/{symbol}:
+ *   get:
+ *     summary: Get market data for a symbol
+ *     description: Retrieve real-time market data including price, volume, and recent trades
+ *     tags: [Market Data]
+ *     parameters:
+ *       - name: symbol
+ *         in: path
+ *         required: true
+ *         description: Trading pair symbol (e.g., BTC/USDT)
+ *         schema:
+ *           type: string
+ *           example: BTC/USDT
+ *       - name: sandbox
+ *         in: query
+ *         required: false
+ *         description: Use testnet environment
+ *         schema:
+ *           type: boolean
+ *           example: true
+ *     responses:
+ *       200:
+ *         description: Market data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MarketData'
+ *       400:
+ *         description: Invalid symbol or request parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error: Invalid trading symbol
+ *               code: INVALID_SYMBOL
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
  */
 router.get('/market-data/:symbol', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -263,6 +417,82 @@ interface PlaceOrderResponse {
   details?: string;
 }
 
+/**
+ * @swagger
+ * /binance/place-order:
+ *   post:
+ *     summary: Place a trading order
+ *     description: Execute a buy or sell order on Binance with optional stop loss and take profit
+ *     tags: [Trading]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PlaceOrderRequest'
+ *           examples:
+ *             market_buy:
+ *               summary: Market buy order
+ *               value:
+ *                 symbol: BTC/USDT
+ *                 side: buy
+ *                 type: market
+ *                 quantity: 0.001
+ *             limit_sell:
+ *               summary: Limit sell order with stop loss
+ *               value:
+ *                 symbol: BTC/USDT
+ *                 side: sell
+ *                 type: limit
+ *                 quantity: 0.001
+ *                 price: 50000.00
+ *                 stopLoss: 48000.00
+ *                 takeProfit: 52000.00
+ *     responses:
+ *       200:
+ *         description: Order placed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PlaceOrderResponse'
+ *       400:
+ *         description: Invalid order parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             examples:
+ *               insufficient_balance:
+ *                 summary: Insufficient balance
+ *                 value:
+ *                   success: false
+ *                   error: Insufficient balance to place this order
+ *                   code: INSUFFICIENT_BALANCE
+ *               invalid_quantity:
+ *                 summary: Invalid quantity
+ *                 value:
+ *                   success: false
+ *                   error: Invalid quantity - check symbol lot size requirements
+ *                   code: LOT_SIZE_ERROR
+ *               min_notional:
+ *                 summary: Below minimum notional
+ *                 value:
+ *                   success: false
+ *                   error: Order value is below minimum notional value
+ *                   code: MIN_NOTIONAL_ERROR
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: API permissions or trading restrictions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
 router.post('/place-order', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {

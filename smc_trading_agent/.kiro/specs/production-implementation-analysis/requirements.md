@@ -1,93 +1,93 @@
-# Wymagania - Analiza i Plan Implementacji Produkcyjnej SMC Trading Agent
+# Requirements Document - Production Implementation Analysis
 
-## Wprowadzenie
+## Introduction
 
-Projekt SMC Trading Agent to zaawansowany system algorytmicznego tradingu implementujący koncepcje Smart Money Concepts (SMC) dla automatycznego handlu kryptowalutami i forex. System składa się z wielu komponentów: Python backend z FastAPI, Rust execution engine, React frontend, Express.js API, oraz integracje z giełdami (Binance, Bybit, Oanda).
+The SMC Trading Agent is a sophisticated algorithmic trading system implementing Smart Money Concepts (SMC) for automated cryptocurrency and forex trading. The system consists of multiple components: Python backend with FastAPI, Rust execution engine, React frontend, Express.js API, and integrations with exchanges (Binance, Bybit, Oanda).
 
-Celem tego dokumentu jest przeprowadzenie kompleksowej analizy Context-7 oraz stworzenie planu implementacji w 100% działającej aplikacji produkcyjnej.
+The goal of this document is to conduct a comprehensive Context-7 analysis and create an implementation plan for a 100% functional production application.
 
 ## Wymagania
 
-### Wymaganie 1: Analiza Context-7
+### Requirement 1: Context-7 Analysis
 
-**User Story:** Jako senior full-stack developer i architect, chcę przeprowadzić siedmiowarstwową analizę Context-7 całego projektu SMC Trading Agent, aby zrozumieć wszystkie aspekty biznesowe, techniczne i operacyjne.
+**User Story:** As a senior full-stack developer and architect, I want to conduct a seven-layer Context-7 analysis of the entire SMC Trading Agent project, so that I can understand all business, technical, and operational aspects.
 
-#### Kryteria Akceptacji
+#### Acceptance Criteria
 
-1. WHEN przeprowadzam analizę kontekstu biznesowego THEN system SHALL zidentyfikować cele biznesowe, KPI, ROI i ryzyka biznesowe
-2. WHEN analizuję kontekst użytkownika THEN system SHALL określić persony, przypadki użycia, journey użytkowników i wymagania dostępności
-3. WHEN badam kontekst systemowy THEN system SHALL zmapować granice systemu, systemy zewnętrzne i polityki danych
-4. WHEN oceniam kontekst kodu THEN system SHALL przeanalizować języki, frameworki, style kodowania, jakość i pokrycie testami
-5. WHEN sprawdzam kontekst danych THEN system SHALL zbadać modele danych, schematy, migracje, PII i polityki retencji
-6. WHEN analizuję kontekst operacyjny THEN system SHALL ocenić deployment, runtime, HA, DR, skalowanie i koszty
-7. WHEN badam kontekst ryzyka THEN system SHALL zidentyfikować zagrożenia bezpieczeństwa, compliance, privacy i vendor lock-in
+1. WHEN I conduct business context analysis THEN the system SHALL identify business goals, KPIs, ROI, and business risks
+2. WHEN I analyze user context THEN the system SHALL define personas, use cases, user journeys, and availability requirements
+3. WHEN I examine system context THEN the system SHALL map system boundaries, external systems, and data policies
+4. WHEN I assess code context THEN the system SHALL analyze languages, frameworks, coding styles, quality, and test coverage
+5. WHEN I check data context THEN the system SHALL examine data models, schemas, migrations, PII, and retention policies
+6. WHEN I analyze operational context THEN the system SHALL evaluate deployment, runtime, HA, DR, scaling, and costs
+7. WHEN I examine risk context THEN the system SHALL identify security threats, compliance, privacy, and vendor lock-in
 
-### Wymaganie 2: Identyfikacja Luk i Problemów
+### Requirement 2: Gap and Issue Identification
 
-**User Story:** Jako DevOps/SRE lead, chcę zidentyfikować wszystkie luki techniczne, ryzyka bezpieczeństwa, problemy wydajności i długi techniczny, aby móc je systematycznie rozwiązać.
+**User Story:** As a DevOps/SRE lead, I want to identify all technical gaps, security risks, performance issues, and technical debt, so that I can systematically resolve them.
 
-#### Kryteria Akceptacji
+#### Acceptance Criteria
 
-1. WHEN przeprowadzam audyt bezpieczeństwa THEN system SHALL zidentyfikować wszystkie podatności i zagrożenia
-2. WHEN analizuję wydajność THEN system SHALL wykryć bottlenecki i problemy skalowania
-3. WHEN oceniam jakość kodu THEN system SHALL zidentyfikować długi techniczny i problemy maintainability
-4. WHEN sprawdzam infrastrukturę THEN system SHALL wykryć problemy z deployment i monitoring
-5. WHEN badam integracje THEN system SHALL zidentyfikować problemy z systemami zewnętrznymi
-6. WHEN analizuję testy THEN system SHALL ocenić pokrycie testami i jakość testów
-7. WHEN sprawdzam dokumentację THEN system SHALL zidentyfikować braki w dokumentacji
+1. WHEN I conduct security audit THEN the system SHALL identify all vulnerabilities and threats
+2. WHEN I analyze performance THEN the system SHALL detect bottlenecks and scaling issues
+3. WHEN I assess code quality THEN the system SHALL identify technical debt and maintainability problems
+4. WHEN I check infrastructure THEN the system SHALL detect deployment and monitoring issues
+5. WHEN I examine integrations THEN the system SHALL identify problems with external systems
+6. WHEN I analyze tests THEN the system SHALL evaluate test coverage and test quality
+7. WHEN I check documentation THEN the system SHALL identify documentation gaps
 
-### Wymaganie 3: Plan Implementacji Produkcyjnej
+### Requirement 3: Production Implementation Plan
 
-**User Story:** Jako tech lead, chcę otrzymać szczegółowy plan implementacji 100% działającej aplikacji produkcyjnej z realnymi integracjami, CI/CD, monitoring i runbookami.
+**User Story:** As a tech lead, I want to receive a detailed implementation plan for a 100% functional production application with real integrations, CI/CD, monitoring, and runbooks.
 
-#### Kryteria Akceptacji
+#### Acceptance Criteria
 
-1. WHEN tworzę plan infrastruktury THEN system SHALL zawierać kompletną konfigurację Docker, Kubernetes, CI/CD
-2. WHEN planuję integracje THEN system SHALL zawierać realne konfiguracje API giełd, baz danych i systemów zewnętrznych
-3. WHEN projektuję monitoring THEN system SHALL zawierać Prometheus, Grafana, alerting i SLO/SLA
-4. WHEN tworzę runbooki THEN system SHALL zawierać procedury operacyjne, troubleshooting i disaster recovery
-5. WHEN planuję bezpieczeństwo THEN system SHALL zawierać HTTPS, szyfrowanie, RBAC, audit logs
-6. WHEN projektuję skalowanie THEN system SHALL zawierać auto-scaling, load balancing i performance tuning
-7. WHEN tworzę dokumentację THEN system SHALL zawierać API docs, deployment guides i operational procedures
+1. WHEN I create infrastructure plan THEN the system SHALL contain complete Docker, Kubernetes, CI/CD configuration
+2. WHEN I plan integrations THEN the system SHALL contain real exchange API, database, and external system configurations
+3. WHEN I design monitoring THEN the system SHALL contain Prometheus, Grafana, alerting, and SLO/SLA
+4. WHEN I create runbooks THEN the system SHALL contain operational procedures, troubleshooting, and disaster recovery
+5. WHEN I plan security THEN the system SHALL contain HTTPS, encryption, RBAC, audit logs
+6. WHEN I design scaling THEN the system SHALL contain auto-scaling, load balancing, and performance tuning
+7. WHEN I create documentation THEN the system SHALL contain API docs, deployment guides, and operational procedures
 
-### Wymaganie 4: Weryfikacja i Walidacja
+### Requirement 4: Verification and Validation
 
-**User Story:** Jako security engineer, chcę mieć pewność, że wszystkie rekomendacje są oparte na najnowszych standardach i best practices z oficjalnej dokumentacji.
+**User Story:** As a security engineer, I want to ensure that all recommendations are based on the latest standards and best practices from official documentation.
 
-#### Kryteria Akceptacji
+#### Acceptance Criteria
 
-1. WHEN podaję rekomendacje techniczne THEN system SHALL cytować oficjalną dokumentację z linkami
-2. WHEN sugeruję rozwiązania bezpieczeństwa THEN system SHALL odwoływać się do standardów OWASP i NIST
-3. WHEN rekomenduje narzędzia THEN system SHALL weryfikować najnowsze wersje i kompatybilność
-4. WHEN tworzę konfiguracje THEN system SHALL używać aktualnych składni i parametrów
-5. WHEN planuję deployment THEN system SHALL uwzględniać najnowsze best practices DevOps
-6. WHEN projektuję monitoring THEN system SHALL używać standardowych metryk i alertów
-7. WHEN dokumentuję procedury THEN system SHALL zawierać aktualne komendy i ścieżki
+1. WHEN I provide technical recommendations THEN the system SHALL cite official documentation with links
+2. WHEN I suggest security solutions THEN the system SHALL reference OWASP and NIST standards
+3. WHEN I recommend tools THEN the system SHALL verify latest versions and compatibility
+4. WHEN I create configurations THEN the system SHALL use current syntax and parameters
+5. WHEN I plan deployment THEN the system SHALL incorporate latest DevOps best practices
+6. WHEN I design monitoring THEN the system SHALL use standard metrics and alerts
+7. WHEN I document procedures THEN the system SHALL contain current commands and paths
 
-### Wymaganie 5: Deliverables i Format
+### Requirement 5: Deliverables and Format
 
-**User Story:** Jako stakeholder, chcę otrzymać wyniki analizy w strukturalnym formacie z diagramami, checklistami i gotowymi do użycia artefaktami.
+**User Story:** As a stakeholder, I want to receive analysis results in a structured format with diagrams, checklists, and ready-to-use artifacts.
 
-#### Kryteria Akceptacji
+#### Acceptance Criteria
 
-1. WHEN dostarczam analizę Context-7 THEN system SHALL zawierać 7 sekcji z konkretnymi findings
-2. WHEN tworzę diagramy THEN system SHALL używać Mermaid dla architektury C4 i przepływów danych
-3. WHEN dostarczam plan implementacji THEN system SHALL zawierać gotowe pliki konfiguracyjne
-4. WHEN tworzę checklisty THEN system SHALL zawierać konkretne kroki z komendami
-5. WHEN dokumentuję koszty THEN system SHALL zawierać estymaty dla różnych środowisk
-6. WHEN planuję timeline THEN system SHALL zawierać realistyczne harmonogramy z dependencies
-7. WHEN dostarczam runbooki THEN system SHALL zawierać step-by-step procedures z przykładami
+1. WHEN I deliver Context-7 analysis THEN the system SHALL contain 7 sections with concrete findings
+2. WHEN I create diagrams THEN the system SHALL use Mermaid for C4 architecture and data flows
+3. WHEN I deliver implementation plan THEN the system SHALL contain ready-to-use configuration files
+4. WHEN I create checklists THEN the system SHALL contain concrete steps with commands
+5. WHEN I document costs THEN the system SHALL contain estimates for different environments
+6. WHEN I plan timeline THEN the system SHALL contain realistic schedules with dependencies
+7. WHEN I deliver runbooks THEN the system SHALL contain step-by-step procedures with examples
 
-### Wymaganie 6: Język i Lokalizacja
+### Requirement 6: Language and Localization
 
-**User Story:** Jako polski stakeholder, chcę otrzymać całą dokumentację w języku polskim z zachowaniem precyzji technicznej.
+**User Story:** As a Polish stakeholder, I want to receive all documentation in Polish while maintaining technical precision.
 
-#### Kryteria Akceptacji
+#### Acceptance Criteria
 
-1. WHEN tworzę dokumentację THEN system SHALL używać języka polskiego dla wszystkich opisów
-2. WHEN używam terminologii technicznej THEN system SHALL zachować angielskie nazwy technologii
-3. WHEN cytuję źródła THEN system SHALL podawać linki do oryginalnej dokumentacji
-4. WHEN tworzę diagramy THEN system SHALL używać polskich opisów z angielskimi nazwami komponentów
-5. WHEN dokumentuję procedury THEN system SHALL używać polskich instrukcji z angielskimi komendami
-6. WHEN tworzę checklisty THEN system SHALL używać polskich opisów zadań
-7. WHEN planuję komunikację THEN system SHALL uwzględnić polskie standardy i regulacje (RODO)
+1. WHEN I create documentation THEN the system SHALL use Polish language for all descriptions
+2. WHEN I use technical terminology THEN the system SHALL preserve English technology names
+3. WHEN I cite sources THEN the system SHALL provide links to original documentation
+4. WHEN I create diagrams THEN the system SHALL use Polish descriptions with English component names
+5. WHEN I document procedures THEN the system SHALL use Polish instructions with English commands
+6. WHEN I create checklists THEN the system SHALL use Polish task descriptions
+7. WHEN I plan communication THEN the system SHALL consider Polish standards and regulations (GDPR)

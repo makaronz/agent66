@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: smc-trading-staging
+
+resources:
+  - ../vault-namespace.yaml
+  - ../vault-pvc.yaml
+  - ../vault-configmap.yaml
+  - ../vault-deployment.yaml
+  - ../consul-deployment.yaml
+  - ../smc-trading-namespace.yaml
+  - ../smc-agent-deployment.yaml
+
+patchesStrategicMerge:
+  - staging-patches.yaml
+
+images:
+  - name: smc-agent
+    newTag: staging-latest
+
+configMapGenerator:
+  - name: staging-config
+    literals:
+      - ENVIRONMENT=staging
+      - LOG_LEVEL=DEBUG
+      - VAULT_ADDR=http://vault.vault.svc.cluster.local:8200
+
+secretGenerator:
+  - name: staging-secrets
+    literals:
+      - VAULT_TOKEN=staging-vault-token-placeholder

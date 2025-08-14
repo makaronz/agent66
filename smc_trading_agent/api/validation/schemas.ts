@@ -37,18 +37,12 @@ const quantitySchema = z.number().positive('Quantity must be positive').max(1000
 const percentageSchema = z.number().min(0, 'Percentage cannot be negative').max(100, 'Percentage cannot exceed 100');
 
 // Exchange validation
-const exchangeSchema = z.enum(['binance', 'bybit', 'oanda'], {
-  errorMap: () => ({ message: 'Exchange must be one of: binance, bybit, oanda' })
-});
+const exchangeSchema = z.enum(['binance', 'bybit', 'oanda']);
 
 // Order side and type validation
-const orderSideSchema = z.enum(['buy', 'sell'], {
-  errorMap: () => ({ message: 'Order side must be either buy or sell' })
-});
+const orderSideSchema = z.enum(['buy', 'sell']);
 
-const orderTypeSchema = z.enum(['market', 'limit', 'stop_loss', 'take_profit'], {
-  errorMap: () => ({ message: 'Order type must be one of: market, limit, stop_loss, take_profit' })
-});
+const orderTypeSchema = z.enum(['market', 'limit', 'stop_loss', 'take_profit']);
 
 // Authentication schemas
 export const registerSchema = z.object({
@@ -271,8 +265,8 @@ export const webAuthnAuthenticationSchema = z.object({
 
 // Query parameter schemas
 export const paginationSchema = z.object({
-  page: z.string().regex(/^\d+$/, 'Page must be a number').transform(Number).refine(n => n >= 1, 'Page must be at least 1').default('1'),
-  limit: z.string().regex(/^\d+$/, 'Limit must be a number').transform(Number).refine(n => n >= 1 && n <= 100, 'Limit must be between 1 and 100').default('20'),
+  page: z.string().regex(/^\d+$/, 'Page must be a number').transform(Number).refine(n => n >= 1, 'Page must be at least 1').default(() => 1),
+  limit: z.string().regex(/^\d+$/, 'Limit must be a number').transform(Number).refine(n => n >= 1 && n <= 100, 'Limit must be between 1 and 100').default(() => 20),
   sort: z.string().max(50, 'Sort parameter too long').optional(),
   order: z.enum(['asc', 'desc']).default('desc')
 });
@@ -281,9 +275,7 @@ export const paginationSchema = z.object({
 export const fileUploadSchema = z.object({
   file: z.object({
     originalname: z.string().max(255, 'Filename too long'),
-    mimetype: z.enum(['image/jpeg', 'image/png', 'image/gif', 'image/webp'], {
-      errorMap: () => ({ message: 'File must be a valid image (JPEG, PNG, GIF, or WebP)' })
-    }),
+    mimetype: z.enum(['image/jpeg', 'image/png', 'image/gif', 'image/webp']),
     size: z.number().max(5 * 1024 * 1024, 'File size must not exceed 5MB')
   })
 });
