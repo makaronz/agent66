@@ -4,16 +4,16 @@
 app:
   name: "SMC Trading Agent"
   version: "1.0.0"
-  environment: "development"
+  environment: "${APP_ENV:development}"
   debug: true
-  log_level: "INFO"
+  log_level: "${LOG_LEVEL:INFO}"
 
 # Exchange configurations
 exchanges:
   binance:
     enabled: true
-    api_key: ""  # Set via environment variable BINANCE_API_KEY
-    api_secret: ""  # Set via environment variable BINANCE_API_SECRET
+    api_key: "${BINANCE_API_KEY:}"
+    api_secret: "${BINANCE_API_SECRET:}"
     websocket_url: "wss://stream.binance.com:9443/ws/"
     rest_url: "https://api.binance.com"
     rate_limit: 1200  # requests per minute
@@ -30,8 +30,8 @@ exchanges:
     
   bybit:
     enabled: true
-    api_key: ""  # Set via environment variable BYBIT_API_KEY
-    api_secret: ""  # Set via environment variable BYBIT_API_SECRET
+    api_key: "${BYBIT_API_KEY:}"
+    api_secret: "${BYBIT_API_SECRET:}"
     websocket_url: "wss://stream.bybit.com/v5/public/spot"
     rest_url: "https://api.bybit.com"
     rate_limit: 120  # requests per second
@@ -48,8 +48,8 @@ exchanges:
     
   oanda:
     enabled: true
-    api_key: ""  # Set via environment variable OANDA_API_KEY
-    account_id: ""  # Set via environment variable OANDA_ACCOUNT_ID
+    api_key: "${OANDA_API_KEY:}"
+    account_id: "${OANDA_ACCOUNT_ID:}"
     websocket_url: "wss://stream-fxtrade.oanda.com/v3/accounts/{account_id}/pricing/stream"
     rest_url: "https://api-fxtrade.oanda.com/v3"
     rate_limit: 120  # requests per second
@@ -169,7 +169,7 @@ database:
   port: 5432
   name: "smc_trading_agent"
   user: "postgres"
-  password: ""  # Set via environment variable DB_PASSWORD
+  password: "${DB_PASSWORD:}"
   pool_size: 10
   max_overflow: 20
 
@@ -178,7 +178,7 @@ redis:
   host: "localhost"
   port: 6379
   db: 0
-  password: ""  # Set via environment variable REDIS_PASSWORD
+  password: "${REDIS_PASSWORD:}"
   max_connections: 20
 
 # API settings
@@ -195,6 +195,7 @@ api:
 # Security settings
 security:
   jwt_secret: ""  # Set via environment variable JWT_SECRET
+  jwt_secret: "${JWT_SECRET:}"
   jwt_expiration: 3600  # 1 hour
   api_key_required: true
   encryption_enabled: true

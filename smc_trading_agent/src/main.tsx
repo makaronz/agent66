@@ -43,3 +43,12 @@ try {
     </div>
   `;
 }
+
+// Register a basic service worker only in production
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('Service worker registered', reg.scope))
+      .catch(err => console.error('Service worker registration failed', err));
+  });
+}

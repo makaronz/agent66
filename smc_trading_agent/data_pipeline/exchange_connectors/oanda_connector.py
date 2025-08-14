@@ -131,6 +131,7 @@ class OANDAConnector(ExchangeConnector):
             await pong_waiter
             
             logger.info("OANDA WebSocket connection established successfully")
+            self.connected = True
             return True
             
         except Exception as e:
@@ -150,6 +151,7 @@ class OANDAConnector(ExchangeConnector):
                 self.websocket = None
                 self.subscribed_streams.clear()
                 logger.info("OANDA WebSocket disconnected successfully")
+            self.connected = False
             return True
         except Exception as e:
             logger.error(f"Failed to disconnect OANDA WebSocket: {e}")

@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
 import Layout from "@/components/Layout";
-import Dashboard from "@/pages/Dashboard";
-import TradingInterface from "@/pages/TradingInterface";
-import Analytics from "@/pages/Analytics";
-import Configuration from "@/pages/Configuration";
-import Monitoring from "@/pages/Monitoring";
-import Research from "@/pages/Research";
-import RiskManagement from "@/pages/RiskManagement";
-import Reports from "@/pages/Reports";
-import Login from "@/pages/Login";
-import MFASettings from "@/pages/MFASettings";
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const TradingInterface = lazy(() => import("@/pages/TradingInterface"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const Configuration = lazy(() => import("@/pages/Configuration"));
+const Monitoring = lazy(() => import("@/pages/Monitoring"));
+const Research = lazy(() => import("@/pages/Research"));
+const RiskManagement = lazy(() => import("@/pages/RiskManagement"));
+const Reports = lazy(() => import("@/pages/Reports"));
+const Login = lazy(() => import("@/pages/Login"));
+const MFASettings = lazy(() => import("@/pages/MFASettings"));
 import AuthGuard from "@/components/auth/AuthGuard";
 import SimpleAuthGuard from "@/components/auth/SimpleAuthGuard";
 import { AuthProvider } from "@/contexts/AuthContext";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 console.log('📱 App component loading...');
 
@@ -25,6 +26,7 @@ export default function App() {
     return (
       <AuthProvider>
         <Router>
+          <Suspense fallback={<div className="p-8 flex items-center justify-center"><LoadingSpinner /></div>}>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -46,6 +48,7 @@ export default function App() {
             <Route path="mfa" element={<MFASettings />} />
           </Route>
           </Routes>
+          </Suspense>
           <Toaster 
           position="top-right"
           toastOptions={{

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, validator, model_validator
 from enum import Enum
 
 from .error_handlers import DataValidationError, ErrorSeverity
+from .monitoring.data_quality_metrics import inc_quality_error, inc_anomaly
 
 
 class DataQualityLevel(Enum):
@@ -161,6 +162,8 @@ class DataValidator:
             errors.append(f"Missing required columns: {missing_columns}")
         
         if errors:
+            for e in errors:
+                inc_quality_error('market_data', 'schema')
             return False, errors
         
         # Check data types
@@ -173,6 +176,8 @@ class DataValidator:
                 errors.append(f"Column {col} must be numeric type")
         
         if errors:
+            for e in errors:
+                inc_quality_error('market_data', 'types')
             return False, errors
         
         # Check for missing values
@@ -181,23 +186,28 @@ class DataValidator:
         for col, missing_count in missing_counts.items():
             if missing_count / total_rows > self.quality_thresholds['missing_data_threshold']:
                 errors.append(f"Too many missing values in {col}: {missing_count}/{total_rows}")
+                inc_quality_error('market_data', 'missing_values')
         
         # Check for negative values
         for col in ['open', 'high', 'low', 'close']:
             if (df[col] <= 0).any():
                 errors.append(f"Negative or zero values found in {col}")
+                inc_quality_error('market_data', 'negative_values')
         
         if (df['volume'] < 0).any():
             errors.append("Negative volume values found")
+            inc_quality_error('market_data', 'negative_values')
         
         # Check OHLC relationships
         invalid_high = df['high'] < df[['open', 'close']].max(axis=1)
         if invalid_high.any():
             errors.append("High values are not the highest in some rows")
+            inc_quality_error('market_data', 'ohlc_consistency')
         
         invalid_low = df['low'] > df[['open', 'close']].min(axis=1)
         if invalid_low.any():
             errors.append("Low values are not the lowest in some rows")
+            inc_quality_error('market_data', 'ohlc_consistency')
         
         # Check for outliers
         for col in ['open', 'high', 'low', 'close']:
@@ -205,12 +215,14 @@ class DataValidator:
             outliers = z_scores > self.quality_thresholds['outlier_threshold']
             if outliers.sum() > 0:
                 errors.append(f"Outliers detected in {col}: {outliers.sum()} values")
+                inc_anomaly('outliers')
         
         # Check for stale data
         if len(df) > 0:
             latest_timestamp = df['timestamp'].max()
             if pd.Timestamp.now() - latest_timestamp > timedelta(seconds=self.quality_thresholds['stale_data_threshold']):
                 errors.append(f"Data is stale. Latest timestamp: {latest_timestamp}")
+                inc_anomaly('stale_data')
         
         # Check for volume spikes
         if len(df) > 1:
@@ -218,6 +230,7 @@ class DataValidator:
             volume_spikes = df['volume'] > volume_mean * self.quality_thresholds['volume_spike_threshold']
             if volume_spikes.sum() > len(df) * 0.1:  # More than 10% spikes
                 errors.append("Excessive volume spikes detected")
+                inc_anomaly('volume_spike')
         
         # Check for extreme price changes
         if len(df) > 1:
@@ -225,6 +238,7 @@ class DataValidator:
             extreme_changes = price_changes > self.quality_thresholds['price_change_threshold']
             if extreme_changes.sum() > len(price_changes) * 0.05:  # More than 5% extreme changes
                 errors.append("Excessive price changes detected")
+                inc_anomaly('extreme_price_change')
         
         return len(errors) == 0, errors
     

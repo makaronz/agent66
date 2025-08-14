@@ -15,6 +15,9 @@ spec:
       labels:
         app: smc-trading-agent
       annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "smc-trading-role"
         vault.hashicorp.com/agent-inject-secret-database: "secret/data/smc-trading/database"

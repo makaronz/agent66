@@ -35,52 +35,70 @@ metadata:
   namespace: vault
 data:
   smc-trading-policy.hcl: |
-    # Policy for SMC Trading Agent
-    path "secret/data/smc-trading/*" {
-      capabilities = ["create", "read", "update", "delete", "list"]
+    # Least-privilege policy for SMC Trading Agent
+    # Read-only access to specific required secrets
+    path "secret/data/smc-trading/database" {
+      capabilities = ["read"]
     }
-    
+
+    path "secret/data/smc-trading/jwt" {
+      capabilities = ["read"]
+    }
+
+    path "secret/data/smc-trading/redis" {
+      capabilities = ["read"]
+    }
+
+    path "secret/data/smc-trading/supabase" {
+      capabilities = ["read"]
+    }
+
+    # Exchanges (read-only)
+    path "secret/data/smc-trading/exchanges/binance" {
+      capabilities = ["read"]
+    }
+
+    path "secret/data/smc-trading/exchanges/bybit" {
+      capabilities = ["read"]
+    }
+
+    path "secret/data/smc-trading/exchanges/oanda" {
+      capabilities = ["read"]
+    }
+
+    # Allow listing metadata for diagnostics (no secret reads)
     path "secret/metadata/smc-trading/*" {
       capabilities = ["list"]
     }
-    
-    # Database credentials
+
+    # Dynamic database credentials
     path "database/creds/smc-trading-role" {
       capabilities = ["read"]
     }
-    
-    # Transit engine for encryption
+
+    # Transit engine for encryption/decryption (update verb)
     path "transit/encrypt/smc-trading" {
       capabilities = ["update"]
     }
-    
+
     path "transit/decrypt/smc-trading" {
       capabilities = ["update"]
     }
   
   api-gateway-policy.hcl: |
     # Policy for API Gateway
-    path "secret/data/api-gateway/*" {
-      capabilities = ["read"]
-    }
+    path "secret/data/api-gateway/*" { capabilities = ["read"] }
     
-    path "auth/token/lookup-self" {
-      capabilities = ["read"]
-    }
+    path "auth/token/lookup-self" { capabilities = ["read"] }
     
-    path "auth/token/renew-self" {
-      capabilities = ["update"]
-    }
+    path "auth/token/renew-self" { capabilities = ["update"] }
   
   execution-engine-policy.hcl: |
     # Policy for Execution Engine
-    path "secret/data/execution-engine/*" {
-      capabilities = ["read"]
-    }
-    
-    path "secret/data/exchanges/*" {
-      capabilities = ["read"]
-    }
+    path "secret/data/execution-engine/*" { capabilities = ["read"] }
+
+    # Read-only per-exchange creds
+    path "secret/data/smc-trading/exchanges/*" { capabilities = ["read"] }
     
     path "transit/encrypt/execution-engine" {
       capabilities = ["update"]

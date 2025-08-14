@@ -2,23 +2,31 @@
   "dashboard": {
     "title": "SMC Trading Agent Dashboard",
     "panels": [
-      {
-        "title": "Portfolio Performance",
-        "targets": [{"expr": "smc_portfolio_value"}]
-      },
-      {
-        "title": "Drawdown", 
-        "targets": [{"expr": "smc_max_drawdown"}],
-        "alert": {
-          "conditions": [{
-            "evaluator": {"params": [-0.08], "type": "lt"}
-          }]
-        }
-      },
-      {
-        "title": "Signal Latency",
-        "targets": [{"expr": "smc_signal_processing_duration_seconds"}]
-      }
+      { "title": "Portfolio Performance", "targets": [{ "expr": "smc_portfolio_value" }] },
+      { "title": "Max Drawdown", "targets": [{ "expr": "smc_max_drawdown" }] },
+      { "title": "Signal Processing Latency (s)", "targets": [{ "expr": "smc_signal_processing_duration_seconds" }] },
+
+      // Business Metrics
+      { "title": "Total PnL (USD)", "targets": [{ "expr": "total_pnl_usd" }] },
+      { "title": "Sharpe Ratio", "targets": [{ "expr": "smc_sharpe_ratio" }] },
+      { "title": "Win Rate (%)", "targets": [{ "expr": "smc_win_rate * 100" }] },
+
+      // Technical Metrics
+      { "title": "Orders Executed / s", "targets": [{ "expr": "rate(orders_executed_total[5m])" }] },
+      { "title": "Execution Latency p95 (ms)", "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(order_execution_duration_ms_bucket[5m])) by (le))" }] },
+      { "title": "Exchange API Error Rate (/s)", "targets": [{ "expr": "rate(exchange_api_errors_total[5m])" }] },
+
+      // SLI/SLO Dashboards
+      { "title": "API Error Rate (%)", "targets": [{ "expr": "100 * (sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])))" }] },
+      { "title": "API Availability (1 - 5xx)", "targets": [{ "expr": "1 - (sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])))" }] },
+      { "title": "API Latency p95 (ms)", "targets": [{ "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))" }] },
+      { "title": "Error Budget Burn (99.9% SLO)", "targets": [{ "expr": "(sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))) / (1 - 0.999)" }] },
+
+      // Capacity Planning & Utilization
+      { "title": "Cluster CPU Utilization (%)", "targets": [{ "expr": "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)" }] },
+      { "title": "Cluster Memory Utilization (%)", "targets": [{ "expr": "100 * (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes)))" }] },
+      { "title": "Pod Restarts (rate)", "targets": [{ "expr": "rate(kube_pod_container_status_restarts_total[15m])" }] },
+      { "title": "DB Connections", "targets": [{ "expr": "pg_stat_activity_count" }] }
     ]
   }
 }

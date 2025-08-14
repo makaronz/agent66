@@ -18,7 +18,7 @@ import websockets
 import aiohttp
 from pydantic import BaseModel, Field
 
-from . import ExchangeConnector, ExchangeConnectorError, WebSocketConnectionError, RESTAPIError, RateLimitError
+from . import ExchangeConnector, WebSocketConnectionError, RESTAPIError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +126,7 @@ class BinanceConnector(ExchangeConnector):
             await pong_waiter
             
             logger.info("Binance WebSocket connection established successfully")
+            self.connected = True
             return True
             
         except Exception as e:
@@ -145,6 +146,7 @@ class BinanceConnector(ExchangeConnector):
                 self.websocket = None
                 self.subscribed_streams.clear()
                 logger.info("Binance WebSocket disconnected successfully")
+            self.connected = False
             return True
         except Exception as e:
             logger.error(f"Failed to disconnect Binance WebSocket: {e}")

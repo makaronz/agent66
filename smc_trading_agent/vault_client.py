@@ -352,6 +352,39 @@ class VaultClient:
                 'authenticated': False,
                 'error': str(e)
             }
+
+    def validate_required_secrets(self, paths: Optional[list] = None) -> Dict[str, Any]:
+        """Validate presence of required secrets (read-only check).
+
+        Args:
+            paths: List of Vault KV v2 paths to validate
+
+        Returns:
+            Dict with overall status and per-path results
+        """
+        results: Dict[str, Any] = {}
+        overall_ok = True
+        targets = paths or [
+            'secret/data/smc-trading/database',
+            'secret/data/smc-trading/exchanges/binance',
+            'secret/data/smc-trading/exchanges/bybit',
+            'secret/data/smc-trading/exchanges/oanda',
+            'secret/data/smc-trading/jwt',
+            'secret/data/smc-trading/redis',
+        ]
+
+        for path in targets:
+            try:
+                secret = self.get_secret(path, use_cache=False)
+                ok = bool(secret)
+                results[path] = {'ok': ok}
+                if not ok:
+                    overall_ok = False
+            except Exception as e:
+                overall_ok = False
+                results[path] = {'ok': False, 'error': str(e)}
+
+        return {'ok': overall_ok, 'results': results}
     
     def close(self):
         """Clean shutdown of Vault client"""

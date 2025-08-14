@@ -16,9 +16,9 @@ from urllib.parse import urlencode
 
 import websockets
 import aiohttp
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from . import ExchangeConnector, ExchangeConnectorError, WebSocketConnectionError, RESTAPIError, RateLimitError
+from . import ExchangeConnector, WebSocketConnectionError, RESTAPIError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +126,7 @@ class ByBitConnector(ExchangeConnector):
             await pong_waiter
             
             logger.info("ByBit WebSocket connection established successfully")
+            self.connected = True
             return True
             
         except Exception as e:
@@ -145,6 +146,7 @@ class ByBitConnector(ExchangeConnector):
                 self.websocket = None
                 self.subscribed_streams.clear()
                 logger.info("ByBit WebSocket disconnected successfully")
+            self.connected = False
             return True
         except Exception as e:
             logger.error(f"Failed to disconnect ByBit WebSocket: {e}")

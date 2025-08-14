@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
 
 from .exchange_connectors import ExchangeConnector, BinanceConnector, ByBitConnector, OANDAConnector
+from ..monitoring.data_quality_metrics import set_freshness
 from .kafka_producer import KafkaProducerManager, KafkaConfig, DataType, DataSerializer, TopicManager
 
 logger = logging.getLogger(__name__)
@@ -277,6 +278,15 @@ class DataIngestion:
                     
                     # Extract symbol from data
                     symbol = data.get('symbol', '')
+                    # Update freshness gauge if timestamp present
+                    ts = data.get('timestamp')
+                    if ts:
+                        try:
+                            now = time.time()
+                            age = max(0.0, now - float(ts))
+                            set_freshness(exchange_name, symbol or 'unknown', age)
+                        except Exception:
+                            pass
                     
                     # Send to Kafka
                     if self.kafka_producer and symbol:

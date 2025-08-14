@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaError, CommitFailedError
 from pydantic import BaseModel, Field
+from ..monitoring.data_quality_metrics import inc_anomaly
 
 logger = logging.getLogger(__name__)
 
@@ -532,6 +533,13 @@ class StreamProcessor:
             'processor_id': self.consumer_group,
             'version': '1.0'
         }
+        # Add simple lineage metadata
+        enriched_data.setdefault('lineage', {})
+        enriched_data['lineage'].update({
+            'stage': 'stream_enrichment',
+            'source': 'kafka',
+            'pipeline': 'stream_processor'
+        })
         
         return enriched_data
     
@@ -546,6 +554,13 @@ class StreamProcessor:
             'processor_id': self.consumer_group,
             'version': '1.0'
         }
+        # Add simple lineage metadata
+        enriched_data.setdefault('lineage', {})
+        enriched_data['lineage'].update({
+            'stage': 'stream_enrichment',
+            'source': 'kafka',
+            'pipeline': 'stream_processor'
+        })
         
         return enriched_data
     
@@ -570,6 +585,9 @@ class StreamProcessor:
                 'typical_price': (high_price + low_price + close_price) / 3,
                 'volume_weighted_price': (high_price + low_price + close_price * 2) / 4
             }
+            # Flag extreme changes as anomalies for monitoring
+            if abs(processed_data['derived_metrics']['price_change_pct']) > 10:
+                inc_anomaly('extreme_price_change')
         
         # Add processing metadata
         processed_data['processing'] = {
@@ -577,6 +595,12 @@ class StreamProcessor:
             'processor_id': self.consumer_group,
             'version': '1.0'
         }
+        processed_data.setdefault('lineage', {})
+        processed_data['lineage'].update({
+            'stage': 'stream_enrichment',
+            'source': 'kafka',
+            'pipeline': 'stream_processor'
+        })
         
         return processed_data
     
