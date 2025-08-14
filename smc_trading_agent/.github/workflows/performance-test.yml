@@ -1,0 +1,312 @@
+name: Performance Testing
+
+on:
+  schedule:
+    # Run performance tests weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      duration:
+        description: 'Test duration in minutes'
+        required: true
+        default: '10'
+        type: string
+      users:
+        description: 'Number of concurrent users'
+        required: true
+        default: '100'
+        type: string
+
+jobs:
+  # Load testing with k6
+  load-test:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Create k6 test script
+        run: |
+          cat > load-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Rate } from 'k6/metrics';
+
+          const errorRate = new Rate('errors');
+          const BASE_URL = __ENV.BASE_URL || 'https://staging.smc-trading.com';
+
+          export let options = {
+            stages: [
+              { duration: '2m', target: 20 }, // Ramp up
+              { duration: '5m', target: __ENV.USERS || 100 }, // Stay at target
+              { duration: '2m', target: 0 }, // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
+              http_req_failed: ['rate<0.1'], // Error rate under 10%
+              errors: ['rate<0.1'],
+            },
+          };
+
+          export default function() {
+            // Test homepage
+            let response = http.get(`${BASE_URL}/`);
+            check(response, {
+              'homepage status is 200': (r) => r.status === 200,
+              'homepage response time < 500ms': (r) => r.timings.duration < 500,
+            }) || errorRate.add(1);
+
+            sleep(1);
+
+            // Test API health endpoint
+            response = http.get(`${BASE_URL}/api/health`);
+            check(response, {
+              'health endpoint status is 200': (r) => r.status === 200,
+              'health response time < 200ms': (r) => r.timings.duration < 200,
+            }) || errorRate.add(1);
+
+            sleep(1);
+
+            // Test API metrics endpoint
+            response = http.get(`${BASE_URL}/api/metrics`);
+            check(response, {
+              'metrics endpoint status is 200': (r) => r.status === 200,
+            }) || errorRate.add(1);
+
+            sleep(2);
+          }
+          EOF
+
+      - name: Run load test
+        run: |
+          k6 run \
+            --env BASE_URL=https://${{ github.event.inputs.environment || 'staging' }}.smc-trading.com \
+            --env USERS=${{ github.event.inputs.users || '100' }} \
+            --duration ${{ github.event.inputs.duration || '10' }}m \
+            --out json=load-test-results.json \
+            load-test.js
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: load-test-results.json
+
+  # API performance testing
+  api-performance-test:
+    name: API Performance Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Create API performance test
+        run: |
+          cat > api-performance-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Rate } from 'k6/metrics';
+
+          const errorRate = new Rate('errors');
+          const API_BASE_URL = __ENV.API_BASE_URL || 'https://api-staging.smc-trading.com';
+
+          export let options = {
+            stages: [
+              { duration: '1m', target: 10 },
+              { duration: '3m', target: 50 },
+              { duration: '1m', target: 0 },
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<200'], // API should be fast
+              http_req_failed: ['rate<0.05'], // Very low error rate for API
+              errors: ['rate<0.05'],
+            },
+          };
+
+          export default function() {
+            const params = {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            };
+
+            // Test health endpoint
+            let response = http.get(`${API_BASE_URL}/health`, params);
+            check(response, {
+              'health status is 200': (r) => r.status === 200,
+              'health response time < 100ms': (r) => r.timings.duration < 100,
+            }) || errorRate.add(1);
+
+            sleep(0.5);
+
+            // Test metrics endpoint
+            response = http.get(`${API_BASE_URL}/metrics`, params);
+            check(response, {
+              'metrics status is 200': (r) => r.status === 200,
+              'metrics response time < 200ms': (r) => r.timings.duration < 200,
+            }) || errorRate.add(1);
+
+            sleep(0.5);
+
+            // Test trading signals endpoint (if available)
+            response = http.get(`${API_BASE_URL}/api/v1/signals`, params);
+            check(response, {
+              'signals endpoint accessible': (r) => r.status === 200 || r.status === 401, // 401 is OK (auth required)
+            }) || errorRate.add(1);
+
+            sleep(1);
+          }
+          EOF
+
+      - name: Run API performance test
+        run: |
+          k6 run \
+            --env API_BASE_URL=https://api-${{ github.event.inputs.environment || 'staging' }}.smc-trading.com \
+            --out json=api-performance-results.json \
+            api-performance-test.js
+
+      - name: Upload API performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-performance-results
+          path: api-performance-results.json
+
+  # Database performance testing
+  database-performance-test:
+    name: Database Performance Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'staging' || github.event_name == 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install asyncpg asyncio-mqtt pytest-benchmark
+
+      - name: Create database performance test
+        run: |
+          cat > db_performance_test.py << 'EOF'
+          import asyncio
+          import asyncpg
+          import time
+          import statistics
+          from typing import List
+
+          async def test_database_performance():
+              # Connection parameters (use staging database)
+              conn = await asyncpg.connect(
+                  host=os.environ.get('DB_HOST', 'staging-db.smc-trading.com'),
+                  port=5432,
+                  user=os.environ.get('DB_USER', 'smc_user'),
+                  password=os.environ.get('DB_PASSWORD'),
+                  database='smc_trading_staging'
+              )
+
+              # Test simple queries
+              query_times = []
+              for i in range(100):
+                  start_time = time.time()
+                  await conn.fetchval('SELECT 1')
+                  end_time = time.time()
+                  query_times.append((end_time - start_time) * 1000)  # Convert to ms
+
+              print(f"Simple query performance:")
+              print(f"  Average: {statistics.mean(query_times):.2f}ms")
+              print(f"  Median: {statistics.median(query_times):.2f}ms")
+              print(f"  95th percentile: {statistics.quantiles(query_times, n=20)[18]:.2f}ms")
+
+              # Test complex queries (if tables exist)
+              try:
+                  complex_query_times = []
+                  for i in range(10):
+                      start_time = time.time()
+                      await conn.fetch("""
+                          SELECT COUNT(*) FROM trades 
+                          WHERE created_at > NOW() - INTERVAL '24 hours'
+                      """)
+                      end_time = time.time()
+                      complex_query_times.append((end_time - start_time) * 1000)
+
+                  print(f"Complex query performance:")
+                  print(f"  Average: {statistics.mean(complex_query_times):.2f}ms")
+                  print(f"  95th percentile: {statistics.quantiles(complex_query_times, n=20)[18]:.2f}ms")
+              except Exception as e:
+                  print(f"Complex query test skipped: {e}")
+
+              await conn.close()
+
+          if __name__ == "__main__":
+              asyncio.run(test_database_performance())
+          EOF
+
+      - name: Run database performance test
+        run: python db_performance_test.py
+        env:
+          DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+
+  # Generate performance report
+  performance-report:
+    name: Generate Performance Report
+    runs-on: ubuntu-latest
+    needs: [load-test, api-performance-test, database-performance-test]
+    if: always()
+    steps:
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          path: test-results/
+
+      - name: Generate performance report
+        run: |
+          echo "# Performance Test Report" > performance-report.md
+          echo "Generated on: $(date)" >> performance-report.md
+          echo "Environment: ${{ github.event.inputs.environment || 'staging' }}" >> performance-report.md
+          echo "" >> performance-report.md
+          echo "## Test Results Summary" >> performance-report.md
+          echo "- Load Test: ${{ needs.load-test.result }}" >> performance-report.md
+          echo "- API Performance Test: ${{ needs.api-performance-test.result }}" >> performance-report.md
+          echo "- Database Performance Test: ${{ needs.database-performance-test.result }}" >> performance-report.md
+          echo "" >> performance-report.md
+          
+          # Add detailed results if available
+          if [ -f "test-results/load-test-results/load-test-results.json" ]; then
+            echo "## Load Test Details" >> performance-report.md
+            echo "See attached JSON file for detailed metrics." >> performance-report.md
+          fi
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-report.md
+
+      - name: Notify performance issues
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: 'Performance test failures detected on ${{ github.event.inputs.environment || "staging" }}!'
+          channel: '#performance-alerts'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.PERFORMANCE_SLACK_WEBHOOK_URL }}

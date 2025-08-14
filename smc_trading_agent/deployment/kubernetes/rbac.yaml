@@ -1,0 +1,93 @@
+---
+# Service Account for SMC Trading Application
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: smc-trading-sa
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: service-account
+---
+# Role for SMC Trading Application
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: smc-trading
+  name: smc-trading-role
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+---
+# RoleBinding for SMC Trading Application
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: smc-trading-rolebinding
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: rbac
+subjects:
+- kind: ServiceAccount
+  name: smc-trading-sa
+  namespace: smc-trading
+roleRef:
+  kind: Role
+  name: smc-trading-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service Account for Monitoring
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: monitoring-sa
+  namespace: smc-trading-monitoring
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/component: service-account
+---
+# ClusterRole for Monitoring (needs cluster-wide access)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-cluster-role
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+# ClusterRoleBinding for Monitoring
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: monitoring-cluster-rolebinding
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/component: rbac
+subjects:
+- kind: ServiceAccount
+  name: monitoring-sa
+  namespace: smc-trading-monitoring
+roleRef:
+  kind: ClusterRole
+  name: monitoring-cluster-role
+  apiGroup: rbac.authorization.k8s.io

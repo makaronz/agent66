@@ -1,0 +1,232 @@
+# Elasticsearch Curator actions for GDPR-compliant log retention
+# Automatically manages log lifecycle and data retention policies
+
+actions:
+  # Delete audit logs older than 7 years (GDPR requirement for financial data)
+  1:
+    action: delete_indices
+    description: >-
+      Delete audit log indices older than 7 years to comply with GDPR
+      and financial regulations
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-audit-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: years
+      unit_count: 7
+      exclude:
+
+  # Delete application logs older than 90 days
+  2:
+    action: delete_indices
+    description: >-
+      Delete application log indices older than 90 days
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-application-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 90
+      exclude:
+
+  # Delete security alert logs older than 2 years
+  3:
+    action: delete_indices
+    description: >-
+      Delete security alert indices older than 2 years
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-security-alerts-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: years
+      unit_count: 2
+      exclude:
+
+  # Close indices older than 30 days to save resources
+  4:
+    action: close
+    description: >-
+      Close indices older than 30 days to reduce resource usage
+      while maintaining data availability
+    options:
+      ignore_empty_list: True
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 30
+      exclude:
+    - filtertype: state
+      state: open
+      exclude: False
+
+  # Shrink indices older than 7 days to optimize storage
+  5:
+    action: shrink
+    description: >-
+      Shrink indices older than 7 days to optimize storage usage
+    options:
+      ignore_empty_list: True
+      timeout_override: 300
+      continue_if_exception: False
+      disable_action: False
+      shrink_node: DETERMINISTIC
+      node_filters:
+        permit_masters: False
+        exclude_nodes: ['not_this_node']
+      number_of_shards: 1
+      number_of_replicas: 1
+      shrink_prefix: 'shrunk-'
+      shrink_suffix: ''
+      copy_aliases: False
+      delete_after: True
+      post_allocation:
+        allocation_type: include
+        key: node_tag
+        value: cold
+      wait_for_active_shards: 1
+      wait_for_completion: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 7
+      exclude:
+    - filtertype: state
+      state: open
+      exclude: False
+    - filtertype: shards
+      number_of_shards: 2
+      shard_filter_behavior: greater_than
+      exclude: False
+
+  # Force merge indices older than 1 day
+  6:
+    action: forcemerge
+    description: >-
+      Force merge indices older than 1 day to optimize search performance
+    options:
+      ignore_empty_list: True
+      timeout_override: 300
+      continue_if_exception: False
+      disable_action: False
+      max_num_segments: 1
+      delay: 120
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 1
+      exclude:
+    - filtertype: state
+      state: open
+      exclude: False
+    - filtertype: forcemerged
+      max_num_segments: 1
+      exclude: True
+
+  # Snapshot indices older than 1 day for backup
+  7:
+    action: snapshot
+    description: >-
+      Create snapshots of indices older than 1 day for backup and recovery
+    options:
+      repository: smc-trading-backups
+      name: 'snapshot-%Y%m%d-%H%M%S'
+      ignore_unavailable: False
+      include_global_state: True
+      partial: False
+      wait_for_completion: True
+      skip_repo_fs_check: False
+      timeout_override: 300
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: smc-trading-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 1
+      exclude:
+    - filtertype: state
+      state: open
+      exclude: False
+
+  # Delete snapshots older than 1 year
+  8:
+    action: delete_snapshots
+    description: >-
+      Delete snapshots older than 1 year to manage storage costs
+    options:
+      repository: smc-trading-backups
+      ignore_empty_list: True
+      timeout_override: 300
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: snapshot-
+      exclude:
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: years
+      unit_count: 1
+      exclude:

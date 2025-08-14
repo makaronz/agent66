@@ -1,0 +1,158 @@
+---
+# Default deny all ingress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Allow ingress from ingress controller to web app
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-webapp
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: smc-web-app
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3000
+---
+# Allow communication between API Gateway and Trading Engine
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-to-trading-engine
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: smc-trading-engine
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: smc-api-gateway
+    ports:
+    - protocol: TCP
+      port: 8000
+---
+# Allow communication between Trading Engine and Execution Engine
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-trading-to-execution-engine
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: smc-execution-engine
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: smc-trading-engine
+    ports:
+    - protocol: TCP
+      port: 9090
+---
+# Allow access to PostgreSQL from application pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-to-postgres
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          tier: application
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+# Allow access to Redis from application pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-to-redis
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          tier: application
+    ports:
+    - protocol: TCP
+      port: 6379
+---
+# Allow monitoring access to all pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-access
+  namespace: smc-trading
+  labels:
+    app.kubernetes.io/name: smc-trading-agent
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: smc-trading-monitoring
+    ports:
+    - protocol: TCP
+      port: 8080  # metrics port
+    - protocol: TCP
+      port: 9090  # prometheus port
