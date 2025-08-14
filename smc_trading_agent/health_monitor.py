@@ -1,347 +1,303 @@
 """
-Enhanced Health Monitoring for SMC Trading Agent.
+Health Monitor for SMC Trading Agent Stream Processor
 
-This module provides comprehensive health monitoring including:
-- FastAPI health check endpoints
-- Prometheus metrics collection
-- Docker-compatible health checks
-- Service health status tracking
-- Health check coordination
+Provides HTTP endpoints for health checks, readiness probes, and metrics collection.
 """
 
 import asyncio
+import json
 import logging
 import time
-from typing import Dict, Any, Optional, Callable, List
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from typing import Dict, Any, Callable, Optional
+from aiohttp import web, web_request
+from aiohttp.web_response import Response
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
-from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
-from starlette.responses import Response
-
-from .error_handlers import health_monitor as base_health_monitor
+logger = logging.getLogger(__name__)
 
 
-@dataclass
-class HealthCheckResult:
-    """Result of a health check."""
-    service: str
-    healthy: bool
-    latency_ms: float
-    error_message: Optional[str] = None
-    timestamp: float = None
-    
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = time.time()
-
-
-class EnhancedHealthMonitor:
+class HealthMonitor:
     """
-    Enhanced health monitoring with FastAPI endpoints and Prometheus metrics.
+    HTTP-based health monitoring service.
+    
+    Provides endpoints for Kubernetes health checks and metrics collection.
     """
     
-    def __init__(self, app_name: str = "smc-trading-agent", logger: Optional[logging.Logger] = None):
-        self.app_name = app_name
-        self.logger = logger or logging.getLogger(__name__)
-        self.startup_time = time.time()
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize health monitor.
         
-        # Initialize FastAPI app
-        self.app = FastAPI(
-            title=f"{app_name} Health Monitor",
-            description="Health monitoring endpoints for SMC Trading Agent",
-            version="1.0.0"
-        )
+        Args:
+            config: Health monitor configuration
+        """
+        self.config = config
+        self.port = config.get('port', 8081)
+        self.metrics_port = config.get('metrics_port', 8080)
         
-        # Prometheus metrics
-        self.health_check_counter = Counter(
-            'health_check_total',
-            'Total number of health checks',
-            ['service', 'status']
-        )
+        self.health_checks = {}
+        self.app = None
+        self.runner = None
+        self.site = None
+        self.running = False
         
-        self.health_check_duration = Histogram(
-            'health_check_duration_seconds',
-            'Health check duration in seconds',
-            ['service']
-        )
+        self.start_time = time.time()
         
-        self.service_health_gauge = Gauge(
-            'service_health_status',
-            'Service health status (1=healthy, 0=unhealthy)',
-            ['service']
-        )
-        
-        self.system_uptime_gauge = Gauge(
-            'system_uptime_seconds',
-            'System uptime in seconds'
-        )
-        
-        # Register FastAPI routes
-        self._register_routes()
-        
-        # Background health check task
-        self.health_check_task: Optional[asyncio.Task] = None
-        self.health_check_interval = 30  # seconds
-        
-    def _register_routes(self):
-        """Register FastAPI routes for health monitoring."""
-        
-        @self.app.get("/health")
-        async def health_check():
-            """Basic health check endpoint."""
-            try:
-                health_status = await self.get_system_health()
-                status_code = 200 if health_status["overall_healthy"] else 503
-                
-                return JSONResponse(
-                    content=health_status,
-                    status_code=status_code
-                )
-            except Exception as e:
-                self.logger.error(f"Health check failed: {e}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Health check failed")
-        
-        @self.app.get("/health/ready")
-        async def readiness_check():
-            """Readiness check endpoint for Kubernetes/Docker."""
-            try:
-                health_status = await self.get_system_health()
-                
-                # Check if all critical services are healthy
-                critical_services_healthy = all(
-                    service_info.get("healthy", False)
-                    for service_info in health_status["services"].values()
-                    if service_info.get("critical", False)
-                )
-                
-                if critical_services_healthy:
-                    return JSONResponse(
-                        content={"status": "ready", "timestamp": datetime.now(timezone.utc).isoformat()},
-                        status_code=200
-                    )
-                else:
-                    return JSONResponse(
-                        content={"status": "not ready", "timestamp": datetime.now(timezone.utc).isoformat()},
-                        status_code=503
-                    )
-            except Exception as e:
-                self.logger.error(f"Readiness check failed: {e}", exc_info=True)
-                return JSONResponse(
-                    content={"status": "not ready", "error": str(e)},
-                    status_code=503
-                )
-        
-        @self.app.get("/health/live")
-        async def liveness_check():
-            """Liveness check endpoint for Kubernetes/Docker."""
-            try:
-                # Simple liveness check - just verify the service is responding
-                uptime = time.time() - self.startup_time
-                
-                return JSONResponse(
-                    content={
-                        "status": "alive",
-                        "uptime_seconds": uptime,
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    },
-                    status_code=200
-                )
-            except Exception as e:
-                self.logger.error(f"Liveness check failed: {e}", exc_info=True)
-                return JSONResponse(
-                    content={"status": "not alive", "error": str(e)},
-                    status_code=503
-                )
-        
-        @self.app.get("/metrics")
-        async def metrics():
-            """Prometheus metrics endpoint."""
-            try:
-                # Update uptime metric
-                self.system_uptime_gauge.set(time.time() - self.startup_time)
-                
-                # Update service health metrics
-                health_status = await self.get_system_health()
-                for service_name, service_info in health_status["services"].items():
-                    self.service_health_gauge.labels(service=service_name).set(
-                        1 if service_info.get("healthy", False) else 0
-                    )
-                
-                return Response(
-                    content=generate_latest(),
-                    media_type=CONTENT_TYPE_LATEST
-                )
-            except Exception as e:
-                self.logger.error(f"Metrics generation failed: {e}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Metrics generation failed")
-        
-        @self.app.get("/health/detailed")
-        async def detailed_health_check():
-            """Detailed health check with service-specific information."""
-            try:
-                health_status = await self.get_detailed_health()
-                status_code = 200 if health_status["overall_healthy"] else 503
-                
-                return JSONResponse(
-                    content=health_status,
-                    status_code=status_code
-                )
-            except Exception as e:
-                self.logger.error(f"Detailed health check failed: {e}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Detailed health check failed")
+        logger.info(f"Health monitor initialized on port {self.port}")
     
-    async def start_background_health_checks(self):
-        """Start background health check task."""
-        if self.health_check_task is None or self.health_check_task.done():
-            self.health_check_task = asyncio.create_task(self._background_health_checks())
-            self.logger.info("Background health checks started")
-    
-    async def stop_background_health_checks(self):
-        """Stop background health check task."""
-        if self.health_check_task and not self.health_check_task.done():
-            self.health_check_task.cancel()
-            try:
-                await self.health_check_task
-            except asyncio.CancelledError:
-                pass
-            self.logger.info("Background health checks stopped")
-    
-    async def _background_health_checks(self):
-        """Background task for periodic health checks."""
-        while True:
-            try:
-                await self._perform_health_checks()
-                await asyncio.sleep(self.health_check_interval)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                self.logger.error(f"Background health check failed: {e}", exc_info=True)
-                await asyncio.sleep(self.health_check_interval)
-    
-    async def _perform_health_checks(self):
-        """Perform health checks for all registered components."""
+    async def start(self) -> bool:
+        """
+        Start the health monitor HTTP server.
+        
+        Returns:
+            bool: True if started successfully, False otherwise
+        """
         try:
-            # Get base health monitor status
-            base_health = base_health_monitor.get_system_health()
+            # Create aiohttp application
+            self.app = web.Application()
             
-            # Update Prometheus metrics
-            for component_name, component_info in base_health.get("components", {}).items():
-                is_healthy = component_info.get("healthy", False)
-                self.service_health_gauge.labels(service=component_name).set(1 if is_healthy else 0)
-                
-                # Increment health check counter
-                status = "healthy" if is_healthy else "unhealthy"
-                self.health_check_counter.labels(service=component_name, status=status).inc()
+            # Register routes
+            self.app.router.add_get('/health', self._health_handler)
+            self.app.router.add_get('/ready', self._readiness_handler)
+            self.app.router.add_get('/metrics', self._metrics_handler)
+            self.app.router.add_get('/status', self._status_handler)
             
-            self.logger.debug("Background health checks completed")
+            # Create runner and start server
+            self.runner = web.AppRunner(self.app)
+            await self.runner.setup()
+            
+            self.site = web.TCPSite(self.runner, '0.0.0.0', self.port)
+            await self.site.start()
+            
+            self.running = True
+            logger.info(f"Health monitor started on port {self.port}")
+            return True
             
         except Exception as e:
-            self.logger.error(f"Background health checks failed: {e}", exc_info=True)
+            logger.error(f"Failed to start health monitor: {e}")
+            return False
     
-    async def get_system_health(self) -> Dict[str, Any]:
-        """Get overall system health status."""
-        try:
-            # Get base health monitor status
-            base_health = base_health_monitor.get_system_health()
-            
-            # Enhance with additional information
-            health_status = {
-                "app_name": self.app_name,
-                "overall_healthy": base_health.get("overall_healthy", False),
-                "startup_time": self.startup_time,
-                "uptime_seconds": time.time() - self.startup_time,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "services": base_health.get("components", {}),
-                "version": "1.0.0"
-            }
-            
-            return health_status
-            
-        except Exception as e:
-            self.logger.error(f"System health check failed: {e}", exc_info=True)
-            return {
-                "app_name": self.app_name,
-                "overall_healthy": False,
-                "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "version": "1.0.0"
-            }
-    
-    async def get_detailed_health(self) -> Dict[str, Any]:
-        """Get detailed health status with service-specific information."""
-        try:
-            base_health = base_health_monitor.get_system_health()
-            
-            detailed_health = {
-                "app_name": self.app_name,
-                "overall_healthy": base_health.get("overall_healthy", False),
-                "startup_time": self.startup_time,
-                "uptime_seconds": time.time() - self.startup_time,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "version": "1.0.0",
-                "services": {}
-            }
-            
-            # Add detailed service information
-            for component_name, component_info in base_health.get("components", {}).items():
-                service_health = await self._check_service_health(component_name)
-                detailed_health["services"][component_name] = {
-                    **component_info,
-                    **service_health
-                }
-            
-            return detailed_health
-            
-        except Exception as e:
-            self.logger.error(f"Detailed health check failed: {e}", exc_info=True)
-            return {
-                "app_name": self.app_name,
-                "overall_healthy": False,
-                "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "version": "1.0.0"
-            }
-    
-    async def _check_service_health(self, service_name: str) -> Dict[str, Any]:
-        """Check health of a specific service with timing."""
-        start_time = time.time()
+    async def stop(self) -> bool:
+        """
+        Stop the health monitor HTTP server.
         
+        Returns:
+            bool: True if stopped successfully, False otherwise
+        """
         try:
-            # Get health check from base health monitor
-            is_healthy = base_health_monitor.check_health(service_name)
+            self.running = False
             
-            latency_ms = (time.time() - start_time) * 1000
+            if self.site:
+                await self.site.stop()
+                self.site = None
             
-            # Record metrics
-            self.health_check_duration.labels(service=service_name).observe(
-                (time.time() - start_time)
+            if self.runner:
+                await self.runner.cleanup()
+                self.runner = None
+            
+            self.app = None
+            
+            logger.info("Health monitor stopped")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to stop health monitor: {e}")
+            return False
+    
+    def register_health_check(self, name: str, check_func: Callable[[], Dict[str, Any]]):
+        """
+        Register a health check function.
+        
+        Args:
+            name: Health check name
+            check_func: Function that returns health status
+        """
+        self.health_checks[name] = check_func
+        logger.info(f"Registered health check: {name}")
+    
+    def unregister_health_check(self, name: str):
+        """
+        Unregister a health check function.
+        
+        Args:
+            name: Health check name
+        """
+        if name in self.health_checks:
+            del self.health_checks[name]
+            logger.info(f"Unregistered health check: {name}")
+    
+    async def _health_handler(self, request: web_request.Request) -> Response:
+        """Handle health check requests."""
+        try:
+            health_status = await self._get_health_status()
+            
+            status_code = 200 if health_status['healthy'] else 503
+            
+            return web.json_response(
+                health_status,
+                status=status_code,
+                headers={'Content-Type': 'application/json'}
             )
             
-            return {
-                "healthy": is_healthy,
-                "latency_ms": latency_ms,
-                "last_check": datetime.now(timezone.utc).isoformat()
+        except Exception as e:
+            logger.error(f"Health check error: {e}")
+            return web.json_response(
+                {
+                    'healthy': False,
+                    'error': str(e),
+                    'timestamp': time.time()
+                },
+                status=503
+            )
+    
+    async def _readiness_handler(self, request: web_request.Request) -> Response:
+        """Handle readiness probe requests."""
+        try:
+            # Simple readiness check - server is running
+            readiness_status = {
+                'ready': self.running,
+                'uptime_seconds': time.time() - self.start_time,
+                'timestamp': time.time()
             }
+            
+            status_code = 200 if readiness_status['ready'] else 503
+            
+            return web.json_response(
+                readiness_status,
+                status=status_code,
+                headers={'Content-Type': 'application/json'}
+            )
             
         except Exception as e:
-            latency_ms = (time.time() - start_time) * 1000
-            self.logger.error(f"Health check failed for {service_name}: {e}")
+            logger.error(f"Readiness check error: {e}")
+            return web.json_response(
+                {
+                    'ready': False,
+                    'error': str(e),
+                    'timestamp': time.time()
+                },
+                status=503
+            )
+    
+    async def _metrics_handler(self, request: web_request.Request) -> Response:
+        """Handle metrics requests (Prometheus format)."""
+        try:
+            metrics = await self._get_metrics()
             
-            return {
-                "healthy": False,
-                "latency_ms": latency_ms,
-                "error": str(e),
-                "last_check": datetime.now(timezone.utc).isoformat()
+            # Convert to Prometheus format
+            prometheus_metrics = self._format_prometheus_metrics(metrics)
+            
+            return web.Response(
+                text=prometheus_metrics,
+                content_type='text/plain; version=0.0.4; charset=utf-8'
+            )
+            
+        except Exception as e:
+            logger.error(f"Metrics error: {e}")
+            return web.Response(
+                text=f"# Error collecting metrics: {e}\n",
+                status=500,
+                content_type='text/plain'
+            )
+    
+    async def _status_handler(self, request: web_request.Request) -> Response:
+        """Handle status requests (detailed JSON)."""
+        try:
+            status = {
+                'service': 'smc-stream-processor',
+                'version': '1.0.0',
+                'uptime_seconds': time.time() - self.start_time,
+                'health': await self._get_health_status(),
+                'metrics': await self._get_metrics(),
+                'timestamp': time.time()
             }
+            
+            return web.json_response(status)
+            
+        except Exception as e:
+            logger.error(f"Status error: {e}")
+            return web.json_response(
+                {
+                    'error': str(e),
+                    'timestamp': time.time()
+                },
+                status=500
+            )
     
-    def get_fastapi_app(self) -> FastAPI:
-        """Get the FastAPI application instance."""
-        return self.app
+    async def _get_health_status(self) -> Dict[str, Any]:
+        """Get overall health status."""
+        health_results = {}
+        overall_healthy = True
+        
+        # Run all registered health checks
+        for name, check_func in self.health_checks.items():
+            try:
+                if asyncio.iscoroutinefunction(check_func):
+                    result = await check_func()
+                else:
+                    result = check_func()
+                
+                health_results[name] = result
+                
+                if not result.get('healthy', False):
+                    overall_healthy = False
+                    
+            except Exception as e:
+                logger.error(f"Health check '{name}' failed: {e}")
+                health_results[name] = {
+                    'healthy': False,
+                    'error': str(e)
+                }
+                overall_healthy = False
+        
+        return {
+            'healthy': overall_healthy,
+            'checks': health_results,
+            'uptime_seconds': time.time() - self.start_time,
+            'timestamp': time.time()
+        }
     
-    async def shutdown(self):
-        """Shutdown the health monitor."""
-        await self.stop_background_health_checks()
-        self.logger.info("Health monitor shutdown completed")
+    async def _get_metrics(self) -> Dict[str, Any]:
+        """Get system metrics."""
+        metrics = {
+            'uptime_seconds': time.time() - self.start_time,
+            'health_checks_total': len(self.health_checks),
+            'timestamp': time.time()
+        }
+        
+        # Add health check metrics
+        health_status = await self._get_health_status()
+        healthy_checks = sum(1 for check in health_status['checks'].values() if check.get('healthy', False))
+        
+        metrics.update({
+            'health_checks_healthy': healthy_checks,
+            'health_checks_unhealthy': len(self.health_checks) - healthy_checks,
+            'overall_healthy': 1 if health_status['healthy'] else 0
+        })
+        
+        return metrics
+    
+    def _format_prometheus_metrics(self, metrics: Dict[str, Any]) -> str:
+        """Format metrics in Prometheus format."""
+        lines = [
+            "# HELP smc_stream_processor_uptime_seconds Uptime in seconds",
+            "# TYPE smc_stream_processor_uptime_seconds gauge",
+            f"smc_stream_processor_uptime_seconds {metrics['uptime_seconds']}",
+            "",
+            "# HELP smc_stream_processor_health_checks_total Total number of health checks",
+            "# TYPE smc_stream_processor_health_checks_total gauge",
+            f"smc_stream_processor_health_checks_total {metrics['health_checks_total']}",
+            "",
+            "# HELP smc_stream_processor_health_checks_healthy Number of healthy checks",
+            "# TYPE smc_stream_processor_health_checks_healthy gauge",
+            f"smc_stream_processor_health_checks_healthy {metrics['health_checks_healthy']}",
+            "",
+            "# HELP smc_stream_processor_health_checks_unhealthy Number of unhealthy checks",
+            "# TYPE smc_stream_processor_health_checks_unhealthy gauge",
+            f"smc_stream_processor_health_checks_unhealthy {metrics['health_checks_unhealthy']}",
+            "",
+            "# HELP smc_stream_processor_healthy Overall health status (1=healthy, 0=unhealthy)",
+            "# TYPE smc_stream_processor_healthy gauge",
+            f"smc_stream_processor_healthy {metrics['overall_healthy']}",
+            ""
+        ]
+        
+        return "\n".join(lines)
