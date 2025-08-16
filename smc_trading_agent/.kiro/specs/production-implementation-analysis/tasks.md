@@ -1,166 +1,156 @@
-# Plan Implementacji - SMC Trading Agent Production
+# Implementation Plan - SMC Trading Agent Production
 
-## Status Implementacji
+## Current Implementation Status
 
-**Aktualny stan:** System ma solidną podstawę z działającymi komponentami:
+**System Foundation:** The system has a solid foundation with working components:
 
-- ✅ Python/FastAPI trading engine z SMC detection
-- ✅ Rust execution engine z CCXT integration
-- ✅ React frontend z authentication i MFA
-- ✅ Express.js API z comprehensive middleware
-- ✅ Infrastruktura Docker/Kubernetes (podstawowa)
-- ✅ Vault integration dla secrets management
-- ✅ Exchange connectors z production factory
+- ✅ Python/FastAPI trading engine with SMC detection
+- ✅ Rust execution engine with CCXT integration
+- ✅ React frontend with authentication and MFA
+- ✅ Express.js API with comprehensive middleware
+- ✅ Docker/Kubernetes infrastructure (basic)
+- ✅ Vault integration for secrets management
+- ✅ Exchange connectors with production factory
 - ✅ Comprehensive test suite (19 test files)
 - ✅ API documentation framework (OpenAPI/Swagger)
-- ✅ Basic monitoring setup (Grafana dashboards)
+- ✅ Monitoring setup (Prometheus/Grafana configured)
+- ✅ CI/CD pipeline with security scanning
+- ✅ Production-optimized frontend build configuration
 
-**Krytyczne luki do uzupełnienia:**
+**Remaining Critical Gaps:**
 
-- ❌ Brak production-ready Prometheus configuration (prometheus.yml missing)
-- ❌ Podstawowe Grafana dashboards wymagają rozszerzenia o business metrics
-- ❌ Brak test coverage reporting i enforcement (80%+ requirement)
-- ❌ Potrzebna weryfikacja real exchange API integrations
-- ❌ Wymagana optymalizacja production build i deployment
-- ❌ Brak comprehensive alerting rules
+- ❌ Test coverage reporting and enforcement (80%+ requirement)
+- ❌ Real exchange API integration verification (requires API keys)
+- ❌ Production deployment orchestration
+- ❌ SLI/SLO implementation and monitoring
+- ❌ Operational documentation and runbooks
 
-## Zadania Implementacyjne - Pozostałe Luki
+## Implementation Tasks - Remaining Gaps
 
-### KRYTYCZNE BRAKI DO UZUPEŁNIENIA
+### CRITICAL IMPLEMENTATION TASKS
 
-- [x] 1. Prometheus Configuration Setup
+- [x] 1. Test Coverage Enhancement and CI/CD Integration
 
-  - Utworzenie prometheus.yml configuration file w deployment/monitoring/ (zrobione) 
-  - Konfiguracja scraping targets dla wszystkich services (Python, Rust, Node.js) (zrobione dla agenta; reszta: w toku) 
-  - Setup alerting rules dla critical metrics (latency, error rate, trading losses) (zrobione: trading-alerts.yml) 
-  - Implementacja service discovery dla Kubernetes (zrobione: kubernetes_sd_configs) 
-  - Dodanie Kubernetes deployment manifests dla Prometheus i AlertManager (zrobione) 
-  - _Wymagania: 3.5, 3.6, 4.8_
+  - Add pytest-cov configuration to pytest.ini with 80% minimum coverage
+  - Update CI/CD pipeline to include coverage reporting and gates
+  - Implement missing unit tests for core trading logic components
+  - Add integration tests for WebSocket data flows and error scenarios
+  - Create performance benchmarks for high-frequency trading operations
+  - Implement contract tests for microservice API boundaries
+  - _Requirements: 2.7, 4.7, 5.6_
 
-- [x] 2. Enhanced Monitoring Dashboards
+- [x] 2. Real Exchange API Integration Testing
 
-  - Rozszerzenie monitoring/grafana_dashboards.json z comprehensive metrics (zrobione) 
-  - Implementacja business metrics dashboards (PnL, Sharpe ratio, drawdown) (zrobione) 
-  - Dodanie technical metrics dashboards (latency, throughput, error rates) (zrobione) 
-  - Setup alerting rules dla critical thresholds (zrobione w alertach Prometheus) 
-  - Implementacja SLI/SLO monitoring dashboards (zrobione) 
-  - Dodanie capacity planning i resource utilization dashboards (zrobione) 
-  - _Wymagania: 3.6, 4.8, 5.7_
+  - Create sandbox/testnet configuration for Binance API testing
+  - Implement Bybit testnet integration with proper rate limiting validation
+  - Add Oanda practice account integration for forex testing
+  - Create comprehensive error handling tests for exchange failures
+  - Implement circuit breaker testing with real API rate limits
+  - Add failover mechanism testing between exchanges
+  - _Requirements: 1.5, 2.5, 3.3_
 
-- [ ] 3. Test Coverage Enhancement
+- [ ] 3. Production Kubernetes Deployment
 
-  - Setup automated code coverage reporting w CI/CD (target: 80%+) (zrobione: GitHub Actions, --cov-fail-under=80) 
-  - Konfiguracja coverage gates w GitHub Actions (zrobione) 
-  - Implementacja missing integration tests dla exchange connectors (częściowo zrobione: test_exchange_connectors.py) 
-  - Dodanie comprehensive end-to-end tests dla trading workflows (częściowo zrobione: test_end_to_end_workflow.py) 
-  - Implementacja performance tests dla high-frequency operations (częściowo zrobione: test_performance.py) 
-  - Dodanie contract tests między microservices (częściowo zrobione: test_contracts.py) 
-  - _Wymagania: 2.7, 4.7, 5.6_
+  - Create production-ready Kubernetes manifests with resource limits
+  - Implement multi-zone deployment with pod anti-affinity rules
+  - Configure horizontal pod autoscaling based on CPU/memory metrics
+  - Setup persistent volume claims for database and Redis
+  - Implement health checks and readiness probes for all services
+  - Create Helm charts for simplified deployment management
+  - _Requirements: 3.4, 3.5, 6.2_
 
-- [ ] 4. Real Exchange API Verification
+- [ ] 4. SLI/SLO Implementation and Monitoring
 
-  - Weryfikacja i testowanie production Binance WebSocket i REST API integration (odłożone — brak kluczy testowych) 
-  - Testowanie production Bybit API integration z proper rate limiting (odłożone — brak kluczy testowych) 
-  - Weryfikacja production Oanda API integration dla forex (odłożone — brak kluczy testowych) 
-  - Testing z real API credentials w sandbox/testnet mode (odłożone) 
-  - Implementacja comprehensive error handling dla exchange failures (częściowo: poprawione stany connected, testy kontraktów) 
-  - Dodanie exchange failover logic i circuit breakers (istnieją testy failover; weryfikacja real-time odłożona) 
-  - _Wymagania: 1.5, 2.5, 3.3_
+  - Define Service Level Indicators (SLIs) for availability, latency, error rate
+  - Implement SLO monitoring dashboards with error budget tracking
+  - Create alerting rules for SLO violations and critical thresholds
+  - Setup business metric alerts for trading losses and performance
+  - Implement alert routing and escalation procedures
+  - Create SLO reporting for stakeholders
+  - _Requirements: 3.6, 4.8_
 
-- [x] 5. Production Environment Optimization
+- [ ] 5. Load Balancer and SSL/TLS Configuration
 
-  - Audit i migracja remaining hardcoded values do environment variables (zrobione: config.yaml + przegląd manifestów) 
-  - Implementacja proper secrets rotation mechanism w Vault (przygotowane polityki i walidacja; rotacja do wdrożenia operacyjnie) 
-  - Konfiguracja production Vault policies z least privilege (zrobione: vault-configmap.yaml) 
-  - Setup automated secret injection w Kubernetes z Vault Agent (istnieje; dodano CronJob walidacji) 
-  - Implementacja secret validation i health checks (zrobione: CronJob + tools/validate_secrets.py) 
-  - _Wymagania: 1.1, 6.1, 6.2_
+  - Configure production load balancer with health checks
+  - Setup SSL/TLS certificates with automatic renewal (Let's Encrypt)
+  - Implement domain and DNS configuration for production
+  - Configure CDN integration for static assets
+  - Setup DDoS protection and rate limiting at edge
+  - Test zone failure scenarios and failover procedures
+  - _Requirements: 3.4, 3.5, 6.2_
 
-- [x] 6. Frontend Production Build Optimization
-  - Optymalizacja Vite build configuration dla production (tree shaking, minification) (zrobione: manualChunks, cssCodeSplit, target) 
-  - Implementacja proper code splitting i lazy loading dla routes (zrobione: React.lazy + Suspense) 
-  - Setup CDN integration dla static assets (Cloudflare/AWS CloudFront) (do ustalenia operacyjnie) 
-  - Implementacja proper error boundaries w React components (istnieje globalny ErrorBoundary) 
-  - Dodanie production-ready service worker dla offline functionality (zrobione: public/sw.js + rejestracja w main.tsx tylko w PROD) 
-  - Optymalizacja bundle size i loading performance (zrobione w zakresie konfiguracji i lazy loadingu) 
-  - _Wymagania: 3.4, 4.4, 4.5_
+### OPERATIONAL READINESS TASKS
 
-### DODATKOWE ZADANIA PRODUKCYJNE
+- [x] 6. Comprehensive Operational Documentation
 
-- [x] 7. Data Quality Monitoring
+  - Create troubleshooting guides for common system issues
+  - Document disaster recovery procedures with step-by-step instructions
+  - Implement incident response playbooks for critical scenarios
+  - Create operational runbooks for deployment and maintenance
+  - Write user onboarding guides with screenshots
+  - Document API usage examples and integration guides
+  - _Requirements: 5.7, 6.7_
 
-  - Implementacja data validation rules (rozszerzono walidator + metryki Prometheus) 
-  - Dodanie data quality metrics i alerting (dodane metryki + reguły alertów data_quality) 
-  - Implementacja data lineage tracking (dodane proste metadata lineage w stream processorze) 
-  - Setup automated data quality reports (tools/generate_data_quality_report.py + metryka timestamp) 
-  - _Wymagania: 2.6, 4.6_
+- [ ] 7. Production Data Pipeline Optimization
 
-- [x] 8. Production Database Optimization
+  - Implement real-time data validation with quality metrics
+  - Add data lineage tracking for audit and debugging
+  - Create automated data quality reports and alerting
+  - Optimize Kafka configuration for high-throughput scenarios
+  - Implement data retention policies and cleanup procedures
+  - Add data backup and recovery procedures
+  - _Requirements: 2.6, 4.6_
 
-  - Implementacja missing database indexes dla performance (zrobione: supabase/migrations/003_add_missing_indexes.sql) 
-  - Setup automated database backup verification (zrobione: tools/verify_backup.py) 
-  - Implementacja database connection pooling optimization (istnieje: database/connection_pool.py + metryki) 
-  - Dodanie database monitoring i slow query analysis (istnieje: database/query_optimizer.py + metryki + alert DatabaseSlowQueries) 
-  - Setup automated database maintenance tasks (zrobione: deployment/kubernetes/db-maintenance-cronjob.yaml) 
-  - Implementacja database disaster recovery testing (przygotowane: verify_backup.py; scenariusze DR do uzupełnienia) 
-  - _Wymagania: 4.1, 4.2, 5.1_
+- [ ] 8. Security Hardening and Compliance
 
-- [x] 9. Security Testing & Hardening
+  - Implement comprehensive audit logging for all user actions
+  - Add GDPR compliance features (data export, deletion)
+  - Create security incident response procedures
+  - Implement regular security assessment automation
+  - Add penetration testing procedures and schedules
+  - Document compliance requirements and validation procedures
+  - _Requirements: 5.6, 6.1, 6.2, 6.3, 6.7, 7.1, 7.2_
 
-  - Automated security scanning w CI/CD pipeline (zrobione: GitHub Actions + Bandit, Safety, Semgrep, Trivy) 
-  - Penetration testing dla web application (zrobione: tools/security_test.py z OWASP guidelines) 
-  - API security testing z OWASP guidelines (zrobione: security_test.py testuje SQL injection, XSS, CSRF, auth) 
-  - Infrastructure security assessment (zrobione: WAF rules w nginx.conf + deployment/kubernetes/waf-configmap.yaml) 
-  - Implementacja Web Application Firewall (WAF) rules (zrobione: nginx.conf z security headers + WAF configmap) 
-  - Setup DDoS protection i rate limiting (zrobione: nginx.conf z rate limiting + connection limits) 
-  - _Wymagania: 5.6, 6.1, 6.2, 6.3_
+### PERFORMANCE AND RELIABILITY TASKS
 
-- [ ] 10. Production Deployment Setup
+- [ ] 9. High Availability and Disaster Recovery
 
-  - Multi-zone Kubernetes deployment
-  - Load balancer configuration z health checks
-  - SSL/TLS certificates setup z automatic renewal
-  - Domain i DNS configuration
-  - Implementacja pod anti-affinity rules
-  - Setup persistent volume replication
-  - Testing zone failure scenarios
-  - _Wymagania: 3.4, 3.5, 6.2_
+  - Implement database replication and failover procedures
+  - Create cross-region backup and recovery mechanisms
+  - Test disaster recovery scenarios with documented RTO/RPO
+  - Implement automated backup verification and testing
+  - Create capacity planning procedures and monitoring
+  - Document business continuity procedures
+  - _Requirements: 4.1, 4.2, 5.1_
 
-- [ ] 11. SLI/SLO Implementation
+- [ ] 10. Advanced Monitoring and Observability
 
-  - Definition SLIs dla availability, latency, error rate
-  - Setup SLO monitoring z error budget tracking
-  - Implementacja SLO alerting rules
-  - Creation SLO dashboards dla stakeholders
-  - Setup critical alerts dla system failures
-  - Konfiguracja business alerts dla trading losses
-  - Implementacja alert routing i escalation
-  - _Wymagania: 3.6, 4.8_
+  - Implement distributed tracing for request flows
+  - Add custom business metrics for trading performance
+  - Create capacity planning dashboards and alerts
+  - Implement log aggregation and analysis
+  - Add performance profiling and optimization tools
+  - Create cost monitoring and optimization procedures
+  - _Requirements: 3.6, 4.8, 5.7_
 
-- [ ] 12. Operational Documentation
-  - Creation troubleshooting guides dla common issues
-  - Dokumentacja disaster recovery procedures
-  - Implementacja incident response playbooks
-  - Setup knowledge base dla operational procedures
-  - User onboarding guides
-  - Feature documentation z screenshots
-  - Video tutorials dla key workflows
-  - FAQ i troubleshooting guides
-  - _Wymagania: 5.7, 6.7_
+### CONTINUOUS IMPROVEMENT TASKS
 
-### ZADANIA CIĄGŁE
+- [ ] 11. Automated Testing and Quality Assurance
 
-- [ ] 13. Continuous Improvement
+  - Implement automated end-to-end testing in CI/CD
+  - Add performance regression testing
+  - Create automated security testing procedures
+  - Implement chaos engineering for resilience testing
+  - Add automated dependency vulnerability scanning
+  - Create code quality gates and enforcement
+  - _Requirements: 2.7, 4.7, 5.6_
 
-  - Performance monitoring i optimization
-  - Security updates i vulnerability management
-  - Feature enhancements based na user feedback
-  - Cost optimization i resource management
-  - _Wymagania: 4.8, 5.8, 6.8_
+- [ ] 12. Operational Excellence and Maintenance
 
-- [ ] 14. Compliance & Governance
-  - GDPR compliance implementation
-  - Audit trail maintenance
-  - Data retention policy enforcement
-  - Regular security assessments
-  - _Wymagania: 6.7, 7.1, 7.2_
+  - Implement automated dependency updates and testing
+  - Create performance monitoring and optimization procedures
+  - Add cost optimization and resource management
+  - Implement feature flag management for safe deployments
+  - Create user feedback collection and analysis
+  - Document change management and release procedures
+  - _Requirements: 4.8, 5.8, 6.8_

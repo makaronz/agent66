@@ -30,7 +30,7 @@ from .validators import (
 
 # New service coordination and health monitoring
 from .service_manager import ServiceManager
-from .health_monitor import EnhancedHealthMonitor
+from .health_monitor import HealthMonitor
 
 # FastAPI and server imports
 from fastapi import FastAPI
@@ -379,11 +379,8 @@ async def main_async():
     # Initialize service manager
     service_manager = ServiceManager(config, logger)
     
-    # Initialize enhanced health monitor
-    health_monitor = EnhancedHealthMonitor(
-        app_name=config.get('app', {}).get('name', 'smc-trading-agent'),
-        logger=logger
-    )
+    # Initialize health monitor
+    health_monitor = HealthMonitor(config.get('monitoring', {}))
     
     # Initialize all services with error handling
     try:
@@ -405,13 +402,13 @@ async def main_async():
         return 1
 
     # Start health monitoring
-    await health_monitor.start_background_health_checks()
+    await health_monitor.start()
     
     # Get monitoring port from config
     monitoring_port = config.get('monitoring', {}).get('port', 8008)
     
     # Create FastAPI app for health monitoring
-    app = health_monitor.get_fastapi_app()
+    app = FastAPI(title="SMC Trading Agent Health Monitor")
     
     # Start health monitoring server
     config_uvicorn = uvicorn.Config(
@@ -452,7 +449,7 @@ async def main_async():
         return 1
     finally:
         # Shutdown health monitor
-        await health_monitor.shutdown()
+        await health_monitor.stop()
     
     return 0
 

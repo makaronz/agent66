@@ -28,7 +28,7 @@ from .error_handlers import (
     CircuitBreaker, RetryHandler, safe_execute, error_boundary,
     health_monitor
 )
-from .health_monitor import EnhancedHealthMonitor
+from .health_monitor import HealthMonitor
 from .service_manager import ServiceManager
 from .config_validator import ConfigValidator
 from .validators import DataValidator, MarketDataModel, TradeSignalModel, OrderBlockModel
@@ -49,7 +49,7 @@ __all__ = [
     "safe_execute",
     "error_boundary",
     "health_monitor",
-    "EnhancedHealthMonitor",
+    "HealthMonitor",
     "ServiceManager",
     "ConfigValidator",
     "DataValidator",
