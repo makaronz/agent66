@@ -164,8 +164,8 @@ interface ListenKeyResponse {
 
 class BinanceApiService {
   private baseUrl = 'https://api.binance.com/api/v3';
-  private wsUrl = 'wss://stream.binance.com:9443/ws';
-  private alternativeWsUrl = 'wss://stream.binance.com:443/ws'; // Alternative WebSocket endpoint
+  private wsUrl = 'wss://stream.binance.com:9443/ws'; // Official Binance WebSocket endpoint
+  private alternativeWsUrl = 'wss://data-stream.binance.vision/ws'; // Alternative WebSocket endpoint
   private websockets: Map<string, WebSocketConnection> = new Map();
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
@@ -475,14 +475,23 @@ class BinanceApiService {
     });
 
     ws.onopen = () => {
-      console.log(`Connected to Binance WebSocket: ${wsKey}`);
+      console.log(`✅ Connected to Binance WebSocket: ${wsKey}`);
       connection.reconnectAttempts = 0;
       toast.success(`Connected to ${Array.isArray(symbolOrSymbols) ? 'multiple symbols' : symbolOrSymbols} stream`);
     };
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const message = JSON.parse(event.data);
+        
+        // Handle different message formats
+        let data = message;
+        
+        // For combined streams, the message has a 'stream' and 'data' field
+        if (message.stream && message.data) {
+          data = message.data;
+          console.log(`📨 Received data for stream: ${message.stream}`);
+        }
         
         // Handle different message types
         if (data.e === '24hrTicker') {
@@ -496,15 +505,25 @@ class BinanceApiService {
             low: parseFloat(data.l),
             open: parseFloat(data.o)
           };
+          console.log(`📊 Market data for ${data.s}:`, marketData);
           callback(marketData);
+        } else {
+          console.log(`📨 Received message type: ${data.e || 'unknown'}`, data);
         }
       } catch (error) {
         console.error(`Error parsing WebSocket message for ${wsKey}:`, error);
+        console.error('Raw message:', event.data);
       }
     };
 
     ws.onerror = (error) => {
-      console.error(`WebSocket error for ${wsKey}:`, error);
+      console.error(`❌ WebSocket error for ${wsKey}:`, error);
+      console.error('WebSocket error details:', {
+        readyState: ws.readyState,
+        url: ws.url,
+        protocol: ws.protocol,
+        error: error
+      });
       // Check if this might be related to IP ban
       const errorMsg = `Connection error for ${Array.isArray(symbolOrSymbols) ? 'market data' : symbolOrSymbols}`;
       if (connection.reconnectAttempts === 0) {
@@ -515,7 +534,7 @@ class BinanceApiService {
     };
 
     ws.onclose = (event) => {
-      console.log(`WebSocket closed for ${wsKey}:`, event.code, event.reason);
+      console.log(`🔌 WebSocket closed for ${wsKey}:`, event.code, event.reason);
       
       // Clear ping interval
       if (connection.pingInterval) {
@@ -560,21 +579,73 @@ class BinanceApiService {
 
   // Subscribe to multiple tickers
   subscribeToMultipleTickers(symbols: string[], callback: (data: MarketData) => void): () => void {
-    const streams = symbols.map(symbol => `${symbol.toLowerCase()}@ticker`).join('/');
+    console.log('🚀 Attempting to connect to Binance WebSocket for symbols:', symbols);
+    
     const wsKey = 'multi_ticker';
     
     // Close existing connection if any
     if (this.websockets.has(wsKey)) {
+      console.log('🔄 Closing existing WebSocket connection');
       const existingConnection = this.websockets.get(wsKey)!;
       existingConnection.isManualClose = true;
       existingConnection.ws.close(1000, 'Replacing connection');
     }
 
-    const ws = new WebSocket(`${this.wsUrl}/${streams}`);
+    let wsUrl: string;
+    
+    // For multiple streams, use the correct Binance format: /stream?streams=
+    if (symbols.length === 1) {
+      // Single stream format: /ws/<streamName>
+      const streamName = `${symbols[0].toLowerCase()}@ticker`;
+      wsUrl = `wss://data-stream.binance.vision/ws/${streamName}`;
+    } else {
+      // Multiple streams format: /stream?streams=<stream1>/<stream2>
+      const streams = symbols.map(symbol => `${symbol.toLowerCase()}@ticker`).join('/');
+      wsUrl = `wss://data-stream.binance.vision/stream?streams=${streams}`;
+    }
+    
+    console.log('🌐 WebSocket URL:', wsUrl);
+    console.log('🔗 Base WebSocket URL:', this.wsUrl);
+    console.log('📊 Number of symbols:', symbols.length);
+    console.log('📏 URL Length:', wsUrl.length);
+    
+    // Binance WebSocket URL limit is around 8000 characters
+    if (wsUrl.length > 8000) {
+      console.warn('⚠️ WebSocket URL too long, limiting to first 3 symbols...');
+      const limitedSymbols = symbols.slice(0, 3);
+      if (limitedSymbols.length === 1) {
+        const streamName = `${limitedSymbols[0].toLowerCase()}@ticker`;
+        wsUrl = `${this.wsUrl}/${streamName}`;
+      } else {
+        const limitedStreams = limitedSymbols.map(symbol => `${symbol.toLowerCase()}@ticker`).join('/');
+        wsUrl = `wss://stream.binance.com:9443/stream?streams=${limitedStreams}`;
+      }
+      console.log('🔗 Limited WebSocket URL:', wsUrl);
+      console.log('📏 Limited URL Length:', wsUrl.length);
+    }
+    
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(wsUrl);
+    } catch (error) {
+      console.warn('❌ Failed to connect to primary WebSocket, trying alternative...', error);
+      // Try alternative endpoint with same format
+      if (symbols.length === 1) {
+        const streamName = `${symbols[0].toLowerCase()}@ticker`;
+        wsUrl = `${this.alternativeWsUrl}/${streamName}`;
+      } else {
+        const streams = symbols.map(symbol => `${symbol.toLowerCase()}@ticker`).join('/');
+        wsUrl = `wss://data-stream.binance.vision:9443/stream?streams=${streams}`;
+      }
+      console.log('🔗 Alternative WebSocket URL:', wsUrl);
+      ws = new WebSocket(wsUrl);
+    }
+    
     const connection = this.setupWebSocketConnection(wsKey, ws, callback, symbols);
     this.websockets.set(wsKey, connection);
 
     return () => {
+      console.log('🛑 Manual close requested for WebSocket');
       connection.isManualClose = true;
       if (connection.pingInterval) {
         clearInterval(connection.pingInterval);

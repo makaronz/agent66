@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 // UserService removed for deployment optimization
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth';
+import { getSupabaseAdmin } from '../supabase';
 
 const router = Router();
 

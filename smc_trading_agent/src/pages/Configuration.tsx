@@ -307,11 +307,12 @@ export default function Configuration() {
                           type="button"
                           onClick={() => { toggleApiKeyVisibility(exchange.id); }}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          aria-label={showApiKeys[exchange.id] ? 'Ukryj API key' : 'Pokaż API key'}
                         >
                           {showApiKeys[exchange.id] ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
+                            <EyeOff className="h-4 w-4 text-gray-400" aria-hidden="true" />
                           ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
+                            <Eye className="h-4 w-4 text-gray-400" aria-hidden="true" />
                           )}
                         </button>
                       </div>
@@ -335,11 +336,12 @@ export default function Configuration() {
                           type="button"
                           onClick={() => toggleApiKeyVisibility(exchange.id)}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          aria-label={showApiKeys[exchange.id] ? 'Ukryj Secret Key' : 'Pokaż Secret Key'}
                         >
                           {showApiKeys[exchange.id] ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
+                            <EyeOff className="h-4 w-4 text-gray-400" aria-hidden="true" />
                           ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
+                            <Eye className="h-4 w-4 text-gray-400" aria-hidden="true" />
                           )}
                         </button>
                       </div>

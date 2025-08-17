@@ -1,7 +1,7 @@
 {
   "SchemaVersion": 2,
-  "CreatedAt": "2025-08-17T11:16:57.445435+02:00",
-  "ArtifactName": ".",
+  "CreatedAt": "2025-08-17T11:16:16.300247+02:00",
+  "ArtifactName": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent",
   "ArtifactType": "filesystem",
   "Results": [
     {
@@ -413,7 +413,7 @@
           "PkgName": "black",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/black@23.11.0",
-            "UID": "1d7bd7865ba08794"
+            "UID": "3acf9f7224b33bda"
           },
           "InstalledVersion": "23.11.0",
           "FixedVersion": "24.3.0",

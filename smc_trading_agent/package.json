@@ -7,12 +7,15 @@
     "client:dev": "vite",
     "build": "tsc -b && vite build",
     "build:vite-only": "vite build",
+    "build:analyze": "tsc -b && vite build --mode analyze",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "server:dev": "nodemon",
     "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
     "docs:generate": "./scripts/generate-api-docs.sh",
+    "cem:analyze": "custom-elements-manifest analyze",
+    "cem:watch": "custom-elements-manifest analyze --watch",
     "docs:validate": "swagger-cli validate docs/openapi-express.json && swagger-cli validate docs/openapi-fastapi.json",
     "docs:serve": "http-server docs/api -p 8080 -o",
     "docs:build": "npm run docs:generate && npm run docs:validate",
@@ -20,6 +23,7 @@
     "api:test": "newman run docs/postman/smc-trading-agent-collection.json -e docs/postman/development.json",
     "sbom:generate": "python tools/generate_sbom.py --output docs/sbom --format json",
     "security:scan": "python tools/scan_vulnerabilities.py --mode full",
+    "security:quick": "./tools/sbom_workflow.sh --scan quick --verbose",
     "security:check": "python tools/scan_vulnerabilities.py --mode quick",
     "security:report": "python tools/scan_vulnerabilities.py --mode report"
   },
@@ -53,6 +57,7 @@
     "rate-limit-redis": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^7.3.0",
@@ -64,10 +69,12 @@
     "swagger-ui-express": "^5.0.1",
     "tailwind-merge": "^3.0.2",
     "twilio": "^5.3.5",
+    "web-vitals": "^5.1.0",
     "zod": "^4.0.17",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@cyclonedx/cdxgen": "^10.8.1",
     "@eslint/js": "^9.25.0",
     "@openapitools/openapi-generator-cli": "^2.22.0",
     "@redocly/cli": "^2.0.5",
@@ -100,6 +107,7 @@
     "postcss": "^8.5.3",
     "postman-to-openapi": "^3.0.1",
     "redoc-cli": "^0.13.21",
+    "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.3",
     "typescript": "~5.8.3",
@@ -107,7 +115,7 @@
     "vite": "^6.3.5",
     "vite-plugin-trae-solo-badge": "^1.0.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4",
-    "@cyclonedx/cdxgen": "^10.8.1"
-  }
+    "vitest": "^3.2.4"
+  },
+  "customElements": "custom-elements.json"
 }

@@ -1,24 +1,21 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, TrendingUp, Database } from 'lucide-react';
 import { useRealtime } from '../../hooks/useRealtime';
 import { useMarketData } from '../../hooks/useMarketData';
-import { binanceApi } from '../../services/binanceApi';
 
 interface RealtimeStatusProps {
   className?: string;
   showDetails?: boolean;
 }
 
-const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
+const RealtimeStatus: React.FC<RealtimeStatusProps> = React.memo(({
   className = '',
   showDetails = false
 }) => {
-  const { isConnected, connectionError, refreshData, marketDataConnected } = useRealtime();
+  const { isConnected, connectionError, refreshData } = useRealtime();
   const { isConnected: binanceConnected, error: binanceError, getConnectionStatus, connect: connectToBinance } = useMarketData();
   
-  // Use WebSocket connection status from useMarketData hook
   const webSocketConnected = binanceConnected;
-  const connectionStatus = useMemo(() => getConnectionStatus(), [getConnectionStatus]);
 
   const handleRefresh = async () => {
     await refreshData();
@@ -86,19 +83,23 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
           </div>
           
           {/* WebSocket Details */}
-          {showDetails && Object.keys(connectionStatus).length > 0 && (
-            <div className="ml-6 space-y-1">
-              {Object.entries(connectionStatus).map(([key, status]) => (
-                <div key={key} className="flex items-center space-x-2 text-xs">
-                  <div className={`w-2 h-2 rounded-full ${
-                    status === 'connected' ? 'bg-green-500' : 
-                    status === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`} />
-                  <span className="text-gray-600">{key}: {status}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {showDetails && (() => {
+            const status = getConnectionStatus();
+            const statusEntries = Object.entries(status);
+            return statusEntries.length > 0 ? (
+              <div className="ml-6 space-y-1">
+                {statusEntries.map(([key, statusValue]) => (
+                  <div key={key} className="flex items-center space-x-2 text-xs">
+                    <div className={`w-2 h-2 rounded-full ${
+                      statusValue === 'connected' ? 'bg-green-500' : 
+                      statusValue === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                    <span className="text-gray-600">{key}: {String(statusValue)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null;
+          })()}
           
           {/* Overall Status */}
           <div className="flex items-center space-x-2 pt-2 border-t border-gray-200">
@@ -169,6 +170,6 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = ({
       </button>
     </div>
   );
-};
+});
 
 export default RealtimeStatus;

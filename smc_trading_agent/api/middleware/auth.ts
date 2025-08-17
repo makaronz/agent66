@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import supabaseAdmin from '../supabase.js';
-import { getVaultClient, getJwtSecret } from '../lib/vault-client.js';
-import { auditAuth } from './audit.js';
+import { getSupabaseAdmin } from '../supabase';
+import { getVaultClient, getJwtSecret } from '../lib/vault-client';
+import { auditAuth } from './audit';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -29,6 +29,7 @@ export async function authenticateToken(
 
     try {
       // First try Supabase authentication
+      const supabaseAdmin = await getSupabaseAdmin();
       const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
       if (!error && user) {
@@ -87,6 +88,7 @@ export async function requireMFA(
     }
 
     // Check if user has any MFA method enabled
+    const supabaseAdmin = await getSupabaseAdmin();
     const { data: mfaData, error } = await supabaseAdmin
       .from('user_mfa_methods')
       .select('totp_enabled, webauthn_enabled, sms_enabled')

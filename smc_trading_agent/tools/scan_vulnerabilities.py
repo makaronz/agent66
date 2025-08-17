@@ -154,8 +154,7 @@ class VulnerabilityScanner:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except Exception as e:
-            self.logger.error(f"Failed to read {file_path}: {e}
-")
+            self.logger.error(f"Failed to read {file_path}: {e}")
             return []
 
         vulns: List[Dict[str, Any]] = []

@@ -2,15 +2,15 @@
  * This is a API server with comprehensive security and validation
  */
 
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import compression from 'compression';
-import authRoutes from './routes/auth.js';
-import binanceRoutes from './routes/binance.js';
-import userRoutes from './routes/users.js';
-import authMfaRoutes from './auth-mfa.js';
+import authRoutes from './routes/auth';
+import binanceRoutes from './routes/binance';
+import userRoutes from './routes/users';
+import authMfaRoutes from './auth-mfa';
 import {
   corsOptions,
   securityHeaders,
@@ -19,16 +19,16 @@ import {
   errorHandler,
   healthCheck,
   generalRateLimit
-} from './middleware/validation.js';
-import swaggerMiddleware, { swaggerUi } from './middleware/swagger.js';
-import { swaggerSpec, API_VERSION } from './config/swagger.js';
+} from './middleware/validation';
+import swaggerMiddleware, { swaggerUi } from './middleware/swagger';
+import { swaggerSpec, API_VERSION } from './config/swagger';
 import versioning, { 
   versionDetectionMiddleware, 
   responseTransformMiddleware,
   getVersionInfoEndpoint,
   getMigrationGuideEndpoint,
   API_VERSIONS 
-} from './config/versioning.js';
+} from './config/versioning';
 
 // load env
 dotenv.config();

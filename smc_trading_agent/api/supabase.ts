@@ -1,11 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './types/database.types';
-import { getVaultClient } from './lib/vault-client.js';
+import { getVaultClient } from './lib/vault-client';
 
 // Initialize Supabase client with Vault secrets
 let supabaseAdmin: any = null;
+let initializationPromise: Promise<void> | null = null;
 
-async function initializeSupabaseClient() {
+async function initializeSupabaseClient(): Promise<void> {
+  if (supabaseAdmin) {
+    return; // Already initialized
+  }
+
   try {
     const vaultClient = getVaultClient();
     const supabaseConfig = await vaultClient.getSupabaseConfig();
@@ -35,24 +40,31 @@ async function initializeSupabaseClient() {
         persistSession: false
       }
     });
+    
+    console.log('Supabase client initialized with environment variables');
   }
 }
 
 // Initialize on module load
-initializeSupabaseClient();
+initializationPromise = initializeSupabaseClient();
 
 // Getter function to ensure client is initialized
-export function getSupabaseAdmin() {
+export async function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    await initializationPromise;
+  }
+  
   if (!supabaseAdmin) {
     throw new Error('Supabase client not initialized');
   }
+  
   return supabaseAdmin;
 }
 
 // Helper function to get user from JWT token
 export const getUserFromToken = async (token: string) => {
   try {
-    const client = getSupabaseAdmin();
+    const client = await getSupabaseAdmin();
     const { data: { user }, error } = await client.auth.getUser(token);
     if (error) throw error;
     return user;
@@ -72,4 +84,5 @@ export const verifyUserSession = async (authHeader: string) => {
   return await getUserFromToken(token);
 };
 
-export default getSupabaseAdmin();
+// Note: Use getSupabaseAdmin() function instead of default export
+// export default getSupabaseAdmin();

@@ -9,7 +9,7 @@ interface TradingViewChartProps {
   className?: string;
 }
 
-const TradingViewChart: React.FC<TradingViewChartProps> = ({
+const TradingViewChart: React.FC<TradingViewChartProps> = React.memo(({
   symbol,
   interval = '15m',
   theme = 'light',
@@ -23,46 +23,67 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     // Clean up previous script
     if (scriptRef.current) {
       scriptRef.current.remove();
+      scriptRef.current = null;
     }
 
-    // Create TradingView widget script
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-    script.type = 'text/javascript';
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol: `BINANCE:${symbol}`,
-      interval: interval,
-      timezone: 'Europe/Warsaw',
-      theme: theme,
-      style: '1',
-      locale: 'pl',
-      enable_publishing: false,
-      allow_symbol_change: true,
-      calendar: false,
-      support_host: 'https://www.tradingview.com',
-      studies: [
-        'STD;SMA',
-        'STD;EMA',
-        'STD;RSI',
-        'STD;MACD'
-      ],
-      show_popup_button: true,
-      popup_width: '1000',
-      popup_height: '650',
-      container_id: `tradingview_${symbol.toLowerCase()}`
-    });
+    // Ensure container exists before creating script
+    if (!containerRef.current) {
+      return;
+    }
 
-    scriptRef.current = script;
+    const containerId = `tradingview_${symbol.toLowerCase()}`;
+    
+    // Add small delay to ensure DOM is fully rendered
+    const timeoutId = setTimeout(() => {
+      // Double check container still exists
+      if (!containerRef.current) {
+        return;
+      }
 
-    if (containerRef.current) {
+      // Create TradingView widget script
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+      script.type = 'text/javascript';
+      script.async = true;
+      
+      // Add error handling
+      script.onerror = () => {
+        console.warn('Failed to load TradingView widget');
+      };
+      
+      script.innerHTML = JSON.stringify({
+        autosize: true,
+        symbol: `BINANCE:${symbol}`,
+        interval: interval,
+        timezone: 'Europe/Warsaw',
+        theme: theme,
+        style: '1',
+        locale: 'pl',
+        enable_publishing: false,
+        allow_symbol_change: true,
+        calendar: false,
+        support_host: 'https://www.tradingview.com',
+        studies: [
+          'STD;SMA',
+          'STD;EMA',
+          'STD;RSI',
+          'STD;MACD'
+        ],
+        show_popup_button: true,
+        popup_width: '1000',
+        popup_height: '650',
+        container_id: containerId
+      });
+
+      scriptRef.current = script;
       containerRef.current.appendChild(script);
-    }
+    }, 100); // Small delay to ensure DOM is ready
 
     return () => {
+      clearTimeout(timeoutId);
       if (scriptRef.current) {
         scriptRef.current.remove();
+        scriptRef.current = null;
       }
     };
   }, [symbol, interval, theme]);
@@ -107,6 +128,6 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default TradingViewChart;

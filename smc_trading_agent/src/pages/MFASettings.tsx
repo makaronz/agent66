@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Shield, Smartphone, Key, MessageSquare, FileText, BookOpen, Activity, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../supabase';
-import TOTPSetup from '../components/mfa/TOTPSetup';
-import WebAuthnSetup from '../components/mfa/WebAuthnSetup';
-import SMSSetup from '../components/mfa/SMSSetup';
-import BackupCodes from '../components/mfa/BackupCodes';
-import MFAEducation from '../components/mfa/MFAEducation';
-import SecurityDashboard from '../components/mfa/SecurityDashboard';
+
+// Lazy load MFA components
+const TOTPSetup = lazy(() => import('../components/mfa/TOTPSetup'));
+const WebAuthnSetup = lazy(() => import('../components/mfa/WebAuthnSetup'));
+const SMSSetup = lazy(() => import('../components/mfa/SMSSetup'));
+const BackupCodes = lazy(() => import('../components/mfa/BackupCodes'));
+const MFAEducation = lazy(() => import('../components/mfa/MFAEducation'));
+const SecurityDashboard = lazy(() => import('../components/mfa/SecurityDashboard'));
 
 interface MFAStatus {
   totp_enabled: boolean;
@@ -182,33 +184,40 @@ const MFASettings: React.FC = () => {
           </div>
 
           <div className="p-6">
-            {activeTab === 'totp' && (
-              <TOTPSetup 
-                enabled={mfaStatus?.totp_enabled || false}
-                onStatusChange={refreshMFAStatus}
-              />
-            )}
-            {activeTab === 'webauthn' && (
-              <WebAuthnSetup 
-                enabled={mfaStatus?.webauthn_enabled || false}
-                onStatusChange={refreshMFAStatus}
-              />
-            )}
-            {activeTab === 'sms' && (
-              <SMSSetup 
-                enabled={mfaStatus?.sms_enabled || false}
-                onStatusChange={refreshMFAStatus}
-              />
-            )}
-            {activeTab === 'backup' && (
-              <BackupCodes 
-                enabled={mfaStatus?.backup_codes_enabled || false}
-                remainingCodes={mfaStatus?.remainingBackupCodes || 0}
-                onStatusChange={refreshMFAStatus}
-              />
-            )}
-            {activeTab === 'security' && <SecurityDashboard />}
-            {activeTab === 'education' && <MFAEducation />}
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Loading...</span>
+              </div>
+            }>
+              {activeTab === 'totp' && (
+                <TOTPSetup 
+                  enabled={mfaStatus?.totp_enabled || false}
+                  onStatusChange={refreshMFAStatus}
+                />
+              )}
+              {activeTab === 'webauthn' && (
+                <WebAuthnSetup 
+                  enabled={mfaStatus?.webauthn_enabled || false}
+                  onStatusChange={refreshMFAStatus}
+                />
+              )}
+              {activeTab === 'sms' && (
+                <SMSSetup 
+                  enabled={mfaStatus?.sms_enabled || false}
+                  onStatusChange={refreshMFAStatus}
+                />
+              )}
+              {activeTab === 'backup' && (
+                <BackupCodes 
+                  enabled={mfaStatus?.backup_codes_enabled || false}
+                  remainingCodes={mfaStatus?.remainingBackupCodes || 0}
+                  onStatusChange={refreshMFAStatus}
+                />
+              )}
+              {activeTab === 'security' && <SecurityDashboard />}
+              {activeTab === 'education' && <MFAEducation />}
+            </Suspense>
           </div>
         </div>
       </div>

@@ -19,9 +19,12 @@ interface MarketDataState {
 }
 
 export function useMarketData(options: UseMarketDataOptions = {}) {
+  console.log('🔄 useMarketData hook called with options:', options);
+  console.log('🚀 HOOK EXECUTION STARTED - useMarketData is running!');
+  
   const {
-    symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT', 'BNBUSDT', 'XRPUSDT', 'SOLUSDT'],
-    autoConnect = false, // Disabled auto-connect to prevent IP ban issues
+    symbols = ['BTCUSDT'], // Test with single symbol first
+    autoConnect = true, // Enable auto-connect for better user experience
     updateInterval = 30000 // WebSocket connection monitoring interval
   } = options;
 
@@ -54,26 +57,30 @@ export function useMarketData(options: UseMarketDataOptions = {}) {
     // Update background services with WebSocket data
     try {
       // Update background pattern detection
-      backgroundPatternDetection.updatePriceData(marketData.symbol, {
-        price: marketData.price,
-        open: marketData.open,
-        high: marketData.high,
-        low: marketData.low,
-        close: marketData.price,
-        volume: marketData.volume
-      });
+      if (backgroundPatternDetection && typeof backgroundPatternDetection.updatePriceData === 'function') {
+        backgroundPatternDetection.updatePriceData(marketData.symbol, {
+          price: marketData.price,
+          open: marketData.open,
+          high: marketData.high,
+          low: marketData.low,
+          close: marketData.price,
+          volume: marketData.volume
+        });
+      }
       
       // Update SMC signal generator
-      smcSignalGenerator.updatePriceFromWebSocket(marketData.symbol, {
-        price: marketData.price,
-        open: marketData.open,
-        high: marketData.high,
-        low: marketData.low,
-        close: marketData.price,
-        volume: marketData.volume
-      });
+      if (smcSignalGenerator && typeof smcSignalGenerator.updatePriceFromWebSocket === 'function') {
+        smcSignalGenerator.updatePriceFromWebSocket(marketData.symbol, {
+          price: marketData.price,
+          open: marketData.open,
+          high: marketData.high,
+          low: marketData.low,
+          close: marketData.price,
+          volume: marketData.volume
+        });
+      }
     } catch (error) {
-      console.error('Error updating background services:', error);
+      console.error('❌ Error updating background services:', error);
     }
   }, []);
 
@@ -105,51 +112,63 @@ export function useMarketData(options: UseMarketDataOptions = {}) {
     }));
   }, [symbols]);
 
-  // Connect to WebSocket
-  const connect = useCallback(() => {
+  // Connect using REST API fallback
+  const connect = useCallback(async () => {
+    console.log('🔄 useMarketData connect called, using REST API fallback');
     if (!mountedRef.current) return;
     
-    // Disconnect existing connection
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-
-    setState(prev => ({ ...prev, isConnected: false, error: null }));
+    console.log('🚀 Starting market data connection with REST API...');
+    setState(prev => ({ ...prev, isConnected: false, error: null, isLoading: true }));
 
     try {
-      // Subscribe to multiple tickers
-      const unsubscribe = binanceApi.subscribeToMultipleTickers(symbols, updateMarketData);
-      unsubscribeRef.current = unsubscribe;
-
-      // Check connection status after a short delay
-      setTimeout(() => {
-        if (!mountedRef.current) return;
+      const tickers = await binanceApi.get24hrTicker();
+      const filteredTickers = tickers.filter(ticker => 
+        symbols.includes(ticker.symbol)
+      );
+      
+      const newData: Record<string, MarketData> = {};
+      filteredTickers.forEach(ticker => {
+        newData[ticker.symbol] = {
+          symbol: ticker.symbol,
+          price: parseFloat(ticker.price),
+          change: parseFloat(ticker.priceChange),
+          changePercent: parseFloat(ticker.priceChangePercent),
+          volume: parseFloat(ticker.volume),
+          high: parseFloat(ticker.highPrice),
+          low: parseFloat(ticker.lowPrice),
+          open: parseFloat(ticker.openPrice)
+        };
+      });
+      
+      if (mountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          data: newData,
+          isLoading: false,
+          isConnected: true,
+          lastUpdate: new Date()
+        }));
         
-        const isConnected = binanceApi.isConnected();
-        setState(prev => ({ ...prev, isConnected }));
-        
-        if (isConnected) {
-          toast.success('Connected to live market data');
-        }
-      }, 1000);
-
-      // WebSocket only approach - no fallback REST API calls
+        console.log('✅ Market data connection established via REST API');
+        toast.success('Connected to market data via REST API');
+      }
       
     } catch (error) {
       if (!mountedRef.current) return;
       
+      console.error('❌ Failed to connect to market data:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to connect to market data';
       setState(prev => ({
         ...prev,
         error: errorMessage,
-        isConnected: false
+        isConnected: false,
+        isLoading: false
       }));
       toast.error(errorMessage);
     }
   }, [symbols, updateMarketData]);
 
-  // Disconnect from WebSocket
+    // Disconnect from WebSocket
   const disconnect = useCallback(() => {
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
@@ -159,54 +178,99 @@ export function useMarketData(options: UseMarketDataOptions = {}) {
     setState(prev => ({ ...prev, isConnected: false }));
   }, []);
 
-  // Refresh data manually - WebSocket only approach
+  // Refresh data manually - REST API approach
   const refresh = useCallback(async () => {
-    // Initialize empty data and reconnect WebSocket
-    initializeEmptyData();
-    if (autoConnect) {
-      connect();
-    }
-  }, [initializeEmptyData, autoConnect, connect]);
+    // Fetch fresh data from REST API
+    await connect();
+  }, [connect]);
 
   // Get specific symbol data
   const getSymbolData = useCallback((symbol: string): MarketData | null => {
     return state.data[symbol] || null;
-  }, [state.data]);
+  }, []);
 
   // Get all symbols data as array
   const getAllData = useCallback((): MarketData[] => {
     return Object.values(state.data);
-  }, [state.data]);
+  }, []);
 
   // Check if specific symbol is available
   const hasSymbol = useCallback((symbol: string): boolean => {
     return symbol in state.data;
-  }, [state.data]);
+  }, []);
 
   // Get connection status details
   const getConnectionStatus = useCallback(() => {
     return binanceApi.getConnectionStatus();
   }, []);
 
-  // Initialize
+  // Initialize with REST API fallback
   useEffect(() => {
+    console.log('🔧 useMarketData useEffect triggered, using REST API fallback');
     mountedRef.current = true;
+    let intervalId: NodeJS.Timeout;
     
-    // Initialize empty data structure
-    initializeEmptyData();
-    
-    // Auto-connect if enabled
-    if (autoConnect) {
-      // Small delay to allow initialization
-      const timer = setTimeout(() => {
+    // Fallback to REST API due to WebSocket CORS issues in browser
+    const fetchMarketData = async () => {
+      try {
+        setState(prev => ({ ...prev, isLoading: true, error: null }));
+        
+        const tickers = await binanceApi.get24hrTicker();
+        const filteredTickers = tickers.filter(ticker => 
+          symbols.includes(ticker.symbol)
+        );
+        
+        const newData: Record<string, MarketData> = {};
+        filteredTickers.forEach(ticker => {
+          newData[ticker.symbol] = {
+            symbol: ticker.symbol,
+            price: parseFloat(ticker.price),
+            change: parseFloat(ticker.priceChange),
+            changePercent: parseFloat(ticker.priceChangePercent),
+            volume: parseFloat(ticker.volume),
+            high: parseFloat(ticker.highPrice),
+            low: parseFloat(ticker.lowPrice),
+            open: parseFloat(ticker.openPrice)
+          };
+        });
+        
         if (mountedRef.current) {
-          connect();
+          setState(prev => ({
+            ...prev,
+            data: newData,
+            isLoading: false,
+            isConnected: true,
+            lastUpdate: new Date()
+          }));
         }
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [autoConnect]); // Remove problematic dependencies
+      } catch (error) {
+        if (mountedRef.current) {
+          console.error('Error fetching market data:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch market data';
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+            isLoading: false,
+            isConnected: false
+          }));
+        }
+      }
+    };
+
+    // Initial fetch with delay to avoid rate limiting
+    const timeoutId = setTimeout(() => {
+      fetchMarketData();
+      // Update every 60 seconds to avoid rate limiting
+      intervalId = setInterval(fetchMarketData, 60000);
+    }, 1000);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [symbols.join(',')]); // Use string join to avoid array reference issues
 
   // Cleanup on unmount
   useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QrCode, Smartphone, Copy, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { supabase } from '../../supabase';
+import LazyImage from '../LazyImage';
 
 interface TOTPSetupProps {
   enabled: boolean;
@@ -156,7 +157,7 @@ const TOTPSetup: React.FC<TOTPSetupProps> = ({ enabled, onStatusChange }) => {
         <div className="bg-gray-50 rounded-lg p-6">
           <div className="text-center mb-4">
             <div className="bg-white p-4 rounded-lg inline-block">
-              <img 
+              <LazyImage 
                 src={setupData.qrCodeUrl} 
                 alt="TOTP QR Code" 
                 className="w-48 h-48 mx-auto"

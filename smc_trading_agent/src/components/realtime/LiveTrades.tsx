@@ -10,7 +10,7 @@ interface LiveTradesProps {
   showFilters?: boolean;
 }
 
-const LiveTrades: React.FC<LiveTradesProps> = ({
+const LiveTrades: React.FC<LiveTradesProps> = React.memo(({
   className = '',
   maxTrades = 15,
   showFilters = true
@@ -224,6 +224,6 @@ const LiveTrades: React.FC<LiveTradesProps> = ({
       )}
     </div>
   );
-};
+});
 
 export default LiveTrades;

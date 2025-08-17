@@ -10,7 +10,7 @@ interface LiveSignalsProps {
   showFilters?: boolean;
 }
 
-const LiveSignals: React.FC<LiveSignalsProps> = ({
+const LiveSignals: React.FC<LiveSignalsProps> = React.memo(({
   className = '',
   maxSignals = 20,
   showFilters = true
@@ -185,6 +185,6 @@ const LiveSignals: React.FC<LiveSignalsProps> = ({
       )}
     </div>
   );
-};
+});
 
 export default LiveSignals;

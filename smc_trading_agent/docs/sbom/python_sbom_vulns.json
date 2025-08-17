@@ -1,79 +1,22 @@
 {
   "SchemaVersion": 2,
-  "CreatedAt": "2025-08-17T11:16:57.445435+02:00",
-  "ArtifactName": ".",
-  "ArtifactType": "filesystem",
+  "CreatedAt": "2025-08-17T11:16:16.367079+02:00",
+  "ArtifactName": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/python.sbom.json",
+  "ArtifactType": "cyclonedx",
   "Results": [
     {
-      "Target": "Cargo.lock",
+      "Target": "Python",
       "Class": "lang-pkgs",
-      "Type": "cargo",
-      "Vulnerabilities": [
-        {
-          "VulnerabilityID": "CVE-2025-55159",
-          "PkgID": "slab@0.4.10",
-          "PkgName": "slab",
-          "PkgIdentifier": {
-            "PURL": "pkg:cargo/slab@0.4.10",
-            "UID": "4566b2895b0490f8"
-          },
-          "InstalledVersion": "0.4.10",
-          "FixedVersion": "0.4.11",
-          "Status": "fixed",
-          "SeveritySource": "ghsa",
-          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-55159",
-          "DataSource": {
-            "ID": "ghsa",
-            "Name": "GitHub Security Advisory Rust",
-            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Arust"
-          },
-          "Title": "slab: Slab: Out-of-bounds Memory Access Vulnerability",
-          "Description": "slab is a pre-allocated storage for a uniform data type. In version 0.4.10, the get_disjoint_mut method incorrectly checked if indices were within the slab's capacity instead of its length, allowing access to uninitialized memory. This could lead to undefined behavior or potential crashes. This has been fixed in slab 0.4.11. A workaround for this issue involves to avoid using get_disjoint_mut with indices that might be beyond the slab's actual length.",
-          "Severity": "MEDIUM",
-          "CweIDs": [
-            "CWE-119"
-          ],
-          "VendorSeverity": {
-            "ghsa": 2,
-            "redhat": 2
-          },
-          "CVSS": {
-            "redhat": {
-              "V3Vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
-              "V3Score": 4
-            }
-          },
-          "References": [
-            "https://access.redhat.com/security/cve/CVE-2025-55159",
-            "https://github.com/tokio-rs/slab",
-            "https://github.com/tokio-rs/slab/commit/2d65c514bc964b192bab212ddf3c1fcea4ae96b8",
-            "https://github.com/tokio-rs/slab/pull/152",
-            "https://github.com/tokio-rs/slab/security/advisories/GHSA-qx2v-8332-m4fv",
-            "https://nvd.nist.gov/vuln/detail/CVE-2025-55159",
-            "https://rustsec.org/advisories/RUSTSEC-2025-0047.html",
-            "https://www.cve.org/CVERecord?id=CVE-2025-55159"
-          ],
-          "PublishedDate": "2025-08-11T23:15:28.173Z",
-          "LastModifiedDate": "2025-08-12T14:25:33.177Z"
-        }
-      ]
-    },
-    {
-      "Target": "pnpm-lock.yaml",
-      "Class": "lang-pkgs",
-      "Type": "pnpm"
-    },
-    {
-      "Target": "requirements.txt",
-      "Class": "lang-pkgs",
-      "Type": "pip",
+      "Type": "python-pkg",
       "Vulnerabilities": [
         {
           "VulnerabilityID": "CVE-2024-23334",
+          "PkgID": "aiohttp@3.9.1",
           "PkgName": "aiohttp",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/aiohttp@3.9.1",
-            "UID": "fd31dadd43de90aa"
+            "UID": "a774e6c076ac78b8",
+            "BOMRef": "BomRef.7047556299118529.6526858321027957"
           },
           "InstalledVersion": "3.9.1",
           "FixedVersion": "3.9.2",
@@ -132,10 +75,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-30251",
+          "PkgID": "aiohttp@3.9.1",
           "PkgName": "aiohttp",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/aiohttp@3.9.1",
-            "UID": "fd31dadd43de90aa"
+            "UID": "a774e6c076ac78b8",
+            "BOMRef": "BomRef.7047556299118529.6526858321027957"
           },
           "InstalledVersion": "3.9.1",
           "FixedVersion": "3.9.4",
@@ -186,10 +131,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-23829",
+          "PkgID": "aiohttp@3.9.1",
           "PkgName": "aiohttp",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/aiohttp@3.9.1",
-            "UID": "fd31dadd43de90aa"
+            "UID": "a774e6c076ac78b8",
+            "BOMRef": "BomRef.7047556299118529.6526858321027957"
           },
           "InstalledVersion": "3.9.1",
           "FixedVersion": "3.9.2",
@@ -250,10 +197,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-27306",
+          "PkgID": "aiohttp@3.9.1",
           "PkgName": "aiohttp",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/aiohttp@3.9.1",
-            "UID": "fd31dadd43de90aa"
+            "UID": "a774e6c076ac78b8",
+            "BOMRef": "BomRef.7047556299118529.6526858321027957"
           },
           "InstalledVersion": "3.9.1",
           "FixedVersion": "3.9.4",
@@ -310,10 +259,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-52304",
+          "PkgID": "aiohttp@3.9.1",
           "PkgName": "aiohttp",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/aiohttp@3.9.1",
-            "UID": "fd31dadd43de90aa"
+            "UID": "a774e6c076ac78b8",
+            "BOMRef": "BomRef.7047556299118529.6526858321027957"
           },
           "InstalledVersion": "3.9.1",
           "FixedVersion": "3.10.11",
@@ -361,10 +312,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-53643",
+          "PkgID": "aiohttp@3.9.1",
           "PkgName": "aiohttp",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/aiohttp@3.9.1",
-            "UID": "fd31dadd43de90aa"
+            "UID": "a774e6c076ac78b8",
+            "BOMRef": "BomRef.7047556299118529.6526858321027957"
           },
           "InstalledVersion": "3.9.1",
           "FixedVersion": "3.12.14",
@@ -410,10 +363,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-21503",
+          "PkgID": "black@23.11.0",
           "PkgName": "black",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/black@23.11.0",
-            "UID": "1d7bd7865ba08794"
+            "UID": "30f8fe5915222041",
+            "BOMRef": "BomRef.5707028219306027.9703864541486543"
           },
           "InstalledVersion": "23.11.0",
           "FixedVersion": "24.3.0",
@@ -461,10 +416,12 @@
         },
         {
           "VulnerabilityID": "CVE-2023-50782",
+          "PkgID": "cryptography@41.0.8",
           "PkgName": "cryptography",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/cryptography@41.0.8",
-            "UID": "d2a8a39a5dc9a78b"
+            "UID": "7acde152414e2d22",
+            "BOMRef": "BomRef.6797839540776932.6751680088958149"
           },
           "InstalledVersion": "41.0.8",
           "FixedVersion": "42.0.0",
@@ -525,10 +482,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-26130",
+          "PkgID": "cryptography@41.0.8",
           "PkgName": "cryptography",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/cryptography@41.0.8",
-            "UID": "d2a8a39a5dc9a78b"
+            "UID": "7acde152414e2d22",
+            "BOMRef": "BomRef.6797839540776932.6751680088958149"
           },
           "InstalledVersion": "41.0.8",
           "FixedVersion": "42.0.4",
@@ -587,10 +546,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-0727",
+          "PkgID": "cryptography@41.0.8",
           "PkgName": "cryptography",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/cryptography@41.0.8",
-            "UID": "d2a8a39a5dc9a78b"
+            "UID": "7acde152414e2d22",
+            "BOMRef": "BomRef.6797839540776932.6751680088958149"
           },
           "InstalledVersion": "41.0.8",
           "FixedVersion": "42.0.2",
@@ -669,10 +630,12 @@
         },
         {
           "VulnerabilityID": "GHSA-h4gh-qq45-vh27",
+          "PkgID": "cryptography@41.0.8",
           "PkgName": "cryptography",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/cryptography@41.0.8",
-            "UID": "d2a8a39a5dc9a78b"
+            "UID": "7acde152414e2d22",
+            "BOMRef": "BomRef.6797839540776932.6751680088958149"
           },
           "InstalledVersion": "41.0.8",
           "FixedVersion": "43.0.1",
@@ -699,103 +662,13 @@
           "LastModifiedDate": "2024-09-03T21:59:48Z"
         },
         {
-          "VulnerabilityID": "CVE-2024-33663",
-          "PkgName": "python-jose",
-          "PkgIdentifier": {
-            "PURL": "pkg:pypi/python-jose@3.3.0",
-            "UID": "2e26324916f0e3ad"
-          },
-          "InstalledVersion": "3.3.0",
-          "FixedVersion": "3.4.0",
-          "Status": "fixed",
-          "SeveritySource": "ghsa",
-          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-33663",
-          "DataSource": {
-            "ID": "ghsa",
-            "Name": "GitHub Security Advisory pip",
-            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Apip"
-          },
-          "Title": "python-jose: algorithm confusion with OpenSSH ECDSA keys and other key formats",
-          "Description": "python-jose through 3.3.0 has algorithm confusion with OpenSSH ECDSA keys and other key formats. This is similar to CVE-2022-29217.",
-          "Severity": "CRITICAL",
-          "CweIDs": [
-            "CWE-327"
-          ],
-          "VendorSeverity": {
-            "ghsa": 4,
-            "redhat": 2
-          },
-          "CVSS": {
-            "ghsa": {
-              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
-              "V3Score": 7.4
-            }
-          },
-          "References": [
-            "https://access.redhat.com/security/cve/CVE-2024-33663",
-            "https://github.com/mpdavis/python-jose",
-            "https://github.com/mpdavis/python-jose/issues/346",
-            "https://github.com/pypa/advisory-database/tree/main/vulns/python-jose/PYSEC-2024-232.yaml",
-            "https://nvd.nist.gov/vuln/detail/CVE-2024-33663",
-            "https://www.cve.org/CVERecord?id=CVE-2024-33663",
-            "https://www.vicarius.io/vsociety/posts/algorithm-confusion-in-python-jose-cve-2024-33663"
-          ],
-          "PublishedDate": "2024-04-26T00:15:09.01Z",
-          "LastModifiedDate": "2024-11-21T09:17:21.073Z"
-        },
-        {
-          "VulnerabilityID": "CVE-2024-33664",
-          "PkgName": "python-jose",
-          "PkgIdentifier": {
-            "PURL": "pkg:pypi/python-jose@3.3.0",
-            "UID": "2e26324916f0e3ad"
-          },
-          "InstalledVersion": "3.3.0",
-          "FixedVersion": "3.4.0",
-          "Status": "fixed",
-          "SeveritySource": "ghsa",
-          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-33664",
-          "DataSource": {
-            "ID": "ghsa",
-            "Name": "GitHub Security Advisory pip",
-            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Apip"
-          },
-          "Title": "python-jose: allows attackers to cause a denial of service",
-          "Description": "python-jose through 3.3.0 allows attackers to cause a denial of service (resource consumption) during a decode via a crafted JSON Web Encryption (JWE) token with a high compression ratio, aka a \"JWT bomb.\" This is similar to CVE-2024-21319.",
-          "Severity": "MEDIUM",
-          "CweIDs": [
-            "CWE-400"
-          ],
-          "VendorSeverity": {
-            "ghsa": 2,
-            "redhat": 2
-          },
-          "CVSS": {
-            "ghsa": {
-              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
-              "V3Score": 5.3
-            }
-          },
-          "References": [
-            "https://access.redhat.com/security/cve/CVE-2024-33664",
-            "https://github.com/mpdavis/python-jose",
-            "https://github.com/mpdavis/python-jose/issues/344",
-            "https://github.com/mpdavis/python-jose/pull/345",
-            "https://github.com/mpdavis/python-jose/releases/tag/3.4.0",
-            "https://github.com/pypa/advisory-database/tree/main/vulns/python-jose/PYSEC-2024-233.yaml",
-            "https://nvd.nist.gov/vuln/detail/CVE-2024-33664",
-            "https://www.cve.org/CVERecord?id=CVE-2024-33664",
-            "https://www.vicarius.io/vsociety/posts/jwt-bomb-in-python-jose-cve-2024-33664"
-          ],
-          "PublishedDate": "2024-04-26T00:15:09.06Z",
-          "LastModifiedDate": "2024-11-21T09:17:21.297Z"
-        },
-        {
           "VulnerabilityID": "CVE-2024-24762",
+          "PkgID": "python-multipart@0.0.6",
           "PkgName": "python-multipart",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/python-multipart@0.0.6",
-            "UID": "e8a0f5c9907b72b1"
+            "UID": "2bb0552ba3d29f09",
+            "BOMRef": "BomRef.24164881808142713.20766612688907715"
           },
           "InstalledVersion": "0.0.6",
           "FixedVersion": "0.0.7",
@@ -847,10 +720,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-53981",
+          "PkgID": "python-multipart@0.0.6",
           "PkgName": "python-multipart",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/python-multipart@0.0.6",
-            "UID": "e8a0f5c9907b72b1"
+            "UID": "2bb0552ba3d29f09",
+            "BOMRef": "BomRef.24164881808142713.20766612688907715"
           },
           "InstalledVersion": "0.0.6",
           "FixedVersion": "0.0.18",
@@ -895,10 +770,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-5206",
+          "PkgID": "scikit-learn@1.3.2",
           "PkgName": "scikit-learn",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/scikit-learn@1.3.2",
-            "UID": "c2149394e12bb7a5"
+            "UID": "c66f0aca96929de9",
+            "BOMRef": "BomRef.9834315764045276.2902113449933015"
           },
           "InstalledVersion": "1.3.2",
           "FixedVersion": "1.5.0",
@@ -950,10 +827,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-32434",
+          "PkgID": "torch@2.1.2",
           "PkgName": "torch",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/torch@2.1.2",
-            "UID": "99fa6a9b0e9b339c"
+            "UID": "72818bc41598e407",
+            "BOMRef": "BomRef.11575943499603625.5675034941931278"
           },
           "InstalledVersion": "2.1.2",
           "FixedVersion": "2.6.0",
@@ -996,10 +875,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-31580",
+          "PkgID": "torch@2.1.2",
           "PkgName": "torch",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/torch@2.1.2",
-            "UID": "99fa6a9b0e9b339c"
+            "UID": "72818bc41598e407",
+            "BOMRef": "BomRef.11575943499603625.5675034941931278"
           },
           "InstalledVersion": "2.1.2",
           "FixedVersion": "2.2.0",
@@ -1045,10 +926,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-31583",
+          "PkgID": "torch@2.1.2",
           "PkgName": "torch",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/torch@2.1.2",
-            "UID": "99fa6a9b0e9b339c"
+            "UID": "72818bc41598e407",
+            "BOMRef": "BomRef.11575943499603625.5675034941931278"
           },
           "InstalledVersion": "2.1.2",
           "FixedVersion": "2.2.0",
@@ -1095,10 +978,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-3730",
+          "PkgID": "torch@2.1.2",
           "PkgName": "torch",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/torch@2.1.2",
-            "UID": "99fa6a9b0e9b339c"
+            "UID": "72818bc41598e407",
+            "BOMRef": "BomRef.11575943499603625.5675034941931278"
           },
           "InstalledVersion": "2.1.2",
           "Status": "affected",
@@ -1148,10 +1033,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-2953",
+          "PkgID": "torch@2.1.2",
           "PkgName": "torch",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/torch@2.1.2",
-            "UID": "99fa6a9b0e9b339c"
+            "UID": "72818bc41598e407",
+            "BOMRef": "BomRef.11575943499603625.5675034941931278"
           },
           "InstalledVersion": "2.1.2",
           "FixedVersion": "2.7.1-rc1",
@@ -1207,10 +1094,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-11392",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.48.0",
@@ -1263,10 +1152,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-11393",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.48.0",
@@ -1319,10 +1210,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-11394",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.48.0",
@@ -1375,10 +1268,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-12720",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.48.0",
@@ -1421,10 +1316,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-1194",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.50.0",
@@ -1467,10 +1364,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-2099",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.50.0",
@@ -1522,10 +1421,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-3263",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.51.0",
@@ -1571,10 +1472,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-3264",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.51.0",
@@ -1620,10 +1523,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-3933",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.52.1",
@@ -1674,10 +1579,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-5197",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.53.0",
@@ -1723,10 +1630,12 @@
         },
         {
           "VulnerabilityID": "CVE-2024-3568",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.38.0",
@@ -1764,10 +1673,12 @@
         },
         {
           "VulnerabilityID": "CVE-2025-3777",
+          "PkgID": "transformers@4.36.2",
           "PkgName": "transformers",
           "PkgIdentifier": {
             "PURL": "pkg:pypi/transformers@4.36.2",
-            "UID": "6071148694869c55"
+            "UID": "a955487024397a35",
+            "BOMRef": "BomRef.3552652700547526.16060932076393986"
           },
           "InstalledVersion": "4.36.2",
           "FixedVersion": "4.52.1",

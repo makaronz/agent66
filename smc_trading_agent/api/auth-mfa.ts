@@ -11,8 +11,8 @@ import {
   VerifyRegistrationResponseOpts,
   VerifyAuthenticationResponseOpts,
 } from '@simplewebauthn/server';
-import supabase from './supabase.js';
-import { authenticateToken } from './middleware/auth.js';
+import { getSupabaseAdmin } from './supabase';
+import { authenticateToken } from './middleware/auth';
 // MFA audit logging removed for deployment optimization
 
 const router = express.Router();
@@ -34,6 +34,7 @@ router.post('/totp/setup', authenticateToken, async (req, res) => {
 
     const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url!);
 
+    const supabase = await getSupabaseAdmin();
     const { error } = await supabase
       .from('user_mfa_methods')
       .upsert({
@@ -71,6 +72,7 @@ router.post('/totp/verify', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    const supabase = await getSupabaseAdmin();
     const { data: mfaData, error: fetchError } = await supabase
       .from('user_mfa_methods')
       .select('totp_secret')
@@ -123,6 +125,7 @@ router.get('/compliance', authenticateToken, async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
+    const supabase = await getSupabaseAdmin();
     const { data: mfaMethods, error: mfaError } = await supabase
       .from('user_mfa_methods')
       .select('*')
@@ -193,6 +196,7 @@ router.post('/sms/setup', authenticateToken, async (req, res) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store phone number and verification code
+    const supabase = await getSupabaseAdmin();
     const { error } = await supabase
       .from('user_mfa_methods')
       .upsert({

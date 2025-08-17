@@ -5,7 +5,7 @@
 
 import swaggerUi from 'swagger-ui-express';
 import { Request, Response, NextFunction } from 'express';
-import { swaggerSpec, API_VERSION } from '../config/swagger.js';
+import { swaggerSpec, API_VERSION } from '../config/swagger';
 
 // Custom CSS for Swagger UI styling
 const customCss = `

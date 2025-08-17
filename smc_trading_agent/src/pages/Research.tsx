@@ -14,6 +14,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { cn } from '../utils';
+import LazyImage from '../components/LazyImage';
 
 const smcPatterns = [
   {
@@ -283,7 +284,15 @@ export default function Research() {
           {/* Patterns Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPatterns.map((pattern) => (
-              <div key={pattern.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+              <div key={pattern.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                {/* Pattern Image */}
+                <div className="h-48 bg-gray-100">
+                  <LazyImage
+                    src={`/images/patterns/${pattern.image}`}
+                    alt={`${pattern.name} pattern example`}
+                    className="w-full h-full"
+                  />
+                </div>
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>

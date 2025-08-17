@@ -40,6 +40,19 @@ export default function Layout() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
+      {/* Skip Links for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Przejdź do głównej zawartości
+      </a>
+      <a
+        href="#navigation"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-40 bg-blue-600 text-white px-4 py-2 rounded-md z-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Przejdź do nawigacji
+      </a>
       {/* Mobile sidebar */}
       <div className={cn(
         'fixed inset-0 flex z-40 md:hidden',
@@ -52,15 +65,16 @@ export default function Layout() {
               type="button"
               className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
               onClick={() => { setSidebarOpen(false); }}
+              aria-label="Zamknij menu nawigacji"
             >
-              <X className="h-6 w-6 text-white" />
+              <X className="h-6 w-6 text-white" aria-hidden="true" />
             </button>
           </div>
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
               <h1 className="text-xl font-bold text-gray-900">SMC Trading Agent</h1>
             </div>
-            <nav className="mt-5 px-2 space-y-1">
+            <nav id="navigation" className="mt-5 px-2 space-y-1" role="navigation" aria-label="Główna nawigacja">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
@@ -98,7 +112,7 @@ export default function Layout() {
               <div className="flex items-center flex-shrink-0 px-4">
                 <h1 className="text-xl font-bold text-gray-900">SMC Trading Agent</h1>
               </div>
-              <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
+              <nav className="mt-5 flex-1 px-2 bg-white space-y-1" role="navigation" aria-label="Główna nawigacja">
                 {navigation.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
@@ -135,9 +149,10 @@ export default function Layout() {
           <button
             type="button"
             className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
-            onClick={() => { setSidebarOpen(true); }}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Otwórz menu nawigacji"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-6 w-6" aria-hidden="true" />
           </button>
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex">
@@ -156,8 +171,9 @@ export default function Layout() {
               <button
                 type="button"
                 className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                aria-label="Powiadomienia"
               >
-                <Bell className="h-6 w-6" />
+                <Bell className="h-6 w-6" aria-hidden="true" />
               </button>
 
               {/* Profile dropdown */}
@@ -166,8 +182,9 @@ export default function Layout() {
                   <button
                     type="button"
                     className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    aria-label="Profil użytkownika"
                   >
-                    <User className="h-8 w-8 rounded-full text-gray-400" />
+                    <User className="h-8 w-8 rounded-full text-gray-400" aria-hidden="true" />
                   </button>
                   <div className="hidden md:block">
                     <div className="text-sm font-medium text-gray-700">
@@ -181,9 +198,9 @@ export default function Layout() {
                     type="button"
                     onClick={handleSignOut}
                     className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    title="Wyloguj się"
+                    aria-label="Wyloguj się"
                   >
-                    <LogOut className="h-5 w-5" />
+                    <LogOut className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -192,7 +209,7 @@ export default function Layout() {
         </div>
 
         {/* Main content area */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+        <main id="main-content" className="flex-1 relative overflow-y-auto focus:outline-none" role="main">
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               <Outlet />

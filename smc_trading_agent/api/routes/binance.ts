@@ -4,8 +4,8 @@
  */
 import { Router, type Request, type Response } from 'express';
 import ccxt from 'ccxt';
-import { authenticateToken } from '../middleware/auth.js';
-import supabaseAdmin from '../supabase.js';
+import { authenticateToken } from '../middleware/auth';
+import { getSupabaseAdmin } from '../supabase';
 // UserService removed for deployment optimization
 
 const router = Router();
@@ -632,6 +632,7 @@ router.post('/place-order', authenticateToken, async (req: Request, res: Respons
 
       // Store successful order in database
         try {
+          const supabaseAdmin = await getSupabaseAdmin();
           const { data: savedTrade, error: dbError } = await supabaseAdmin
             .from('trades')
             .insert(tradeData)

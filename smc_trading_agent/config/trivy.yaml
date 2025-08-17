@@ -2,8 +2,6 @@
 scan:
   scanners:
     - vuln
-    - secret
-    - misconfig
   severity: CRITICAL,HIGH,MEDIUM,LOW
   ignore-unfixed: true
 

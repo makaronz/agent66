@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -15,10 +15,13 @@ import { useRealtime } from '../hooks/useRealtime';
 import { useMarketData } from '../hooks/useMarketData';
 import { smcSignalGenerator } from '../services/smcSignalGenerator';
 import { backgroundPatternDetection } from '../services/backgroundPatternDetection';
-import TradingViewChart from '../components/charts/TradingViewChart';
-import LiveSignals from '../components/realtime/LiveSignals';
-import LiveTrades from '../components/realtime/LiveTrades';
-import RealtimeStatus from '../components/realtime/RealtimeStatus';
+import SEOHead, { SEOConfigs, getStructuredData } from '../components/SEOHead';
+
+// Lazy load heavy components
+const TradingViewChart = lazy(() => import('../components/charts/TradingViewChart'));
+const LiveSignals = lazy(() => import('../components/realtime/LiveSignals'));
+const LiveTrades = lazy(() => import('../components/realtime/LiveTrades'));
+const RealtimeStatus = lazy(() => import('../components/realtime/RealtimeStatus'));
 
 // Symbols to track
 const TRACKED_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT'];
@@ -128,7 +131,13 @@ export default function Dashboard() {
     : mockPositions.reduce((sum, pos) => sum + pos.pnl, 0);
 
   return (
-    <div className="space-y-6">
+    <>
+      <SEOHead 
+        title="Trading Dashboard - SMC Trading Agent"
+        description="Real-time trading dashboard with market data, performance metrics, and live signals for cryptocurrency trading."
+        keywords="trading dashboard, cryptocurrency, market data, trading signals, portfolio"
+      />
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -138,7 +147,14 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <RealtimeStatus />
+          <Suspense fallback={
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <div className="animate-pulse h-4 w-4 bg-gray-300 rounded"></div>
+              <span>Loading status...</span>
+            </div>
+          }>
+            <RealtimeStatus />
+          </Suspense>
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <Clock className="h-4 w-4" />
             <span>{currentTime.toLocaleTimeString()}</span>
@@ -213,10 +229,36 @@ export default function Dashboard() {
       {/* Real-time Data Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Live Signals */}
-        <LiveSignals className="" maxSignals={10} />
+        <Suspense fallback={
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-300 rounded mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-300 rounded"></div>
+                <div className="h-4 bg-gray-300 rounded"></div>
+                <div className="h-4 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+          </div>
+        }>
+          <LiveSignals className="" maxSignals={10} />
+        </Suspense>
         
         {/* Live Trades */}
-        <LiveTrades className="" maxTrades={10} />
+        <Suspense fallback={
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="animate-pulse">
+              <div className="h-6 bg-gray-300 rounded mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-300 rounded"></div>
+                <div className="h-4 bg-gray-300 rounded"></div>
+                <div className="h-4 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+          </div>
+        }>
+          <LiveTrades className="" maxTrades={10} />
+        </Suspense>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -265,12 +307,21 @@ export default function Dashboard() {
 
         {/* Live Chart */}
         <div className="lg:col-span-2">
-          <TradingViewChart 
-            symbol="BTCUSDT" 
-            interval="15m" 
-            height={500}
-            className="h-full"
-          />
+          <Suspense fallback={
+            <div className="bg-white rounded-lg shadow p-6 h-[500px] flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading TradingView Chart...</p>
+              </div>
+            </div>
+          }>
+            <TradingViewChart 
+              symbol="BTCUSDT" 
+              interval="15m" 
+              height={500}
+              className="h-full"
+            />
+          </Suspense>
         </div>
 
         {/* Active Positions */}
@@ -354,5 +405,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

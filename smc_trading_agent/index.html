@@ -4,7 +4,73 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My React App</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>SMC Trading Agent - Smart Market Structure Trading Platform</title>
+    <meta name="title" content="SMC Trading Agent - Smart Market Structure Trading Platform" />
+    <meta name="description" content="Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies." />
+    <meta name="keywords" content="SMC trading, Smart Money Concepts, trading platform, market structure, forex trading, crypto trading, technical analysis" />
+    <meta name="author" content="SMC Trading Agent" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://smc-trading-agent.vercel.app/" />
+    <meta property="og:title" content="SMC Trading Agent - Smart Market Structure Trading Platform" />
+    <meta property="og:description" content="Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="SMC Trading Agent" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://smc-trading-agent.vercel.app/" />
+    <meta property="twitter:title" content="SMC Trading Agent - Smart Market Structure Trading Platform" />
+    <meta property="twitter:description" content="Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies." />
+    <meta property="twitter:image" content="/og-image.png" />
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="theme-color" content="#1f2937" />
+    <meta name="msapplication-TileColor" content="#1f2937" />
+    <link rel="canonical" href="https://smc-trading-agent.vercel.app/" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/App.tsx" />
+    <link rel="preload" href="/src/index.css" as="style" />
+    
+    <!-- DNS prefetch for potential external resources -->
+    <link rel="dns-prefetch" href="//api.binance.com" />
+    <link rel="dns-prefetch" href="//api.bybit.com" />
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "SMC Trading Agent",
+      "description": "Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies.",
+      "url": "https://smc-trading-agent.vercel.app/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "SMC Trading Agent"
+      }
+    }
+    </script>
     <script type="module">
       if (import.meta.hot?.on) {
         import.meta.hot.on('vite:error', (error) => {

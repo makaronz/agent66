@@ -82,6 +82,7 @@ class SBOMGenerator:
             from cyclonedx.output.json import JsonV1Dot5
             from cyclonedx.output.xml import XmlV1Dot5
             from cyclonedx.model.component import Component, ComponentType
+            from packageurl import PackageURL
             import hashlib
             import re
             
@@ -108,16 +109,28 @@ class SBOMGenerator:
                     
                     # Create component
                     try:
+                        self.logger.debug(f"About to create Component with: name={package_name}, type={ComponentType.LIBRARY}, version={version}")
+                        self.logger.debug(f"ComponentType.LIBRARY type: {type(ComponentType.LIBRARY)}")
+                        
+                        # Create PackageURL object
+                        if version != "unknown":
+                            purl = PackageURL(type="pypi", name=package_name, version=version)
+                        else:
+                            purl = PackageURL(type="pypi", name=package_name)
+                        
                         component = Component(
                             type=ComponentType.LIBRARY,
                             name=package_name,
                             version=version if version != "unknown" else None,
-                            purl=f"pkg:pypi/{package_name}@{version}" if version != "unknown" else f"pkg:pypi/{package_name}"
+                            purl=purl
                         )
+                        self.logger.debug(f"Component created successfully: {component}")
                         bom.components.add(component)
                         self.logger.debug(f"Successfully added component: {package_name}")
                     except Exception as e:
                         self.logger.error(f"Error creating component for {package_name}: {e}")
+                        import traceback
+                        self.logger.error(f"Traceback: {traceback.format_exc()}")
                         raise
             
             # Write SBOM to file

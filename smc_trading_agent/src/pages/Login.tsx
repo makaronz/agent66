@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, TrendingUp } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import SEOHead from '../components/SEOHead';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -63,7 +64,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900">
+    <>
+      <SEOHead 
+        title="Login - SMC Trading Agent"
+        description="Sign in to access your SMC Trading Agent dashboard. Secure login for cryptocurrency trading platform."
+        keywords="login, trading platform, cryptocurrency, SMC trading, secure access"
+      />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="text-center">
@@ -215,6 +222,7 @@ export default function Login() {
           </form>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

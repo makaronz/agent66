@@ -12,7 +12,7 @@ interface AuthModalProps {
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
-const AuthModal: React.FC<AuthModalProps> = ({
+const AuthModal: React.FC<AuthModalProps> = React.memo(({
   isOpen,
   onClose,
   initialMode = 'login'
@@ -68,6 +68,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default AuthModal;

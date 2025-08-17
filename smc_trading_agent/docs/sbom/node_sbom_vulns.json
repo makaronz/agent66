@@ -1,0 +1,333 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2025-08-17T11:16:16.57406+02:00",
+  "ArtifactName": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/node.sbom.xml",
+  "ArtifactType": "cyclonedx",
+  "Results": [
+    {
+      "Target": "Node.js",
+      "Class": "lang-pkgs",
+      "Type": "node-pkg",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2025-26791",
+          "PkgID": "dompurify@2.5.8",
+          "PkgName": "dompurify",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/dompurify@2.5.8",
+            "UID": "2ac58d35e0071297",
+            "BOMRef": "pkg:npm/dompurify@2.5.8"
+          },
+          "InstalledVersion": "2.5.8",
+          "FixedVersion": "3.2.4",
+          "Status": "fixed",
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-26791",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory npm",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Anpm"
+          },
+          "Title": "dompurify: Mutation XSS in DOMPurify Due to Improper Template Literal Handling",
+          "Description": "DOMPurify before 3.2.4 has an incorrect template literal regular expression, sometimes leading to mutation cross-site scripting (mXSS).",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-79"
+          ],
+          "VendorSeverity": {
+            "ghsa": 2,
+            "redhat": 2
+          },
+          "CVSS": {
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:L/I:L/A:N",
+              "V3Score": 4.5
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:L/I:L/A:N",
+              "V3Score": 4.5
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2025-26791",
+            "https://ensy.zip/posts/dompurify-323-bypass",
+            "https://ensy.zip/posts/dompurify-323-bypass/",
+            "https://github.com/cure53/DOMPurify",
+            "https://github.com/cure53/DOMPurify/commit/d18ffcb554e0001748865da03ac75dd7829f0f02",
+            "https://github.com/cure53/DOMPurify/releases/tag/3.2.4",
+            "https://nsysean.github.io/posts/dompurify-323-bypass",
+            "https://nsysean.github.io/posts/dompurify-323-bypass/",
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-26791",
+            "https://www.cve.org/CVERecord?id=CVE-2025-26791"
+          ],
+          "PublishedDate": "2025-02-14T09:15:08.067Z",
+          "LastModifiedDate": "2025-02-14T16:15:37.35Z"
+        },
+        {
+          "VulnerabilityID": "GHSA-67mh-4wv8-2f99",
+          "PkgID": "esbuild@0.14.47",
+          "PkgName": "esbuild",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/esbuild@0.14.47",
+            "UID": "74128a52573d1391",
+            "BOMRef": "pkg:npm/esbuild@0.14.47"
+          },
+          "InstalledVersion": "0.14.47",
+          "FixedVersion": "0.25.0",
+          "Status": "fixed",
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://github.com/advisories/GHSA-67mh-4wv8-2f99",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory npm",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Anpm"
+          },
+          "Title": "esbuild enables any website to send any requests to the development server and read the response",
+          "Description": "### Summary\n\nesbuild allows any websites to send any request to the development server and read the response due to default CORS settings.\n\n### Details\n\nesbuild sets `Access-Control-Allow-Origin: *` header to all requests, including the SSE connection, which allows any websites to send any request to the development server and read the response.\n\nhttps://github.com/evanw/esbuild/blob/df815ac27b84f8b34374c9182a93c94718f8a630/pkg/api/serve_other.go#L121\nhttps://github.com/evanw/esbuild/blob/df815ac27b84f8b34374c9182a93c94718f8a630/pkg/api/serve_other.go#L363\n\n**Attack scenario**:\n\n1. The attacker serves a malicious web page (`http://malicious.example.com`).\n1. The user accesses the malicious web page.\n1. The attacker sends a `fetch('http://127.0.0.1:8000/main.js')` request by JS in that malicious web page. This request is normally blocked by same-origin policy, but that's not the case for the reasons above.\n1. The attacker gets the content of `http://127.0.0.1:8000/main.js`.\n\nIn this scenario, I assumed that the attacker knows the URL of the bundle output file name. But the attacker can also get that information by\n\n- Fetching `/index.html`: normally you have a script tag here\n- Fetching `/assets`: it's common to have a `assets` directory when you have JS files and CSS files in a different directory and the directory listing feature tells the attacker the list of files\n- Connecting `/esbuild` SSE endpoint: the SSE endpoint sends the URL path of the changed files when the file is changed (`new EventSource('/esbuild').addEventListener('change', e =\u003e console.log(e.type, e.data))`)\n- Fetching URLs in the known file: once the attacker knows one file, the attacker can know the URLs imported from that file\n\nThe scenario above fetches the compiled content, but if the victim has the source map option enabled, the attacker can also get the non-compiled content by fetching the source map file.\n\n### PoC\n\n1. Download [reproduction.zip](https://github.com/user-attachments/files/18561484/reproduction.zip)\n2. Extract it and move to that directory\n1. Run `npm i`\n1. Run `npm run watch`\n1. Run `fetch('http://127.0.0.1:8000/app.js').then(r =\u003e r.text()).then(content =\u003e console.log(content))` in a different website's dev tools.\n\n![image](https://github.com/user-attachments/assets/08fc2e4d-e1ec-44ca-b0ea-78a73c3c40e9)\n\n### Impact\n\nUsers using the serve feature may get the source code stolen by malicious websites.",
+          "Severity": "MEDIUM",
+          "VendorSeverity": {
+            "ghsa": 2
+          },
+          "CVSS": {
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N",
+              "V3Score": 5.3
+            }
+          },
+          "References": [
+            "https://github.com/evanw/esbuild",
+            "https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d",
+            "https://github.com/evanw/esbuild/security/advisories/GHSA-67mh-4wv8-2f99"
+          ],
+          "PublishedDate": "2025-02-10T17:48:07Z",
+          "LastModifiedDate": "2025-02-10T17:48:08Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-45296",
+          "PkgID": "path-to-regexp@6.1.0",
+          "PkgName": "path-to-regexp",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/path-to-regexp@6.1.0",
+            "UID": "834976f7c6eca55c",
+            "BOMRef": "pkg:npm/path-to-regexp@6.1.0"
+          },
+          "InstalledVersion": "6.1.0",
+          "FixedVersion": "1.9.0, 0.1.10, 8.0.0, 3.3.0, 6.3.0",
+          "Status": "fixed",
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-45296",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory npm",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Anpm"
+          },
+          "Title": "path-to-regexp: Backtracking regular expressions cause ReDoS",
+          "Description": "path-to-regexp turns path strings into a regular expressions. In certain cases, path-to-regexp will output a regular expression that can be exploited to cause poor performance. Because JavaScript is single threaded and regex matching runs on the main thread, poor performance will block the event loop and lead to a DoS. The bad regular expression is generated any time you have two parameters within a single segment, separated by something that is not a period (.). For users of 0.1, upgrade to 0.1.10. All other users should upgrade to 8.0.0.",
+          "Severity": "HIGH",
+          "CweIDs": [
+            "CWE-1333"
+          ],
+          "VendorSeverity": {
+            "cbl-mariner": 3,
+            "ghsa": 3,
+            "redhat": 2
+          },
+          "CVSS": {
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 7.5
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+              "V3Score": 5.3
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2024-45296",
+            "https://github.com/pillarjs/path-to-regexp",
+            "https://github.com/pillarjs/path-to-regexp/commit/29b96b4a1de52824e1ca0f49a701183cc4ed476f",
+            "https://github.com/pillarjs/path-to-regexp/commit/60f2121e9b66b7b622cc01080df0aabda9eedee6",
+            "https://github.com/pillarjs/path-to-regexp/commit/925ac8e3c5780b02f58cbd4e52f95da8ad2ac485",
+            "https://github.com/pillarjs/path-to-regexp/commit/d31670ae8f6e69cbfd56e835742195b7d10942ef",
+            "https://github.com/pillarjs/path-to-regexp/commit/f1253b47b347dcb909e3e80b0eb2649109e59894",
+            "https://github.com/pillarjs/path-to-regexp/releases/tag/v6.3.0",
+            "https://github.com/pillarjs/path-to-regexp/security/advisories/GHSA-9wv6-86v2-598j",
+            "https://nvd.nist.gov/vuln/detail/CVE-2024-45296",
+            "https://security.netapp.com/advisory/ntap-20250124-0001",
+            "https://security.netapp.com/advisory/ntap-20250124-0001/",
+            "https://www.cve.org/CVERecord?id=CVE-2024-45296"
+          ],
+          "PublishedDate": "2024-09-09T19:15:13.33Z",
+          "LastModifiedDate": "2025-01-24T20:15:32.68Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2024-57083",
+          "PkgID": "redoc@2.0.0",
+          "PkgName": "redoc",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/redoc@2.0.0",
+            "UID": "a029cc01dc5862b5",
+            "BOMRef": "pkg:npm/redoc@2.0.0"
+          },
+          "InstalledVersion": "2.0.0",
+          "FixedVersion": "2.4.0",
+          "Status": "fixed",
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-57083",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory npm",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Anpm"
+          },
+          "Title": "redoc: Prototype Pollution in redoc",
+          "Description": "A prototype pollution in the component Module.mergeObjects (redoc/bundles/redoc.lib.js:2) of redoc \u003c= 2.2.0 allows attackers to cause a Denial of Service (DoS) via supplying a crafted payload.",
+          "Severity": "HIGH",
+          "CweIDs": [
+            "CWE-1321"
+          ],
+          "VendorSeverity": {
+            "ghsa": 3,
+            "redhat": 3
+          },
+          "CVSS": {
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "V3Score": 7.5
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2024-57083",
+            "https://github.com/Redocly/redoc",
+            "https://github.com/Redocly/redoc/issues/2499",
+            "https://github.com/Redocly/redoc/pull/2638",
+            "https://nvd.nist.gov/vuln/detail/CVE-2024-57083",
+            "https://www.cve.org/CVERecord?id=CVE-2024-57083"
+          ],
+          "PublishedDate": "2025-03-28T21:15:17.307Z",
+          "LastModifiedDate": "2025-04-14T17:02:15.813Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-22150",
+          "PkgID": "undici@5.28.4",
+          "PkgName": "undici",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/undici@5.28.4",
+            "UID": "87a70f45139be2d",
+            "BOMRef": "pkg:npm/undici@5.28.4"
+          },
+          "InstalledVersion": "5.28.4",
+          "FixedVersion": "5.28.5, 6.21.1, 7.2.3",
+          "Status": "fixed",
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22150",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory npm",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Anpm"
+          },
+          "Title": "undici: Undici Uses Insufficiently Random Values",
+          "Description": "Undici is an HTTP/1.1 client. Starting in version 4.5.0 and prior to versions 5.28.5, 6.21.1, and 7.2.3, undici uses `Math.random()` to choose the boundary for a multipart/form-data request. It is known that the output of `Math.random()` can be predicted if several of its generated values are known. If there is a mechanism in an app that sends multipart requests to an attacker-controlled website, they can use this to leak the necessary values. Therefore, an attacker can tamper with the requests going to the backend APIs if certain conditions are met. This is fixed in versions 5.28.5, 6.21.1, and 7.2.3. As a workaround, do not issue multipart requests to attacker controlled servers.",
+          "Severity": "MEDIUM",
+          "CweIDs": [
+            "CWE-330"
+          ],
+          "VendorSeverity": {
+            "alma": 3,
+            "amazon": 3,
+            "azure": 2,
+            "cbl-mariner": 2,
+            "ghsa": 2,
+            "oracle-oval": 3,
+            "redhat": 2
+          },
+          "CVSS": {
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N",
+              "V3Score": 6.8
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N",
+              "V3Score": 6.8
+            }
+          },
+          "References": [
+            "https://access.redhat.com/errata/RHSA-2025:1613",
+            "https://access.redhat.com/security/cve/CVE-2025-22150",
+            "https://blog.securityevaluators.com/hacking-the-javascript-lottery-80cc437e3b7f",
+            "https://bugzilla.redhat.com/2339176",
+            "https://bugzilla.redhat.com/2339392",
+            "https://bugzilla.redhat.com/2342618",
+            "https://errata.almalinux.org/9/ALSA-2025-1613.html",
+            "https://github.com/nodejs/undici",
+            "https://github.com/nodejs/undici/blob/8b06b8250907d92fead664b3368f1d2aa27c1f35/lib/web/fetch/body.js#L113",
+            "https://github.com/nodejs/undici/commit/711e20772764c29f6622ddc937c63b6eefdf07d0",
+            "https://github.com/nodejs/undici/commit/c2d78cd19fe4f4c621424491e26ce299e65e934a",
+            "https://github.com/nodejs/undici/commit/c3acc6050b781b827d80c86cbbab34f14458d385",
+            "https://github.com/nodejs/undici/security/advisories/GHSA-c76h-2ccp-4975",
+            "https://hackerone.com/reports/2913312",
+            "https://linux.oracle.com/cve/CVE-2025-22150.html",
+            "https://linux.oracle.com/errata/ELSA-2025-1613.html",
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-22150",
+            "https://www.cve.org/CVERecord?id=CVE-2025-22150"
+          ],
+          "PublishedDate": "2025-01-21T18:15:14.887Z",
+          "LastModifiedDate": "2025-01-21T18:15:14.887Z"
+        },
+        {
+          "VulnerabilityID": "CVE-2025-47279",
+          "PkgID": "undici@5.28.4",
+          "PkgName": "undici",
+          "PkgIdentifier": {
+            "PURL": "pkg:npm/undici@5.28.4",
+            "UID": "87a70f45139be2d",
+            "BOMRef": "pkg:npm/undici@5.28.4"
+          },
+          "InstalledVersion": "5.28.4",
+          "FixedVersion": "5.29.0, 6.21.2, 7.5.0",
+          "Status": "fixed",
+          "SeveritySource": "ghsa",
+          "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47279",
+          "DataSource": {
+            "ID": "ghsa",
+            "Name": "GitHub Security Advisory npm",
+            "URL": "https://github.com/advisories?query=type%3Areviewed+ecosystem%3Anpm"
+          },
+          "Title": "undici: Undici Memory Leak with Invalid Certificates",
+          "Description": "Undici is an HTTP/1.1 client for Node.js. Prior to versions 5.29.0, 6.21.2, and 7.5.0, applications that use undici to implement a webhook-like system are vulnerable. If the attacker set up a server with an invalid certificate, and they can force the application to call the webhook repeatedly, then they can cause a memory leak. This has been patched in versions 5.29.0, 6.21.2, and 7.5.0. As a workaound, avoid calling a webhook repeatedly if the webhook fails.",
+          "Severity": "LOW",
+          "CweIDs": [
+            "CWE-401"
+          ],
+          "VendorSeverity": {
+            "amazon": 3,
+            "azure": 1,
+            "cbl-mariner": 1,
+            "ghsa": 1,
+            "redhat": 1
+          },
+          "CVSS": {
+            "ghsa": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L",
+              "V3Score": 3.1
+            },
+            "redhat": {
+              "V3Vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:L",
+              "V3Score": 3.1
+            }
+          },
+          "References": [
+            "https://access.redhat.com/security/cve/CVE-2025-47279",
+            "https://github.com/nodejs/undici",
+            "https://github.com/nodejs/undici/issues/3895",
+            "https://github.com/nodejs/undici/pull/4088",
+            "https://github.com/nodejs/undici/security/advisories/GHSA-cxrh-j4jr-qwg3",
+            "https://nvd.nist.gov/vuln/detail/CVE-2025-47279",
+            "https://www.cve.org/CVERecord?id=CVE-2025-47279"
+          ],
+          "PublishedDate": "2025-05-15T18:15:38.027Z",
+          "LastModifiedDate": "2025-05-16T14:43:26.16Z"
+        }
+      ]
+    }
+  ]
+}

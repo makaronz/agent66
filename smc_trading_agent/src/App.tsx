@@ -16,6 +16,8 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import SimpleAuthGuard from "@/components/auth/SimpleAuthGuard";
 import { AuthProvider } from "@/contexts/AuthContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import WebVitalsProvider from "@/components/WebVitalsProvider";
+import { HelmetProvider } from 'react-helmet-async';
 
 console.log('📱 App component loading...');
 
@@ -24,7 +26,14 @@ export default function App() {
   
   try {
     return (
-      <AuthProvider>
+      <HelmetProvider>
+        <WebVitalsProvider 
+          enabled={process.env.NODE_ENV === 'production'}
+          endpoint="/api/analytics/vitals"
+          batchSize={5}
+          flushInterval={30000}
+        >
+          <AuthProvider>
         <Router>
           <Suspense fallback={<div className="p-8 flex items-center justify-center"><LoadingSpinner /></div>}>
           <Routes>
@@ -75,7 +84,9 @@ export default function App() {
         />
 
         </Router>
-      </AuthProvider>
+          </AuthProvider>
+        </WebVitalsProvider>
+      </HelmetProvider>
     );
   } catch (error) {
     console.error('❌ Error in App component:', error);

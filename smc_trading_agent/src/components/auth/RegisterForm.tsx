@@ -178,11 +178,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isSubmitting}
+                aria-label={showPassword ? 'Ukryj hasło' : 'Pokaż hasło'}
               >
                 {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" aria-hidden="true" />
                 )}
               </button>
             </div>
@@ -216,11 +217,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 disabled={isSubmitting}
+                aria-label={showConfirmPassword ? 'Ukryj potwierdzenie hasła' : 'Pokaż potwierdzenie hasła'}
               >
                 {showConfirmPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" aria-hidden="true" />
                 ) : (
-                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" aria-hidden="true" />
                 )}
               </button>
             </div>
