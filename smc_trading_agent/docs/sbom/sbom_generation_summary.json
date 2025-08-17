@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-08-17T10:43:15.548842",
+  "project_root": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent",
+  "generated_sboms": {
+    "python": {
+      "path": null,
+      "status": "failed"
+    }
+  },
+  "status": "failed"
+}

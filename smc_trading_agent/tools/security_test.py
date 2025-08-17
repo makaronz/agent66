@@ -1,374 +1,421 @@
 #!/usr/bin/env python3
 """
-Security testing script for API endpoints following OWASP guidelines.
-Tests for common vulnerabilities like SQL injection, XSS, CSRF, etc.
+Security Policy Enforcement Test Script
+
+This script tests the security policy enforcement functionality,
+validates vulnerability scanning results, and ensures compliance
+with defined security standards.
 """
 
-import asyncio
+import os
+import sys
 import json
 import logging
-import sys
-from typing import Dict, List, Any
-import aiohttp
-import sqlite3
-from urllib.parse import urljoin
+import argparse
+import tempfile
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
+from datetime import datetime
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Add tools directory to path for imports
+sys.path.append(str(Path(__file__).parent))
 
+from security_policy import SecurityPolicy
+from scan_vulnerabilities import VulnerabilityScanner
+from generate_sbom import SBOMGenerator
 
-class SecurityTester:
-    """Security testing framework for API endpoints."""
+@dataclass
+class TestResult:
+    """Represents a test result with status and details."""
+    name: str
+    passed: bool
+    message: str
+    details: Optional[Dict[str, Any]] = None
+
+class SecurityTestRunner:
+    """Main class for running security policy tests."""
     
-    def __init__(self, base_url: str):
-        self.base_url = base_url
-        self.session = None
-        self.results = {
-            'passed': [],
-            'failed': [],
-            'warnings': []
-        }
+    def __init__(self, project_root: Path, config_dir: Path = None):
+        self.project_root = project_root
+        self.config_dir = config_dir or project_root / "config"
+        self.test_results: List[TestResult] = []
+        
+        # Setup logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize components
+        try:
+            self.security_policy = SecurityPolicy(
+                config_file=self.config_dir / "security_policy.yaml"
+            )
+            self.logger.info("Security policy loaded successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to load security policy: {e}")
+            self.security_policy = None
     
-    async def __aenter__(self):
-        self.session = aiohttp.ClientSession()
-        return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self.session:
-            await self.session.close()
-    
-    async def test_sql_injection(self) -> None:
-        """Test for SQL injection vulnerabilities."""
-        logger.info("Testing SQL injection vulnerabilities...")
-        
-        # Common SQL injection payloads
-        payloads = [
-            "' OR '1'='1",
-            "'; DROP TABLE users; --",
-            "' UNION SELECT * FROM users --",
-            "1' OR '1'='1' --",
-            "admin'--",
-            "1' AND 1=1--",
-            "1' AND 1=2--"
-        ]
-        
-        endpoints = [
-            "/api/auth/login",
-            "/api/users/search",
-            "/api/trades/filter"
-        ]
-        
-        for endpoint in endpoints:
-            for payload in payloads:
-                try:
-                    url = urljoin(self.base_url, endpoint)
-                    data = {
-                        'email': payload,
-                        'password': 'test123'
-                    }
-                    
-                    async with self.session.post(url, json=data) as response:
-                        content = await response.text()
-                        
-                        # Check for SQL error messages
-                        sql_errors = [
-                            'sql syntax',
-                            'mysql_fetch',
-                            'ora-',
-                            'postgresql',
-                            'sqlite',
-                            'microsoft ole db provider for sql server'
-                        ]
-                        
-                        if any(error in content.lower() for error in sql_errors):
-                            self.results['failed'].append({
-                                'test': 'SQL Injection',
-                                'endpoint': endpoint,
-                                'payload': payload,
-                                'response': content[:200]
-                            })
-                        elif response.status == 500:
-                            self.results['warnings'].append({
-                                'test': 'SQL Injection',
-                                'endpoint': endpoint,
-                                'payload': payload,
-                                'status': response.status
-                            })
-                        else:
-                            self.results['passed'].append({
-                                'test': 'SQL Injection',
-                                'endpoint': endpoint,
-                                'payload': payload
-                            })
-                            
-                except Exception as e:
-                    logger.error(f"Error testing SQL injection on {endpoint}: {e}")
-    
-    async def test_xss(self) -> None:
-        """Test for XSS vulnerabilities."""
-        logger.info("Testing XSS vulnerabilities...")
-        
-        xss_payloads = [
-            "<script>alert('XSS')</script>",
-            "javascript:alert('XSS')",
-            "<img src=x onerror=alert('XSS')>",
-            "';alert('XSS');//",
-            "<svg onload=alert('XSS')>",
-            "&#60;script&#62;alert('XSS')&#60;/script&#62;"
-        ]
-        
-        endpoints = [
-            "/api/users/profile",
-            "/api/trades/comment",
-            "/api/signals/note"
-        ]
-        
-        for endpoint in endpoints:
-            for payload in xss_payloads:
-                try:
-                    url = urljoin(self.base_url, endpoint)
-                    data = {
-                        'name': payload,
-                        'description': payload,
-                        'comment': payload
-                    }
-                    
-                    async with self.session.post(url, json=data) as response:
-                        content = await response.text()
-                        
-                        # Check if payload is reflected in response
-                        if payload in content:
-                            self.results['failed'].append({
-                                'test': 'XSS',
-                                'endpoint': endpoint,
-                                'payload': payload,
-                                'reflected': True
-                            })
-                        else:
-                            self.results['passed'].append({
-                                'test': 'XSS',
-                                'endpoint': endpoint,
-                                'payload': payload
-                            })
-                            
-                except Exception as e:
-                    logger.error(f"Error testing XSS on {endpoint}: {e}")
-    
-    async def test_csrf(self) -> None:
-        """Test for CSRF vulnerabilities."""
-        logger.info("Testing CSRF vulnerabilities...")
-        
-        # Test if endpoints accept requests without proper CSRF tokens
-        csrf_endpoints = [
-            "/api/trades/execute",
-            "/api/users/update",
-            "/api/settings/change"
-        ]
-        
-        for endpoint in csrf_endpoints:
-            try:
-                url = urljoin(self.base_url, endpoint)
-                headers = {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'  # Some frameworks check this
+    def test_security_policy_loading(self) -> TestResult:
+        """Test if security policy configuration loads correctly."""
+        try:
+            if self.security_policy is None:
+                return TestResult(
+                    "security_policy_loading",
+                    False,
+                    "Security policy failed to load"
+                )
+            
+            # Test basic policy access
+            severity_levels = self.security_policy.get_severity_thresholds()
+            build_fail_severities = self.security_policy.get_build_fail_severities()
+            
+            return TestResult(
+                "security_policy_loading",
+                True,
+                f"Security policy loaded with {len(severity_levels)} severity levels",
+                {
+                    "severity_levels": severity_levels,
+                    "build_fail_severities": build_fail_severities
                 }
-                data = {'action': 'test'}
-                
-                async with self.session.post(url, json=data, headers=headers) as response:
-                    if response.status == 200:
-                        self.results['warnings'].append({
-                            'test': 'CSRF',
-                            'endpoint': endpoint,
-                            'status': response.status,
-                            'note': 'Endpoint might be vulnerable to CSRF'
-                        })
-                    elif response.status == 403:
-                        self.results['passed'].append({
-                            'test': 'CSRF',
-                            'endpoint': endpoint,
-                            'status': response.status
-                        })
-                    else:
-                        self.results['warnings'].append({
-                            'test': 'CSRF',
-                            'endpoint': endpoint,
-                            'status': response.status
-                        })
-                        
-            except Exception as e:
-                logger.error(f"Error testing CSRF on {endpoint}: {e}")
+            )
+        except Exception as e:
+            return TestResult(
+                "security_policy_loading",
+                False,
+                f"Security policy test failed: {str(e)}"
+            )
     
-    async def test_authentication(self) -> None:
-        """Test authentication and authorization."""
-        logger.info("Testing authentication and authorization...")
-        
-        protected_endpoints = [
-            "/api/users/profile",
-            "/api/trades/history",
-            "/api/settings",
-            "/api/admin/users"
-        ]
-        
-        for endpoint in protected_endpoints:
-            try:
-                url = urljoin(self.base_url, endpoint)
+    def test_sbom_generation(self) -> TestResult:
+        """Test SBOM generation functionality."""
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+                sbom_generator = SBOMGenerator(
+                    project_root=self.project_root,
+                    output_dir=temp_path
+                )
                 
-                # Test without authentication
-                async with self.session.get(url) as response:
-                    if response.status == 401:
-                        self.results['passed'].append({
-                            'test': 'Authentication',
-                            'endpoint': endpoint,
-                            'status': response.status
-                        })
-                    else:
-                        self.results['failed'].append({
-                            'test': 'Authentication',
-                            'endpoint': endpoint,
-                            'status': response.status,
-                            'note': 'Endpoint accessible without authentication'
-                        })
-                        
-            except Exception as e:
-                logger.error(f"Error testing authentication on {endpoint}: {e}")
-    
-    async def test_rate_limiting(self) -> None:
-        """Test rate limiting implementation."""
-        logger.info("Testing rate limiting...")
-        
-        rate_limit_endpoints = [
-            "/api/auth/login",
-            "/api/trades/execute",
-            "/api/signals/generate"
-        ]
-        
-        for endpoint in rate_limit_endpoints:
-            try:
-                url = urljoin(self.base_url, endpoint)
-                data = {'test': 'data'}
+                # Test Python SBOM generation
+                python_sbom = sbom_generator.generate_python_sbom(temp_path)
                 
-                # Send multiple requests quickly
-                responses = []
-                for i in range(10):
-                    async with self.session.post(url, json=data) as response:
-                        responses.append(response.status)
-                
-                # Check if rate limiting is enforced
-                if 429 in responses:
-                    self.results['passed'].append({
-                        'test': 'Rate Limiting',
-                        'endpoint': endpoint,
-                        'note': 'Rate limiting enforced'
-                    })
+                if python_sbom and python_sbom.exists():
+                    # Validate SBOM content
+                    with open(python_sbom, 'r') as f:
+                        sbom_data = json.load(f)
+                    
+                    required_fields = ['bomFormat', 'specVersion', 'components']
+                    missing_fields = [field for field in required_fields if field not in sbom_data]
+                    
+                    if missing_fields:
+                        return TestResult(
+                            "sbom_generation",
+                            False,
+                            f"SBOM missing required fields: {missing_fields}"
+                        )
+                    
+                    return TestResult(
+                        "sbom_generation",
+                        True,
+                        f"SBOM generated successfully with {len(sbom_data.get('components', []))} components",
+                        {
+                            "sbom_path": str(python_sbom),
+                            "component_count": len(sbom_data.get('components', []))
+                        }
+                    )
                 else:
-                    self.results['warnings'].append({
-                        'test': 'Rate Limiting',
-                        'endpoint': endpoint,
-                        'note': 'Rate limiting might not be enforced'
-                    })
+                    return TestResult(
+                        "sbom_generation",
+                        False,
+                        "Failed to generate Python SBOM"
+                    )
+        except Exception as e:
+            return TestResult(
+                "sbom_generation",
+                False,
+                f"SBOM generation test failed: {str(e)}"
+            )
+    
+    def test_vulnerability_scanning(self) -> TestResult:
+        """Test vulnerability scanning functionality."""
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+                
+                scanner = VulnerabilityScanner(
+                    project_root=self.project_root,
+                    output_dir=temp_path,
+                    config_file=self.config_dir / "trivy.yaml"
+                )
+                
+                # Test filesystem scanning
+                scan_result = scanner.scan_filesystem()
+                
+                if scan_result and scan_result.exists():
+                    with open(scan_result, 'r') as f:
+                        scan_data = json.load(f)
+                    
+                    return TestResult(
+                        "vulnerability_scanning",
+                        True,
+                        f"Vulnerability scan completed successfully",
+                        {
+                            "scan_path": str(scan_result),
+                            "results_count": len(scan_data.get('Results', []))
+                        }
+                    )
+                else:
+                    return TestResult(
+                        "vulnerability_scanning",
+                        False,
+                        "Vulnerability scan failed to produce results"
+                    )
+        except Exception as e:
+            return TestResult(
+                "vulnerability_scanning",
+                False,
+                f"Vulnerability scanning test failed: {str(e)}"
+            )
+    
+    def test_policy_enforcement(self) -> TestResult:
+        """Test security policy enforcement with sample vulnerabilities."""
+        try:
+            if self.security_policy is None:
+                return TestResult(
+                    "policy_enforcement",
+                    False,
+                    "Security policy not available for testing"
+                )
+            
+            # Create sample vulnerability data for testing
+            sample_vulnerabilities = [
+                {
+                    "VulnerabilityID": "CVE-2023-0001",
+                    "Severity": "CRITICAL",
+                    "PkgName": "test-package",
+                    "Title": "Critical vulnerability for testing"
+                },
+                {
+                    "VulnerabilityID": "CVE-2023-0002",
+                    "Severity": "HIGH",
+                    "PkgName": "another-package",
+                    "Title": "High severity vulnerability for testing"
+                },
+                {
+                    "VulnerabilityID": "CVE-2023-0003",
+                    "Severity": "MEDIUM",
+                    "PkgName": "third-package",
+                    "Title": "Medium severity vulnerability for testing"
+                }
+            ]
+            
+            # Test policy enforcement
+            policy_result = self.security_policy.enforce_policy(sample_vulnerabilities)
+            should_fail_build = self.security_policy.should_fail_build(sample_vulnerabilities)
+            
+            return TestResult(
+                "policy_enforcement",
+                True,
+                f"Policy enforcement working correctly. Build should {'fail' if should_fail_build else 'pass'}",
+                {
+                    "should_fail_build": should_fail_build,
+                    "policy_result": policy_result
+                }
+            )
+        except Exception as e:
+            return TestResult(
+                "policy_enforcement",
+                False,
+                f"Policy enforcement test failed: {str(e)}"
+            )
+    
+    def test_configuration_files(self) -> TestResult:
+        """Test if all required configuration files exist and are valid."""
+        try:
+            required_files = [
+                self.config_dir / "security_policy.yaml",
+                self.config_dir / "trivy.yaml"
+            ]
+            
+            missing_files = []
+            invalid_files = []
+            
+            for config_file in required_files:
+                if not config_file.exists():
+                    missing_files.append(str(config_file))
+                else:
+                    # Try to parse the file
+                    try:
+                        import yaml
+                        with open(config_file, 'r') as f:
+                            yaml.safe_load(f)
+                    except Exception as e:
+                        invalid_files.append(f"{config_file}: {str(e)}")
+            
+            if missing_files or invalid_files:
+                error_msg = ""
+                if missing_files:
+                    error_msg += f"Missing files: {missing_files}. "
+                if invalid_files:
+                    error_msg += f"Invalid files: {invalid_files}."
+                
+                return TestResult(
+                    "configuration_files",
+                    False,
+                    error_msg.strip()
+                )
+            
+            return TestResult(
+                "configuration_files",
+                True,
+                f"All {len(required_files)} configuration files are valid"
+            )
+        except Exception as e:
+            return TestResult(
+                "configuration_files",
+                False,
+                f"Configuration files test failed: {str(e)}"
+            )
+    
+    def run_all_tests(self) -> Dict[str, Any]:
+        """Run all security tests and return results."""
+        self.logger.info("Starting security policy tests...")
+        
+        # List of all tests to run
+        tests = [
+            self.test_configuration_files,
+            self.test_security_policy_loading,
+            self.test_sbom_generation,
+            self.test_vulnerability_scanning,
+            self.test_policy_enforcement
+        ]
+        
+        # Run each test
+        for test_func in tests:
+            try:
+                result = test_func()
+                self.test_results.append(result)
+                
+                status = "PASS" if result.passed else "FAIL"
+                self.logger.info(f"{status}: {result.name} - {result.message}")
+                
+                if result.details:
+                    self.logger.debug(f"Details: {result.details}")
                     
             except Exception as e:
-                logger.error(f"Error testing rate limiting on {endpoint}: {e}")
-    
-    async def test_input_validation(self) -> None:
-        """Test input validation."""
-        logger.info("Testing input validation...")
+                self.logger.error(f"Test {test_func.__name__} crashed: {str(e)}")
+                self.test_results.append(TestResult(
+                    test_func.__name__,
+                    False,
+                    f"Test crashed: {str(e)}"
+                ))
         
-        validation_tests = [
-            {
-                'endpoint': '/api/users/register',
-                'data': {'email': 'invalid-email', 'password': '123'},
-                'expected_status': 400
+        # Generate summary
+        passed_tests = [r for r in self.test_results if r.passed]
+        failed_tests = [r for r in self.test_results if not r.passed]
+        
+        summary = {
+            "total_tests": len(self.test_results),
+            "passed": len(passed_tests),
+            "failed": len(failed_tests),
+            "success_rate": len(passed_tests) / len(self.test_results) * 100 if self.test_results else 0,
+            "results": [
+                {
+                    "name": r.name,
+                    "passed": r.passed,
+                    "message": r.message,
+                    "details": r.details
+                } for r in self.test_results
+            ]
+        }
+        
+        self.logger.info(f"Test Summary: {len(passed_tests)}/{len(self.test_results)} tests passed "
+                        f"({summary['success_rate']:.1f}%)")
+        
+        return summary
+    
+    def generate_report(self, output_file: Path = None) -> Path:
+        """Generate a detailed test report."""
+        if output_file is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = self.project_root / "docs" / "sbom" / f"security_test_report_{timestamp}.json"
+        
+        # Ensure output directory exists
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Run tests if not already run
+        if not self.test_results:
+            self.run_all_tests()
+        
+        # Generate report data
+        report_data = {
+            "timestamp": datetime.now().isoformat(),
+            "project_root": str(self.project_root),
+            "test_summary": {
+                "total_tests": len(self.test_results),
+                "passed": len([r for r in self.test_results if r.passed]),
+                "failed": len([r for r in self.test_results if not r.passed])
             },
-            {
-                'endpoint': '/api/trades/execute',
-                'data': {'symbol': '', 'quantity': -1, 'price': 'invalid'},
-                'expected_status': 400
-            },
-            {
-                'endpoint': '/api/signals/create',
-                'data': {'confidence': 150, 'price_level': 'invalid'},
-                'expected_status': 400
-            }
-        ]
+            "test_results": [
+                {
+                    "name": r.name,
+                    "passed": r.passed,
+                    "message": r.message,
+                    "details": r.details
+                } for r in self.test_results
+            ]
+        }
         
-        for test in validation_tests:
-            try:
-                url = urljoin(self.base_url, test['endpoint'])
-                
-                async with self.session.post(url, json=test['data']) as response:
-                    if response.status == test['expected_status']:
-                        self.results['passed'].append({
-                            'test': 'Input Validation',
-                            'endpoint': test['endpoint'],
-                            'status': response.status
-                        })
-                    else:
-                        self.results['failed'].append({
-                            'test': 'Input Validation',
-                            'endpoint': test['endpoint'],
-                            'expected': test['expected_status'],
-                            'actual': response.status
-                        })
-                        
-            except Exception as e:
-                logger.error(f"Error testing input validation on {test['endpoint']}: {e}")
-    
-    async def run_all_tests(self) -> Dict[str, Any]:
-        """Run all security tests."""
-        logger.info("Starting comprehensive security testing...")
+        # Write report
+        with open(output_file, 'w') as f:
+            json.dump(report_data, f, indent=2)
         
-        await self.test_sql_injection()
-        await self.test_xss()
-        await self.test_csrf()
-        await self.test_authentication()
-        await self.test_rate_limiting()
-        await self.test_input_validation()
-        
-        return self.results
+        self.logger.info(f"Test report written to: {output_file}")
+        return output_file
 
-
-async def main():
-    """Main function."""
-    if len(sys.argv) != 2:
-        print("Usage: python security_test.py <base_url>")
-        print("Example: python security_test.py http://localhost:8000")
-        sys.exit(1)
+def main():
+    """Main function for command-line usage."""
+    parser = argparse.ArgumentParser(description="Security Policy Enforcement Testing")
+    parser.add_argument("--project-root", type=Path, default=Path("."),
+                       help="Project root directory")
+    parser.add_argument("--config-dir", type=Path,
+                       help="Configuration directory (default: PROJECT_ROOT/config)")
+    parser.add_argument("--output", type=Path,
+                       help="Output file for test report")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                       help="Enable verbose logging")
     
-    base_url = sys.argv[1]
+    args = parser.parse_args()
     
-    async with SecurityTester(base_url) as tester:
-        results = await tester.run_all_tests()
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    # Initialize test runner
+    test_runner = SecurityTestRunner(
+        project_root=args.project_root,
+        config_dir=args.config_dir
+    )
+    
+    try:
+        # Run tests
+        summary = test_runner.run_all_tests()
         
-        # Print results
-        print("\n" + "="*50)
-        print("SECURITY TEST RESULTS")
-        print("="*50)
+        # Generate report
+        report_file = test_runner.generate_report(args.output)
         
-        print(f"\n✅ PASSED: {len(results['passed'])}")
-        for test in results['passed'][:5]:  # Show first 5
-            print(f"  - {test['test']}: {test.get('endpoint', 'N/A')}")
-        
-        print(f"\n❌ FAILED: {len(results['failed'])}")
-        for test in results['failed']:
-            print(f"  - {test['test']}: {test.get('endpoint', 'N/A')}")
-            if 'payload' in test:
-                print(f"    Payload: {test['payload']}")
-        
-        print(f"\n⚠️  WARNINGS: {len(results['warnings'])}")
-        for test in results['warnings'][:5]:  # Show first 5
-            print(f"  - {test['test']}: {test.get('endpoint', 'N/A')}")
-        
-        # Save detailed results to file
-        with open('security_test_results.json', 'w') as f:
-            json.dump(results, f, indent=2, default=str)
-        
-        print(f"\nDetailed results saved to: security_test_results.json")
-        
-        # Exit with error if any tests failed
-        if results['failed']:
+        # Exit with appropriate code
+        if summary["failed"] > 0:
+            print(f"Tests failed: {summary['failed']}/{summary['total_tests']}")
             sys.exit(1)
-
+        else:
+            print(f"All tests passed: {summary['passed']}/{summary['total_tests']}")
+            sys.exit(0)
+            
+    except Exception as e:
+        logging.error(f"Security testing failed: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

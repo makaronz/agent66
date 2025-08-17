@@ -110,3 +110,6 @@ src/execution_engine/
 # Development configs
 nodemon.json
 eslint.config.js
+smc_trading_agent/.trivy-cache/
+smc_trading_agent/.trivy-cache/db/
+smc_trading_agent/.trivy-cache/db/trivy.db

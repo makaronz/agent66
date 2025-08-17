@@ -96,3 +96,7 @@ plotly==5.17.0
 
 # API documentation
 openapi-spec-validator==0.7.1
+
+# --- Security SBOM tools ---
+# CycloneDX SBOM generator for Python dependencies
+cyclonedx-bom==3.7.4

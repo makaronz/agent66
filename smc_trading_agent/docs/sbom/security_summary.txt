@@ -1,0 +1,11 @@
+SMC Trading Agent - Security Scan Summary
+==========================================
+Timestamp: Sat Aug 16 23:05:56 CEST 2025
+Scan Mode: full
+Environment: development
+Format: table
+
+SBOM Files Generated:
+
+Scan Results:
+  - trivy_fs_full.json

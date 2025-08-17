@@ -17,7 +17,11 @@
     "docs:serve": "http-server docs/api -p 8080 -o",
     "docs:build": "npm run docs:generate && npm run docs:validate",
     "api:start": "concurrently \"npm run server:dev\" \"python -m uvicorn api_fastapi:app --host 0.0.0.0 --port 8000\"",
-    "api:test": "newman run docs/postman/smc-trading-agent-collection.json -e docs/postman/development.json"
+    "api:test": "newman run docs/postman/smc-trading-agent-collection.json -e docs/postman/development.json",
+    "sbom:generate": "python tools/generate_sbom.py --output docs/sbom --format json",
+    "security:scan": "python tools/scan_vulnerabilities.py --mode full",
+    "security:check": "python tools/scan_vulnerabilities.py --mode quick",
+    "security:report": "python tools/scan_vulnerabilities.py --mode report"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
@@ -103,6 +107,7 @@
     "vite": "^6.3.5",
     "vite-plugin-trae-solo-badge": "^1.0.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@cyclonedx/cdxgen": "^10.8.1"
   }
 }

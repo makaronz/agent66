@@ -1,0 +1,37 @@
+# Trivy configuration for filesystem, SBOM, and container scans
+scan:
+  scanners:
+    - vuln
+    - secret
+    - misconfig
+  severity: CRITICAL,HIGH,MEDIUM,LOW
+  ignore-unfixed: true
+
+vulnerability:
+  type: os,library
+  ignore-policy: config/security_policy.yaml
+
+misconfiguration:
+  include-non-failures: false
+
+secret:
+  severity: CRITICAL,HIGH,MEDIUM,LOW
+
+cache:
+  dir: .trivy-cache
+
+format: json
+output: docs/sbom/trivy_scan.json
+
+timeout: 10m
+
+# Ignore common build/test folders to reduce noise
+ignore:
+  - node_modules
+  - dist
+  - build
+  - .git
+  - .venv
+  - htmlcov
+  - __pycache__
+  - tests
