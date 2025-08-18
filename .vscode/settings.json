@@ -9,5 +9,6 @@
         "**/node_modules/**": true,
         "**/.vscode/**": true
     },
-    "traycer.enableAutoAnalysis": true
+    "traycer.enableAutoAnalysis": true,
+    "coderabbit.autoReviewMode": "auto"
 }
