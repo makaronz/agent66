@@ -25,7 +25,10 @@
     "security:scan": "python tools/scan_vulnerabilities.py --mode full",
     "security:quick": "./tools/sbom_workflow.sh --scan quick --verbose",
     "security:check": "python tools/scan_vulnerabilities.py --mode quick",
-    "security:report": "python tools/scan_vulnerabilities.py --mode report"
+    "security:report": "python tools/scan_vulnerabilities.py --mode report",
+    "deploy:vercel": "vercel --prod",
+    "deploy:preview": "vercel",
+    "deploy:build": "pnpm run build && pnpm run deploy:vercel"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
