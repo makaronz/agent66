@@ -144,10 +144,23 @@ export const useKlinesQuery = (
 ) => {
   return useQuery({
     queryKey: ['klines', symbol, interval, limit],
-    queryFn: async () => {
+    queryFn: async (): Promise<KlineData[]> => {
       try {
-        // TODO: Implement getKlines in MarketDataService
-        throw new Error('getKlines not implemented yet');
+        const raw = await marketDataService.getKlines(symbol, interval, limit);
+        const parsed: KlineData[] = raw.map((k: any[]) => ({
+          openTime: k[0],
+          open: k[1],
+          high: k[2],
+          low: k[3],
+          close: k[4],
+          volume: k[5],
+          closeTime: k[6],
+          quoteAssetVolume: k[7],
+          numberOfTrades: k[8],
+          takerBuyBaseAssetVolume: k[9],
+          takerBuyQuoteAssetVolume: k[10],
+        }));
+        return parsed;
       } catch (error: any) {
         console.error('Failed to fetch klines:', error);
         throw error;
@@ -161,21 +174,20 @@ export const useKlinesQuery = (
 };
 
 // Recent Trades Query
-export const useRecentTradesQuery = (symbol: string, limit: number = 100) => {
+export const useRecentTradesQuery = (symbol: string, limit: number = 100, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['recentTrades', symbol, limit],
     queryFn: async () => {
       if (!symbol) throw new Error('Symbol is required');
-      
       try {
-        // TODO: Implement getRecentTrades in MarketDataService
-        throw new Error('getRecentTrades not implemented yet');
-      } catch (error) {
-        console.error('Failed to fetch recent trades:', error);
+        const trades = await marketDataService.getRecentTrades(symbol, limit);
+        return trades;
+      } catch (error: any) {
+        handleQueryError(error, `recent trades for ${symbol}`);
         throw error;
       }
     },
-    enabled: false, // Disabled until implemented
+    enabled: enabled && !!symbol,
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // 1 minute
   });

@@ -312,6 +312,28 @@ class MarketDataService {
       throw error;
     }
   }
+
+  public async getRecentTrades(symbol: string, limit: number = 100): Promise<any[]> {
+    try {
+      // Mock recent trades data
+      const trades = [];
+      for (let i = 0; i < limit; i++) {
+        trades.push({
+          id: i,
+          price: '50000',
+          qty: '0.01',
+          quoteQty: '500',
+          time: Date.now() - i * 1000,
+          isBuyerMaker: i % 2 === 0,
+          isBestMatch: true,
+        });
+      }
+      return trades;
+    } catch (error) {
+      console.error(`Error fetching recent trades for ${symbol}:`, error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
