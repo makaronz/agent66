@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd smc_trading_agent && npm run build",
+  "buildCommand": "cd smc_trading_agent && pnpm run build",
   "outputDirectory": "smc_trading_agent/dist",
-  "installCommand": "cd smc_trading_agent && npm install",
+  "installCommand": "cd smc_trading_agent && pnpm install --no-frozen-lockfile",
   "rewrites": [
     {
       "source": "/api/(.*)",
