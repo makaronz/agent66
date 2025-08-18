@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, TrendingUp } from 'lucide-react';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
 import SEOHead from '../components/SEOHead';
 
@@ -13,7 +13,7 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<{email?: string; password?: string}>({});
   const navigate = useNavigate();
-  const { signIn, loading } = useAuthContext();
+  const { signIn, isLoading } = useAuthStore();
 
   const validateForm = () => {
     const errors: {email?: string; password?: string} = {};
@@ -46,7 +46,7 @@ export default function Login() {
     try {
       const result = await signIn(email, password);
       
-      if (result.success) {
+      if (!result.error) {
         // Store API key in localStorage if provided
         if (apiKey.trim()) {
           localStorage.setItem('trading_api_key', apiKey);
@@ -54,6 +54,8 @@ export default function Login() {
         
         // Navigate to dashboard on successful login
         navigate('/');
+      } else {
+        toast.error(result.error.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -193,14 +195,14 @@ export default function Login() {
             <div>
               <button
                 type="submit"
-                disabled={isSubmitting || loading}
+                disabled={isSubmitting || isLoading}
                 className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  isSubmitting || loading
+                  isSubmitting || isLoading
                     ? 'bg-blue-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {isSubmitting || loading ? (
+                {isSubmitting || isLoading ? (
                   <div className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, ArrowLeft, Key } from 'lucide-react';
-import { useAuthContext } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ForgotPasswordFormProps {
   onSuccess?: () => void;
@@ -14,7 +14,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const { resetPassword } = useAuthContext();
+  const { resetPassword } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,9 +24,9 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      const { success } = await resetPassword(email);
+      const { error } = await resetPassword(email);
       
-      if (success) {
+      if (!error) {
         setIsSubmitted(true);
         setTimeout(() => {
           onSuccess?.();

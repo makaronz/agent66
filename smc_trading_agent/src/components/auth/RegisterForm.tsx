@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, UserPlus } from 'lucide-react';
-import { useAuthContext } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/authStore';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -21,7 +21,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { signUp } = useAuthContext();
+  const { signUp } = useAuthStore();
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -64,15 +64,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      const { success } = await signUp(
+      const { error } = await signUp(
         formData.email,
-        formData.password,
-        {
-          full_name: formData.fullName
-        }
+        formData.password
       );
       
-      if (success) {
+      if (!error) {
         onSuccess?.();
       }
     } finally {

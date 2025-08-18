@@ -10,6 +10,13 @@ console.log('React version:', React.version);
 
 console.log('🚀 Starting SMC Trading Agent application...');
 
+// HOTFIX: Conditionally disable StrictMode in development to prevent double mounting
+// This resolves duplicate API calls and WebSocket connections
+const isDevelopment = import.meta.env.DEV;
+const enableStrictMode = import.meta.env.VITE_ENABLE_STRICT_MODE === 'true' || !isDevelopment;
+
+console.log(`🔧 StrictMode ${enableStrictMode ? 'enabled' : 'disabled'} (dev: ${isDevelopment})`);
+
 try {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
@@ -22,12 +29,19 @@ try {
   
   console.log('✅ React root created, rendering app...');
   
+  const AppComponent = (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+  
+  // Conditionally wrap with StrictMode
   root.render(
-    <StrictMode>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
+    enableStrictMode ? (
+      <StrictMode>
+        {AppComponent}
       </StrictMode>
+    ) : AppComponent
   );
   
   console.log('✅ App rendered successfully!');

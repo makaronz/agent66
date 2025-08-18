@@ -7,12 +7,15 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '../utils';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
+import { useMarketDataStore } from '../stores/marketDataStore';
+import { useUIStore } from '../stores/uiStore';
 import { useRealtime } from '../hooks/useRealtime';
-import { useMarketData } from '../hooks/useMarketData';
+import { useAllTickersQuery } from '../hooks/queries/useMarketDataQueries';
 import { smcSignalGenerator } from '../services/smcSignalGenerator';
 import { backgroundPatternDetection } from '../services/backgroundPatternDetection';
 import SEOHead, { SEOConfigs, getStructuredData } from '../components/SEOHead';
@@ -33,9 +36,12 @@ const mockPositions = [
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { user, profile } = useAuthContext();
+  const { user, profile } = useAuthStore();
+  const { tickers, wsState, error: marketError } = useMarketDataStore();
+  const binanceConnected = wsState.isConnected;
+  const { addToast } = useUIStore();
   const { trades, signals, isConnected, marketDataConnected } = useRealtime();
-  const { marketData, isConnected: binanceConnected, error: marketError } = useMarketData();
+  const { data: allTickersData, isLoading: tickersLoading } = useAllTickersQuery();
   const [systemStarted, setSystemStarted] = useState(false);
   const [patternDetectionActive, setPatternDetectionActive] = useState(false);
 
@@ -86,9 +92,19 @@ export default function Dashboard() {
           setPatternDetectionActive(true);
           
           setSystemStarted(true);
+          addToast({
+            type: 'success',
+            title: 'System Started',
+            message: 'Trading system initialized successfully'
+          });
           console.log('Trading system initialized successfully');
         } catch (error) {
           console.error('Failed to initialize trading system:', error);
+          addToast({
+            type: 'error',
+            title: 'System Error',
+            message: 'Failed to initialize trading system'
+          });
         }
       }
     };
@@ -107,15 +123,29 @@ export default function Dashboard() {
 
   // Get real market data for tracked symbols
   const getMarketDataForSymbol = (symbol: string) => {
-    const data = marketData.find(m => m.symbol === symbol);
-    if (!data) return null;
+    // Try from Zustand store first
+    const storeData = tickers[symbol];
+    if (storeData) {
+      return {
+        symbol,
+        price: parseFloat(storeData.price),
+        change: parseFloat(storeData.priceChangePercent),
+        volume: storeData.volume
+      };
+    }
     
-    return {
-      symbol,
-      price: data.price,
-      change: data.changePercent,
-      volume: data.volume.toString()
-    };
+    // Fallback to TanStack Query data
+    const queryData = allTickersData?.find(t => t.symbol === symbol);
+    if (queryData) {
+      return {
+        symbol,
+        price: parseFloat(queryData.price),
+        change: parseFloat(queryData.priceChangePercent),
+        volume: queryData.volume
+      };
+    }
+    
+    return null;
   };
 
   const realMarketData = TRACKED_SYMBOLS.map(symbol => getMarketDataForSymbol(symbol)).filter(Boolean);
@@ -269,7 +299,12 @@ export default function Dashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {realMarketData.length > 0 ? (
+              {tickersLoading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-500">Ładowanie danych rynkowych...</p>
+                </div>
+              ) : realMarketData.length > 0 ? (
                 realMarketData.map((market) => (
                   <div key={market.symbol} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -297,8 +332,18 @@ export default function Dashboard() {
               ) : (
                 <div className="text-center py-4">
                   <p className="text-sm text-gray-500">
-                    {binanceConnected ? 'Ładowanie danych rynkowych...' : 'Brak połączenia z Binance API'}
+                    {binanceConnected ? 'Brak danych dla śledzonych symboli' : 'Brak połączenia z Binance API'}
                   </p>
+                  {marketError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center">
+                        <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                        <span className="text-red-700">
+                          {marketError}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

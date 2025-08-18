@@ -13,7 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '../utils';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 
 // Mock SMC patterns data
 const mockSMCPatterns = [
@@ -96,7 +96,7 @@ interface OrderResponse {
 }
 
 export default function TradingInterface() {
-  const { user } = useAuthContext();
+  const { user } = useAuthStore();
   const isAuthenticated = !!user;
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [orderSide, setOrderSide] = useState<'BUY' | 'SELL'>('BUY');

@@ -55,12 +55,24 @@ export class VaultClient {
   private tokenRenewalInterval?: NodeJS.Timeout;
 
   constructor(config: VaultConfig = {}) {
+    // Always initialize basic properties
     this.vaultUrl = config.vaultUrl || process.env.VAULT_ADDR || 'http://vault.vault.svc.cluster.local:8200';
     this.vaultToken = config.vaultToken;
     this.kubernetesRole = config.kubernetesRole || process.env.VAULT_ROLE || 'smc-trading-role';
     this.tokenFilePath = config.tokenFilePath || '/vault/secrets/token';
     this.cacheTtl = config.cacheTtl || 300000; // 5 minutes in ms
     this.maxRetries = config.maxRetries || 3;
+
+    // Check if Vault is disabled in development
+    if (process.env.VAULT_ENABLED === 'false') {
+      console.warn('[vault] Vault is disabled in development mode');
+      // Create a dummy client to prevent errors
+      this.client = axios.create({
+        baseURL: 'http://localhost',
+        timeout: 1000
+      });
+      return;
+    }
 
     this.client = axios.create({
       baseURL: this.vaultUrl,
@@ -70,40 +82,33 @@ export class VaultClient {
       }
     });
 
-    // Initialize authentication
-    this.authenticate().catch(error => {
-      console.error('Failed to authenticate with Vault:', error);
-    });
+    // Initialize authentication only if Vault is enabled
+    if (process.env.VAULT_ENABLED !== 'false') {
+      this.authenticate().catch(error => {
+        console.error('Failed to authenticate with Vault:', error);
+      });
 
-    // Start token renewal
-    this.startTokenRenewal();
+      // Start token renewal
+      this.startTokenRenewal();
+    }
 
     // Cleanup on process exit
     process.on('SIGTERM', () => this.close());
     process.on('SIGINT', () => this.close());
   }
 
-  private async authenticate(): Promise<void> {
+  async authenticate(): Promise<void> {
+    // Check if Vault is disabled in development
+    if (process.env.VAULT_ENABLED === 'false') {
+      console.warn('[vault] Vault disabled in development mode');
+      return;
+    }
+
     try {
-      // Try token from file (Vault Agent)
-      if (existsSync(this.tokenFilePath)) {
-        const token = await fs.readFile(this.tokenFilePath, 'utf8');
-        this.vaultToken = token.trim();
-        this.client.defaults.headers.common['X-Vault-Token'] = this.vaultToken;
-        console.log('Authenticated with Vault using token from file');
-        return;
-      }
-
-      // Try direct token
-      if (this.vaultToken) {
-        this.client.defaults.headers.common['X-Vault-Token'] = this.vaultToken;
-        console.log('Authenticated with Vault using provided token');
-        return;
-      }
-
-      // Try Kubernetes authentication
+      // Try Kubernetes authentication first
       if (await this.authenticateKubernetes()) {
         console.log('Authenticated with Vault using Kubernetes service account');
+        this.startTokenRenewal();
         return;
       }
 
@@ -146,6 +151,12 @@ export class VaultClient {
   }
 
   private startTokenRenewal(): void {
+    // Check if Vault is disabled in development
+    if (process.env.VAULT_ENABLED === 'false') {
+      console.warn('[vault] Token renewal disabled in development mode');
+      return;
+    }
+    
     // Renew token every 30 minutes
     this.tokenRenewalInterval = setInterval(async () => {
       try {
@@ -211,6 +222,12 @@ export class VaultClient {
   }
 
   async getSecret(path: string, useCache: boolean = true): Promise<VaultSecret> {
+    // Check if Vault is disabled in development
+    if (process.env.VAULT_ENABLED === 'false') {
+      console.warn(`[vault] Vault disabled, cannot retrieve secret from path: ${path}`);
+      throw new VaultClientError('Vault is disabled in development mode');
+    }
+
     // Check cache first
     if (useCache && this.isCacheValid(path)) {
       console.debug(`Returning cached secret for path: ${path}`);
@@ -243,6 +260,15 @@ export class VaultClient {
   }
 
   async getDatabaseConfig(): Promise<{ DATABASE_URL: string; DATABASE_PASSWORD: string }> {
+    // Check if Vault is disabled in development
+    if (process.env.VAULT_ENABLED === 'false') {
+      console.warn('[vault] Vault disabled, using environment variable for database config');
+      return {
+        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://localhost:5432/smc_trading_agent',
+        DATABASE_PASSWORD: process.env.DATABASE_PASSWORD || ''
+      };
+    }
+
     try {
       const secret = await this.getSecret('secret/data/smc-trading/database');
       return {
@@ -310,6 +336,16 @@ export class VaultClient {
   }
 
   async getSupabaseConfig(): Promise<{ SUPABASE_URL: string; SUPABASE_SERVICE_ROLE_KEY: string; SUPABASE_ANON_KEY: string }> {
+    // Check if Vault is disabled in development
+    if (process.env.VAULT_ENABLED === 'false') {
+      console.warn('[vault] Vault disabled, using environment variables for Supabase config');
+      return {
+        SUPABASE_URL: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+      };
+    }
+
     try {
       const secret = await this.getSecret('secret/data/smc-trading/supabase');
       return {
@@ -397,6 +433,24 @@ export class VaultClient {
 let vaultClient: VaultClient | null = null;
 
 export function getVaultClient(): VaultClient {
+  // Check if Vault is disabled in development
+  if (process.env.VAULT_ENABLED === 'false') {
+    // Return a mock client that doesn't actually connect to Vault
+    return {
+      authenticate: async () => {},
+      getSecret: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      getSupabaseConfig: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      getDatabaseConfig: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      getExchangeConfig: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      getJwtConfig: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      encryptData: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      decryptData: async () => { throw new VaultClientError('Vault is disabled in development mode'); },
+      healthCheck: async () => ({ vaultUrl: 'disabled', authenticated: false, cacheSize: 0, lastAuthMethod: 'none' }),
+      invalidateCache: () => {},
+      close: () => {}
+    } as unknown as VaultClient;
+  }
+  
   if (!vaultClient) {
     vaultClient = new VaultClient();
   }
@@ -422,6 +476,12 @@ export function getConfigValue(key: string, defaultValue?: any, vaultPath?: stri
 
 // Async configuration helpers
 export async function getDatabaseUrl(): Promise<string> {
+  // Check if Vault is disabled in development
+  if (process.env.VAULT_ENABLED === 'false') {
+    console.warn('[vault] Vault disabled, using environment variable for database URL');
+    return process.env.DATABASE_URL || 'postgresql://localhost:5432/smc_trading_agent';
+  }
+
   try {
     const client = getVaultClient();
     const config = await client.getDatabaseConfig();
@@ -433,6 +493,32 @@ export async function getDatabaseUrl(): Promise<string> {
 }
 
 export async function getExchangeCredentials(exchange: string): Promise<Record<string, string>> {
+  // Check if Vault is disabled in development
+  if (process.env.VAULT_ENABLED === 'false') {
+    console.warn(`[vault] Vault disabled, using environment variables for ${exchange} credentials`);
+    
+    // Fallback to environment variables
+    switch (exchange) {
+      case 'binance':
+        return {
+          BINANCE_API_KEY: process.env.BINANCE_API_KEY || '',
+          BINANCE_API_SECRET: process.env.BINANCE_API_SECRET || ''
+        };
+      case 'bybit':
+        return {
+          BYBIT_API_KEY: process.env.BYBIT_API_KEY || '',
+          BYBIT_API_SECRET: process.env.BYBIT_API_SECRET || ''
+        };
+      case 'oanda':
+        return {
+          OANDA_API_KEY: process.env.OANDA_API_KEY || '',
+          OANDA_ACCOUNT_ID: process.env.OANDA_ACCOUNT_ID || ''
+        };
+      default:
+        return {};
+    }
+  }
+
   try {
     const client = getVaultClient();
     return await client.getExchangeConfig(exchange);
@@ -463,6 +549,12 @@ export async function getExchangeCredentials(exchange: string): Promise<Record<s
 }
 
 export async function getJwtSecret(): Promise<string> {
+  // Check if Vault is disabled in development
+  if (process.env.VAULT_ENABLED === 'false') {
+    console.warn('[vault] Vault disabled, using environment variable for JWT secret');
+    return process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+  }
+
   try {
     const client = getVaultClient();
     const config = await client.getJwtConfig();
@@ -474,6 +566,12 @@ export async function getJwtSecret(): Promise<string> {
 }
 
 export async function getEncryptionKey(): Promise<string> {
+  // Check if Vault is disabled in development
+  if (process.env.VAULT_ENABLED === 'false') {
+    console.warn('[vault] Vault disabled, using environment variable for encryption key');
+    return process.env.ENCRYPTION_KEY || 'fallback-key-change-in-production';
+  }
+
   try {
     const client = getVaultClient();
     const config = await client.getJwtConfig();

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { binanceApi, MarketData } from '../services/binanceApi';
-import { toast } from 'sonner';
-import { backgroundPatternDetection } from '../services/backgroundPatternDetection';
-import { smcSignalGenerator } from '../services/smcSignalGenerator';
+import { useCallback, useEffect } from 'react';
+import { MarketData } from '../services/binanceApi';
+import { useMarketDataStore, TickerData } from '../stores/marketDataStore';
+import { useExchangeInfoQuery } from './queries/useMarketDataQueries';
+import { backgroundPatternDetection } from '../services/BackgroundPatternDetection';
+import { smcSignalGenerator } from '../services/SMCSignalGenerator';
 
 interface UseMarketDataOptions {
   symbols?: string[];
@@ -10,325 +11,220 @@ interface UseMarketDataOptions {
   updateInterval?: number;
 }
 
-interface MarketDataState {
+interface MarketDataHookReturn {
   data: Record<string, MarketData>;
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
   lastUpdate: Date | null;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+  refresh: () => Promise<void>;
+  getSymbolData: (symbol: string) => MarketData | null;
+  getAllData: () => MarketData[];
+  hasSymbol: (symbol: string) => boolean;
+  getConnectionStatus: () => {
+    isConnected: boolean;
+    isLoading: boolean;
+    error: string | null;
+    lastUpdate: Date | null;
+  };
+  symbols: string[];
+  hasData: boolean;
+  dataCount: number;
 }
 
-export function useMarketData(options: UseMarketDataOptions = {}) {
+// ITERATION 2: Refactored to use Zustand store and TanStack Query
+// This provides better state management and caching capabilities
+export function useMarketData(options: UseMarketDataOptions = {}): MarketDataHookReturn {
   console.log('🔄 useMarketData hook called with options:', options);
-  console.log('🚀 HOOK EXECUTION STARTED - useMarketData is running!');
+  console.log('🚀 HOOK EXECUTION STARTED - useMarketData using Zustand + TanStack Query!');
   
   const {
     symbols = ['BTCUSDT'], // Test with single symbol first
     autoConnect = true, // Enable auto-connect for better user experience
-    updateInterval = 30000 // WebSocket connection monitoring interval
+    updateInterval = 60000 // 60 seconds to respect rate limits
   } = options;
 
-  const [state, setState] = useState<MarketDataState>({
-    data: {},
-    isConnected: false,
-    isLoading: true,
-    error: null,
-    lastUpdate: null
-  });
+  // Use Zustand store for market data state
+  const {
+    tickers,
+    wsState,
+    isLoading,
+    error,
+    lastUpdate,
+    setSelectedSymbols,
+    connectWebSocket,
+    disconnectWebSocket,
+    setTicker,
+    fetchMultipleTickers
+  } = useMarketDataStore();
 
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-  const mountedRef = useRef(true);
+  // Data fetching is handled by the store
+  const tickersLoading = false;
+  const tickersError = null;
 
-  // Update market data
-  const updateMarketData = useCallback((marketData: MarketData) => {
-    if (!mountedRef.current) return;
-    
-    setState(prev => ({
-      ...prev,
-      data: {
-        ...prev.data,
-        [marketData.symbol]: marketData
-      },
-      lastUpdate: new Date(),
-      isLoading: false,
-      error: null
-    }));
-    
-    // Update background services with WebSocket data
-    try {
-      // Update background pattern detection
-      if (backgroundPatternDetection && typeof backgroundPatternDetection.updatePriceData === 'function') {
-        backgroundPatternDetection.updatePriceData(marketData.symbol, {
-          price: marketData.price,
-          open: marketData.open,
-          high: marketData.high,
-          low: marketData.low,
-          close: marketData.price,
-          volume: marketData.volume
-        });
+  const { data: exchangeInfo } = useExchangeInfoQuery();
+
+  // Update background services when new data arrives
+  const updateBackgroundServices = useCallback((data: Record<string, MarketData>) => {
+    Object.values(data).forEach(marketData => {
+      try {
+        // Update background pattern detection
+        if (backgroundPatternDetection && typeof backgroundPatternDetection.updatePriceData === 'function') {
+          backgroundPatternDetection.updatePriceData(marketData.symbol, {
+            price: marketData.price,
+            open: marketData.open,
+            high: marketData.high,
+            low: marketData.low,
+            close: marketData.price,
+            volume: marketData.volume
+          });
+        }
+        
+        // Update SMC signal generator
+        if (smcSignalGenerator && typeof smcSignalGenerator.updatePriceFromWebSocket === 'function') {
+          smcSignalGenerator.updatePriceFromWebSocket(marketData.symbol, {
+            price: marketData.price,
+            open: marketData.open,
+            high: marketData.high,
+            low: marketData.low,
+            close: marketData.price,
+            volume: marketData.volume
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error updating background services:', error);
       }
-      
-      // Update SMC signal generator
-      if (smcSignalGenerator && typeof smcSignalGenerator.updatePriceFromWebSocket === 'function') {
-        smcSignalGenerator.updatePriceFromWebSocket(marketData.symbol, {
-          price: marketData.price,
-          open: marketData.open,
-          high: marketData.high,
-          low: marketData.low,
-          close: marketData.price,
-          volume: marketData.volume
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error updating background services:', error);
-    }
+    });
   }, []);
 
-  // Initialize empty data structure for symbols
-  const initializeEmptyData = useCallback(() => {
-    if (!mountedRef.current) return;
-    
-    const dataMap: Record<string, MarketData> = {};
-    symbols.forEach(symbol => {
-      // Initialize with empty/placeholder data that will be populated by WebSocket
-      dataMap[symbol] = {
-        symbol,
-        price: 0,
-        change: 0,
-        changePercent: 0,
-        volume: 0,
-        high: 0,
-        low: 0,
-        open: 0
-      };
-    });
-    
-    setState(prev => ({
-      ...prev,
-      data: dataMap,
-      isLoading: false,
-      error: null,
-      lastUpdate: new Date()
-    }));
-  }, [symbols]);
+  // Set selected symbols in store when symbols change
+  useEffect(() => {
+    setSelectedSymbols(symbols);
+  }, [symbols, setSelectedSymbols]);
 
-  // Connect using REST API fallback
-  const connect = useCallback(async () => {
-    console.log('🔄 useMarketData connect called, using REST API fallback');
-    if (!mountedRef.current) return;
-    
-    console.log('🚀 Starting market data connection with REST API...');
-    setState(prev => ({ ...prev, isConnected: false, error: null, isLoading: true }));
-
-    try {
-      const tickers = await binanceApi.get24hrTicker();
-      const filteredTickers = tickers.filter(ticker => 
-        symbols.includes(ticker.symbol)
-      );
-      
-      const newData: Record<string, MarketData> = {};
-      filteredTickers.forEach(ticker => {
-        newData[ticker.symbol] = {
+  // Update background services when ticker data changes
+  useEffect(() => {
+    if (tickers && Object.keys(tickers).length > 0) {
+      // Convert TickerData to MarketData format for background services
+      const marketDataFormat: Record<string, MarketData> = {};
+      Object.entries(tickers).forEach(([symbol, ticker]) => {
+        marketDataFormat[symbol] = {
           symbol: ticker.symbol,
           price: parseFloat(ticker.price),
           change: parseFloat(ticker.priceChange),
           changePercent: parseFloat(ticker.priceChangePercent),
           volume: parseFloat(ticker.volume),
-          high: parseFloat(ticker.highPrice),
-          low: parseFloat(ticker.lowPrice),
-          open: parseFloat(ticker.openPrice)
+          high: parseFloat(ticker.high),
+          low: parseFloat(ticker.low),
+          open: parseFloat(ticker.open)
         };
       });
-      
-      if (mountedRef.current) {
-        setState(prev => ({
-          ...prev,
-          data: newData,
-          isLoading: false,
-          isConnected: true,
-          lastUpdate: new Date()
-        }));
-        
-        console.log('✅ Market data connection established via REST API');
-        toast.success('Connected to market data via REST API');
-      }
-      
-    } catch (error) {
-      if (!mountedRef.current) return;
-      
-      console.error('❌ Failed to connect to market data:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to connect to market data';
-      setState(prev => ({
-        ...prev,
-        error: errorMessage,
-        isConnected: false,
-        isLoading: false
-      }));
-      toast.error(errorMessage);
+      updateBackgroundServices(marketDataFormat);
     }
-  }, [symbols, updateMarketData]);
+  }, [tickers, updateBackgroundServices]);
 
-    // Disconnect from WebSocket
+  // Auto-connect effect
+  useEffect(() => {
+    if (autoConnect && !wsState.isConnected) {
+      console.log('🔄 Starting auto-connect with symbols:', symbols);
+      connectWebSocket();
+      fetchMultipleTickers(symbols);
+    }
+  }, [autoConnect, wsState.isConnected, connectWebSocket, fetchMultipleTickers, symbols]);
+
+  // Combine data from different sources - convert TickerData to MarketData
+   const combinedData: Record<string, MarketData> = {};
+   Object.entries(tickers).forEach(([symbol, ticker]) => {
+     combinedData[symbol] = {
+       symbol: ticker.symbol,
+       price: parseFloat(ticker.price),
+       change: parseFloat(ticker.priceChange),
+       changePercent: parseFloat(ticker.priceChangePercent),
+       volume: parseFloat(ticker.volume),
+       high: parseFloat(ticker.high),
+       low: parseFloat(ticker.low),
+       open: parseFloat(ticker.open)
+     };
+   });
+
+  // Combine loading states
+  const combinedLoading = isLoading || tickersLoading;
+  
+  // Combine errors
+  const combinedError = error || tickersError?.message || null;
+
+  // Connect function - delegates to store
+  const connect = useCallback(async () => {
+    console.log('🔄 useMarketData connect called, delegating to store');
+    connectWebSocket();
+    await fetchMultipleTickers(symbols);
+  }, [connectWebSocket, fetchMultipleTickers, symbols]);
+
+  // Disconnect function - delegates to store
   const disconnect = useCallback(() => {
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-    
-    setState(prev => ({ ...prev, isConnected: false }));
-  }, []);
+    console.log('🔄 useMarketData disconnect called');
+    disconnectWebSocket();
+  }, [disconnectWebSocket]);
 
-  // Refresh data manually - REST API approach
+  // Refresh function - refetch queries
   const refresh = useCallback(async () => {
-    // Fetch fresh data from REST API
-    await connect();
-  }, [connect]);
+    console.log('🔄 useMarketData refresh called');
+    // Refetch data from store
+    await fetchMultipleTickers(symbols);
+  }, [fetchMultipleTickers, symbols]);
 
   // Get specific symbol data
   const getSymbolData = useCallback((symbol: string): MarketData | null => {
-    return state.data[symbol] || null;
-  }, []);
+    return combinedData[symbol] || null;
+  }, [combinedData]);
 
   // Get all symbols data as array
   const getAllData = useCallback((): MarketData[] => {
-    return Object.values(state.data);
-  }, []);
+    return Object.values(combinedData);
+  }, [combinedData]);
 
   // Check if specific symbol is available
   const hasSymbol = useCallback((symbol: string): boolean => {
-    return symbol in state.data;
-  }, []);
+    return symbol in combinedData;
+  }, [combinedData]);
 
-  // Get connection status details
+  // Get connection status
   const getConnectionStatus = useCallback(() => {
-    return binanceApi.getConnectionStatus();
-  }, []);
-
-  // Initialize with REST API fallback
-  useEffect(() => {
-    console.log('🔧 useMarketData useEffect triggered, using REST API fallback');
-    mountedRef.current = true;
-    let intervalId: NodeJS.Timeout;
-    
-    // Fallback to REST API due to WebSocket CORS issues in browser
-    const fetchMarketData = async () => {
-      try {
-        setState(prev => ({ ...prev, isLoading: true, error: null }));
-        
-        const tickers = await binanceApi.get24hrTicker();
-        const filteredTickers = tickers.filter(ticker => 
-          symbols.includes(ticker.symbol)
-        );
-        
-        const newData: Record<string, MarketData> = {};
-        filteredTickers.forEach(ticker => {
-          newData[ticker.symbol] = {
-            symbol: ticker.symbol,
-            price: parseFloat(ticker.price),
-            change: parseFloat(ticker.priceChange),
-            changePercent: parseFloat(ticker.priceChangePercent),
-            volume: parseFloat(ticker.volume),
-            high: parseFloat(ticker.highPrice),
-            low: parseFloat(ticker.lowPrice),
-            open: parseFloat(ticker.openPrice)
-          };
-        });
-        
-        if (mountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            data: newData,
-            isLoading: false,
-            isConnected: true,
-            lastUpdate: new Date()
-          }));
-        }
-      } catch (error) {
-        if (mountedRef.current) {
-          console.error('Error fetching market data:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch market data';
-          setState(prev => ({
-            ...prev,
-            error: errorMessage,
-            isLoading: false,
-            isConnected: false
-          }));
-        }
-      }
+    return {
+      isConnected: wsState.isConnected,
+      isLoading: combinedLoading,
+      error: combinedError,
+      lastUpdate: new Date(lastUpdate)
     };
-
-    // Initial fetch with delay to avoid rate limiting
-    const timeoutId = setTimeout(() => {
-      fetchMarketData();
-      // Update every 60 seconds to avoid rate limiting
-      intervalId = setInterval(fetchMarketData, 60000);
-    }, 1000);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [symbols.join(',')]); // Use string join to avoid array reference issues
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      disconnect();
-    };
-  }, [disconnect]);
-
-  // Monitor connection status
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!mountedRef.current) return;
-      
-      const isConnected = binanceApi.isConnected();
-      setState(prev => {
-        if (prev.isConnected !== isConnected) {
-          return { ...prev, isConnected };
-        }
-        return prev;
-      });
-    }, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [wsState.isConnected, combinedLoading, combinedError, lastUpdate]);
 
   return {
-    marketData: Object.values(state.data),
     // State
-    data: state.data,
-    isConnected: state.isConnected,
-    isLoading: state.isLoading,
-    error: state.error,
-    lastUpdate: state.lastUpdate,
+    data: combinedData,
+    isConnected: wsState.isConnected,
+    isLoading: combinedLoading,
+    error: combinedError,
+    lastUpdate: new Date(lastUpdate),
     
     // Actions
     connect,
     disconnect,
     refresh,
-    subscribeToSymbol: (symbol: string) => {
-      // Implementation for subscribing to individual symbol
-    },
-    unsubscribeFromSymbol: (symbol: string) => {
-      // Implementation for unsubscribing from individual symbol
-    },
     
-    // Getters
+    // Data access
     getSymbolData,
     getAllData,
-    getAllSymbols: () => Object.keys(state.data),
     hasSymbol,
     getConnectionStatus,
     
-    // Computed
-    symbolCount: Object.keys(state.data).length,
-    isOnline: state.isConnected && !state.error,
-    isEmpty: Object.keys(state.data).length === 0
+    // Computed values
+    symbols,
+    hasData: Object.keys(combinedData).length > 0,
+    dataCount: Object.keys(combinedData).length
   };
 }
 
-export type { MarketData, MarketDataState };
+// Export types for external use
+export type { UseMarketDataOptions, MarketDataHookReturn };

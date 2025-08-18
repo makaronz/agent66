@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wifi, WifiOff, RefreshCw, AlertCircle, TrendingUp, Database } from 'lucide-react';
 import { useRealtime } from '../../hooks/useRealtime';
-import { useMarketData } from '../../hooks/useMarketData';
+import { useMarketDataStore } from '../../stores/marketDataStore';
 
 interface RealtimeStatusProps {
   className?: string;
@@ -13,7 +13,12 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = React.memo(({
   showDetails = false
 }) => {
   const { isConnected, connectionError, refreshData } = useRealtime();
-  const { isConnected: binanceConnected, error: binanceError, getConnectionStatus, connect: connectToBinance } = useMarketData();
+  const { 
+    isConnected: binanceConnected, 
+    error: binanceError, 
+    connectionStatus,
+    connect: connectToBinance 
+  } = useMarketDataStore();
   
   const webSocketConnected = binanceConnected;
 
@@ -84,8 +89,7 @@ const RealtimeStatus: React.FC<RealtimeStatusProps> = React.memo(({
           
           {/* WebSocket Details */}
           {showDetails && (() => {
-            const status = getConnectionStatus();
-            const statusEntries = Object.entries(status);
+            const statusEntries = Object.entries(connectionStatus);
             return statusEntries.length > 0 ? (
               <div className="ml-6 space-y-1">
                 {statusEntries.map(([key, statusValue]) => (

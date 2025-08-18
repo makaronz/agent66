@@ -436,8 +436,14 @@ class BinanceApiService {
     }
   }
 
-  // Enhanced WebSocket connection management
+  // HOTFIX: Enhanced WebSocket connection management with debouncing
+  private connectionDebounceMap = new Map<string, NodeJS.Timeout>();
+  private connectionStateMap = new Map<string, 'connecting' | 'connected' | 'disconnected'>();
+  
   private setupWebSocketConnection(wsKey: string, ws: WebSocket, callback: (data: MarketData) => void, symbolOrSymbols: string | string[]): WebSocketConnection {
+    // Set connection state to connecting
+    this.connectionStateMap.set(wsKey, 'connecting');
+    
     const connection: WebSocketConnection = {
       ws,
       lastPong: Date.now(),
@@ -476,8 +482,13 @@ class BinanceApiService {
 
     ws.onopen = () => {
       console.log(`✅ Connected to Binance WebSocket: ${wsKey}`);
+      this.connectionStateMap.set(wsKey, 'connected');
       connection.reconnectAttempts = 0;
-      toast.success(`Connected to ${Array.isArray(symbolOrSymbols) ? 'multiple symbols' : symbolOrSymbols} stream`);
+      
+      // Only show toast for first connection or after reconnect
+      if (connection.reconnectAttempts === 0) {
+        toast.success(`Connected to ${Array.isArray(symbolOrSymbols) ? 'multiple symbols' : symbolOrSymbols} stream`);
+      }
     };
 
     ws.onmessage = (event) => {
@@ -535,15 +546,23 @@ class BinanceApiService {
 
     ws.onclose = (event) => {
       console.log(`🔌 WebSocket closed for ${wsKey}:`, event.code, event.reason);
+      this.connectionStateMap.set(wsKey, 'disconnected');
       
       // Clear ping interval
       if (connection.pingInterval) {
         clearInterval(connection.pingInterval);
       }
       
+      // Clear any pending debounced reconnection
+      const pendingReconnect = this.connectionDebounceMap.get(wsKey);
+      if (pendingReconnect) {
+        clearTimeout(pendingReconnect);
+        this.connectionDebounceMap.delete(wsKey);
+      }
+      
       // Attempt to reconnect if not manually closed
       if (!connection.isManualClose && event.code !== 1000) {
-        this.attemptReconnect(wsKey, symbolOrSymbols, callback, connection);
+        this.attemptReconnectWithDebounce(wsKey, symbolOrSymbols, callback, connection);
       }
     };
 
@@ -655,28 +674,70 @@ class BinanceApiService {
     };
   }
 
-  private attemptReconnect(wsKey: string, symbolOrSymbols: string | string[], callback: (data: MarketData) => void, connection: WebSocketConnection) {
+  // HOTFIX: Debounced reconnection to prevent connection chaos
+  private attemptReconnectWithDebounce(wsKey: string, symbolOrSymbols: string | string[], callback: (data: MarketData) => void, connection: WebSocketConnection) {
+    // Check if we're already trying to reconnect
+    if (this.connectionDebounceMap.has(wsKey)) {
+      console.log(`🔄 Reconnection already pending for ${wsKey}, skipping duplicate attempt`);
+      return;
+    }
+    
+    // Check connection state to prevent duplicate connections
+    const currentState = this.connectionStateMap.get(wsKey);
+    if (currentState === 'connecting') {
+      console.log(`🔄 Connection already in progress for ${wsKey}, skipping reconnect`);
+      return;
+    }
+    
     if (connection.reconnectAttempts < this.maxReconnectAttempts) {
       connection.reconnectAttempts++;
       
       const delay = this.reconnectDelay * Math.pow(2, connection.reconnectAttempts - 1); // Exponential backoff
+      console.log(`⏳ Scheduling reconnection for ${wsKey} in ${delay}ms (attempt ${connection.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        // Remove from debounce map
+        this.connectionDebounceMap.delete(wsKey);
+        
         if (!connection.isManualClose) {
-          console.log(`Attempting to reconnect ${wsKey} (attempt ${connection.reconnectAttempts})`);
+          console.log(`🔄 Attempting to reconnect ${wsKey} (attempt ${connection.reconnectAttempts})`);
           
-          if (Array.isArray(symbolOrSymbols)) {
-            this.subscribeToMultipleTickers(symbolOrSymbols, callback);
-          } else {
-            this.subscribeToTicker(symbolOrSymbols, callback);
+          // Clean up old connection before creating new one
+          this.websockets.delete(wsKey);
+          this.connectionStateMap.set(wsKey, 'connecting');
+          
+          try {
+            if (Array.isArray(symbolOrSymbols)) {
+              this.subscribeToMultipleTickers(symbolOrSymbols, callback);
+            } else {
+              this.subscribeToTicker(symbolOrSymbols, callback);
+            }
+          } catch (error) {
+            console.error(`❌ Failed to reconnect ${wsKey}:`, error);
+            this.connectionStateMap.set(wsKey, 'disconnected');
+            
+            // Try again with increased delay
+            setTimeout(() => {
+              this.attemptReconnectWithDebounce(wsKey, symbolOrSymbols, callback, connection);
+            }, delay * 2);
           }
         }
       }, delay);
+      
+      // Store the timeout ID for potential cancellation
+      this.connectionDebounceMap.set(wsKey, timeoutId);
     } else {
-      console.error(`Max reconnection attempts reached for ${wsKey}`);
+      console.error(`❌ Max reconnection attempts reached for ${wsKey}`);
+      this.connectionStateMap.set(wsKey, 'disconnected');
       toast.error('Lost connection to market data. Please refresh the page.');
       this.websockets.delete(wsKey);
     }
+  }
+  
+  // Keep old method for backward compatibility but mark as deprecated
+  private attemptReconnect(wsKey: string, symbolOrSymbols: string | string[], callback: (data: MarketData) => void, connection: WebSocketConnection) {
+    console.warn('⚠️ attemptReconnect is deprecated, use attemptReconnectWithDebounce instead');
+    this.attemptReconnectWithDebounce(wsKey, symbolOrSymbols, callback, connection);
   }
 
   // Subscribe to kline/candlestick streams
@@ -769,16 +830,32 @@ class BinanceApiService {
     };
   }
 
-  // Close all WebSocket connections
+  // HOTFIX: Enhanced cleanup for WebSocket connections
   closeAllConnections() {
+    console.log('🧹 Cleaning up all WebSocket connections...');
+    
+    // Clear all pending debounced reconnections
+    this.connectionDebounceMap.forEach((timeoutId, key) => {
+      console.log(`⏹️ Clearing pending reconnection for ${key}`);
+      clearTimeout(timeoutId);
+    });
+    this.connectionDebounceMap.clear();
+    
+    // Close all active connections
     this.websockets.forEach((connection, key) => {
+      console.log(`🔌 Closing connection: ${key}`);
       connection.isManualClose = true;
       if (connection.pingInterval) {
         clearInterval(connection.pingInterval);
       }
-      connection.ws.close(1000, 'Service shutdown');
+      if (connection.ws.readyState === WebSocket.OPEN || connection.ws.readyState === WebSocket.CONNECTING) {
+        connection.ws.close(1000, 'Service shutdown');
+      }
     });
     this.websockets.clear();
+    
+    // Clear connection states
+    this.connectionStateMap.clear();
     
     // Clear user data stream connection
     this.userDataStreamConnection = null;
@@ -788,6 +865,8 @@ class BinanceApiService {
     
     // Reset listen key
     this.currentListenKey = null;
+    
+    console.log('✅ All WebSocket connections cleaned up');
   }
 
   // Check if service is connected

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
-import { useAuthContext } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/authStore';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -17,7 +17,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn } = useAuthContext();
+  const { signIn } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,9 +27,9 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({
     setIsSubmitting(true);
     
     try {
-      const { success } = await signIn(email, password);
+      const { error } = await signIn(email, password);
       
-      if (success) {
+      if (!error) {
         onSuccess?.();
       }
     } finally {

@@ -1,0 +1,16 @@
+{
+  "name": "smc-trading-agent-workspace",
+  "version": "1.0.0",
+  "description": "SMC Trading Agent workspace with proxy scripts",
+  "private": true,
+  "scripts": {
+    "server:dev": "npm --prefix smc_trading_agent run server:dev",
+    "client:dev": "npm --prefix smc_trading_agent run dev",
+    "dev": "npm-run-all -p server:dev client:dev",
+    "build": "npm --prefix smc_trading_agent run build",
+    "check": "npm --prefix smc_trading_agent run check"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}

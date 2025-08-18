@@ -15,6 +15,7 @@ const MFASettings = lazy(() => import("@/pages/MFASettings"));
 import AuthGuard from "@/components/auth/AuthGuard";
 import SimpleAuthGuard from "@/components/auth/SimpleAuthGuard";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { QueryProvider } from "@/providers/QueryProvider";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import WebVitalsProvider from "@/components/WebVitalsProvider";
 import { HelmetProvider } from 'react-helmet-async';
@@ -33,7 +34,8 @@ export default function App() {
           batchSize={5}
           flushInterval={30000}
         >
-          <AuthProvider>
+          <QueryProvider>
+            <AuthProvider>
         <Router>
           <Suspense fallback={<div className="p-8 flex items-center justify-center"><LoadingSpinner /></div>}>
           <Routes>
@@ -85,6 +87,7 @@ export default function App() {
 
         </Router>
           </AuthProvider>
+            </QueryProvider>
         </WebVitalsProvider>
       </HelmetProvider>
     );

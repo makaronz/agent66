@@ -10,13 +10,32 @@ import RedisStore from 'rate-limit-redis';
 import Redis from 'ioredis';
 
 // Redis client for rate limiting
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: 3,
-  lazyConnect: true
-});
+const redis = process.env.REDIS_ENABLED === 'false' 
+  ? null 
+  : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD,
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+      enableOfflineQueue: false,
+      retryStrategy: (times) => Math.min(1000 * times, 5000)
+    });
+
+// Handle Redis connection errors gracefully in development
+if (redis) {
+  redis.on('error', (e) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[redis] dev connection problem:', e.message);
+    }
+  });
+  
+  redis.connect().catch(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[redis] Failed to connect in development mode - continuing without Redis');
+    }
+  });
+}
 
 // Generic validation middleware factory
 export const validateRequest = (schema: {
@@ -123,10 +142,7 @@ export const createRateLimit = (options: {
   skipSuccessfulRequests?: boolean;
   keyGenerator?: (req: Request) => string;
 }) => {
-  return rateLimit({
-    store: new RedisStore({
-      sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
-    }),
+  const rateLimitConfig: any = {
     windowMs: options.windowMs,
     max: options.max,
     message: {
@@ -150,40 +166,82 @@ export const createRateLimit = (options: {
         timestamp: new Date().toISOString()
       });
     }
-  });
+  };
+
+  // Add Redis store only if Redis is available
+  if (redis) {
+    rateLimitConfig.store = new RedisStore({
+      sendCommand: (...args: string[]) => redis.call(args[0], ...args.slice(1)) as any,
+    });
+  } else if (process.env.NODE_ENV !== 'production') {
+    console.warn('[redis] Rate limiting using memory store - Redis disabled in development');
+  }
+
+  return rateLimit(rateLimitConfig);
 };
 
-// Predefined rate limiters
-export const generalRateLimit = createRateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
-  message: 'Too many requests from this IP, please try again later'
-});
+// Predefined rate limiters - lazy initialization to respect environment variables
+let _generalRateLimit: any;
+let _authRateLimit: any;
+let _tradingRateLimit: any;
+let _apiKeyRateLimit: any;
+let _marketDataRateLimit: any;
 
-export const authRateLimit = createRateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 login attempts per window
-  message: 'Too many authentication attempts, please try again later',
-  skipSuccessfulRequests: true
-});
+export const generalRateLimit = (req: any, res: any, next: any) => {
+  if (!_generalRateLimit) {
+    _generalRateLimit = createRateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // 100 requests per window
+      message: 'Too many requests from this IP, please try again later'
+    });
+  }
+  return _generalRateLimit(req, res, next);
+};
 
-export const tradingRateLimit = createRateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // 10 trading requests per minute
-  message: 'Too many trading requests, please slow down'
-});
+export const authRateLimit = (req: any, res: any, next: any) => {
+  if (!_authRateLimit) {
+    _authRateLimit = createRateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 5, // 5 login attempts per window
+      message: 'Too many authentication attempts, please try again later',
+      skipSuccessfulRequests: true
+    });
+  }
+  return _authRateLimit(req, res, next);
+};
 
-export const apiKeyRateLimit = createRateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // 5 API key operations per hour
-  message: 'Too many API key operations, please try again later'
-});
+export const tradingRateLimit = (req: any, res: any, next: any) => {
+  if (!_tradingRateLimit) {
+    _tradingRateLimit = createRateLimit({
+      windowMs: 60 * 1000, // 1 minute
+      max: 10, // 10 trading requests per minute
+      message: 'Too many trading requests, please slow down'
+    });
+  }
+  return _tradingRateLimit(req, res, next);
+};
 
-export const marketDataRateLimit = createRateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 60, // 60 market data requests per minute
-  message: 'Too many market data requests, please slow down'
-});
+export const apiKeyRateLimit = (req: any, res: any, next: any) => {
+  if (!_apiKeyRateLimit) {
+    _apiKeyRateLimit = createRateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 5, // 5 API key operations per hour
+      message: 'Too many API key operations, please try again later'
+    });
+  }
+  return _apiKeyRateLimit(req, res, next);
+};
+
+export const marketDataRateLimit = (req: any, res: any, next: any) => {
+  if (!_marketDataRateLimit) {
+    _marketDataRateLimit = createRateLimit({
+      windowMs: 60 * 1000, // 1 minute
+      max: 60, // 60 market data requests per minute
+      message: 'Too many market data requests, please slow down'
+    });
+  }
+  return _marketDataRateLimit(req, res, next);
+};
 
 // CORS configuration with validation
 export const corsOptions = {

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils';
 import toast from 'react-hot-toast';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 
 const exchanges = [
   { id: 'binance', name: 'Binance', status: 'connected', latency: '12ms' },
@@ -40,7 +40,7 @@ const riskParameters = {
 };
 
 export default function Configuration() {
-  const { session } = useAuthContext();
+  const { session } = useAuthStore();
   const [activeTab, setActiveTab] = useState('exchanges');
   const [showApiKeys, setShowApiKeys] = useState<{[key: string]: boolean}>({});
   const [apiKeys, setApiKeys] = useState<{[key: string]: {key: string, secret: string}}>({});

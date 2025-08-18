@@ -11,6 +11,27 @@ async function initializeSupabaseClient(): Promise<void> {
     return; // Already initialized
   }
 
+  // Check if Vault is disabled in development
+  console.log('[supabase] VAULT_ENABLED value:', process.env.VAULT_ENABLED);
+  if (process.env.VAULT_ENABLED === 'false') {
+    console.warn('[supabase] Vault disabled, using environment variables for Supabase config');
+    
+    // Use environment variables directly
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://fqhuoszrysapxrvyaqao.supabase.co';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxaHVvc3pyeXNhcHhydnlhcWFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDgyMzAxMiwiZXhwIjoyMDcwMzk5MDEyfQ.jKJuos3KqupDwVSswUbDE-xZMiCDAFgz6vnth-ZhA7Q';
+    
+    supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+    
+    console.log('Supabase client initialized with environment variables (Vault disabled)');
+    return;
+  }
+
+  // Use Vault for configuration
   try {
     const vaultClient = getVaultClient();
     const supabaseConfig = await vaultClient.getSupabaseConfig();
@@ -41,16 +62,21 @@ async function initializeSupabaseClient(): Promise<void> {
       }
     });
     
+    
     console.log('Supabase client initialized with environment variables');
   }
 }
 
-// Initialize on module load
-initializationPromise = initializeSupabaseClient();
+// Initialize lazily - will be called when getSupabaseAdmin() is first used
+// This ensures dotenv has loaded environment variables first
+initializationPromise = null;
 
 // Getter function to ensure client is initialized
 export async function getSupabaseAdmin() {
   if (!supabaseAdmin) {
+    if (!initializationPromise) {
+      initializationPromise = initializeSupabaseClient();
+    }
     await initializationPromise;
   }
   

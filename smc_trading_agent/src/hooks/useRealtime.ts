@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { realtime } from '../supabase';
-import { useAuthContext } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
+import { useMarketDataStore } from '../stores/marketDataStore';
+import { useUIStore } from '../stores/uiStore';
 import { Trade, SmcSignal, TradingSession } from '../types/database.types';
-import { useMarketData } from './useMarketData';
-import toast from 'react-hot-toast';
 
 interface RealtimeState {
   trades: Trade[];
@@ -23,8 +23,9 @@ interface RealtimeActions {
 }
 
 export const useRealtime = (): RealtimeState & RealtimeActions => {
-  const { user } = useAuthContext();
-  const { isConnected: marketDataConnected, error: marketDataError } = useMarketData();
+  const user = useAuthStore(state => state.user);
+  const { wsState: { isConnected: marketDataConnected }, error: marketDataError } = useMarketDataStore();
+  const { addToast } = useUIStore();
   
   const [state, setState] = useState<RealtimeState>({
     trades: [],
@@ -47,16 +48,16 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
       switch (eventType) {
         case 'INSERT':
           updatedTrades.push(newRecord as Trade);
-          toast.success(`Nowa transakcja: ${newRecord.symbol} ${newRecord.side}`);
+          addToast({ type: 'success', title: 'Nowa transakcja', message: `${newRecord.symbol} ${newRecord.side}` });
           break;
         case 'UPDATE':
           const updateIndex = updatedTrades.findIndex(t => t.id === newRecord.id);
           if (updateIndex !== -1) {
             updatedTrades[updateIndex] = newRecord as Trade;
             if (newRecord.status === 'filled') {
-              toast.success(`Transakcja wykonana: ${newRecord.symbol}`);
+              addToast({ type: 'success', title: 'Transakcja wykonana', message: newRecord.symbol });
             } else if (newRecord.status === 'cancelled') {
-              toast(`Transakcja anulowana: ${newRecord.symbol}`);
+              addToast({ type: 'info', title: 'Transakcja anulowana', message: newRecord.symbol });
             }
           }
           break;
@@ -86,10 +87,12 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
           
           // Show notification for high confidence signals
           if (newRecord.confidence >= 0.8) {
-            toast.success(
-              `Nowy sygnał SMC: ${newRecord.symbol} (${(newRecord.confidence * 100).toFixed(0)}%)`,
-              { duration: 6000 }
-            );
+            addToast({ 
+              type: 'success',
+              title: 'Połączenie',
+              message: `Nowy sygnał SMC: ${newRecord.symbol} (${(newRecord.confidence * 100).toFixed(0)}%)`,
+              duration: 6000
+            });
           }
           break;
         case 'UPDATE':
@@ -97,7 +100,7 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
           if (updateIndex !== -1) {
             updatedSignals[updateIndex] = newRecord as SmcSignal;
             if (newRecord.processed && !oldRecord.processed) {
-              toast(`Sygnał przetworzony: ${newRecord.symbol}`);
+              addToast({ type: 'info', title: 'Sygnał przetworzony', message: newRecord.symbol });
             }
           }
           break;
@@ -120,14 +123,14 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
       switch (eventType) {
         case 'INSERT':
           updatedSessions.push(newRecord as TradingSession);
-          toast.success('Nowa sesja tradingowa rozpoczęta');
+          addToast({ type: 'success', title: 'Sesja rozpoczęta', message: 'Nowa sesja tradingowa rozpoczęta' });
           break;
         case 'UPDATE':
           const updateIndex = updatedSessions.findIndex(s => s.id === newRecord.id);
           if (updateIndex !== -1) {
             updatedSessions[updateIndex] = newRecord as TradingSession;
             if (newRecord.status === 'completed' && oldRecord.status === 'active') {
-              toast('Sesja tradingowa zakończona');
+              addToast({ type: 'info', title: 'Sesja zakończona', message: 'Sesja tradingowa zakończona' });
             }
           }
           break;
@@ -233,7 +236,7 @@ export const useRealtime = (): RealtimeState & RealtimeActions => {
       }));
     } catch (error) {
       console.error('Error refreshing data:', error);
-      toast.error('Błąd podczas odświeżania danych');
+      addToast({ type: 'error', title: 'Błąd', message: 'Błąd podczas odświeżania danych' });
     }
   }, [user]);
 
