@@ -25,3 +25,53 @@ smc_trading_agent/api/.env
 .vercel
 smc_trading_agent/.trivy-cache/
 
+# Large files (>90MB)
+# Git LFS should be used for files larger than 90MB
+*.bin
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+*.rar
+*.7z
+# Database dumps and large data files
+*.sql
+*.dump
+*.backup
+# Large media files
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+*.m4v
+# Large image files
+*.psd
+*.ai
+*.eps
+*.tiff
+*.tif
+# Large audio files
+*.wav
+*.flac
+*.aiff
+*.m4a
+# Machine learning models
+*.model
+*.h5
+*.pkl
+*.joblib
+*.onnx
+*.pb
+# Large datasets
+*.csv
+*.json
+*.parquet
+*.feather
+# Note: Use 'git lfs track "*.extension"' for files that need version control
+

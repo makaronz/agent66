@@ -2,8 +2,8 @@ import { useCallback, useEffect } from 'react';
 import { MarketData } from '../services/binanceApi';
 import { useMarketDataStore, TickerData } from '../stores/marketDataStore';
 import { useExchangeInfoQuery } from './queries/useMarketDataQueries';
-import { backgroundPatternDetection } from '../services/BackgroundPatternDetection';
-import { smcSignalGenerator } from '../services/SMCSignalGenerator';
+import { backgroundPatternDetection } from '../services/backgroundPatternDetection';
+import { smcSignalGenerator } from '../services/smcSignalGenerator';
 
 interface UseMarketDataOptions {
   symbols?: string[];

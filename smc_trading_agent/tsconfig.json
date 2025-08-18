@@ -19,9 +19,9 @@
     "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false,
+    "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": false,
-    "forceConsistentCasingInFileNames": false,
+    "forceConsistentCasingInFileNames": true,
     "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"],
@@ -32,8 +32,7 @@
       "@/utils/*": ["./src/utils/*"]
     },
     "types": [
-      "node",
-      "express"
+      "node"
     ]
   },
   "include": [
