@@ -75,3 +75,4 @@ smc_trading_agent/.trivy-cache/
 *.feather
 # Note: Use 'git lfs track "*.extension"' for files that need version control
 
+.trivy-cache/
