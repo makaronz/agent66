@@ -1,0 +1,111 @@
+# OpenTelemetry Collector Configuration for SMC Trading Agent
+# Centralny hub dla zbierania, przetwarzania i eksportowania danych telemetrycznych
+
+receivers:
+  # OTLP receiver dla aplikacji backend i frontend
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://localhost:3000"  # React dev server
+            - "http://localhost:4173"  # Vite preview
+            - "https://*.vercel.app"   # Vercel deployment
+  
+  # Prometheus receiver dla istniejących metryk
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'smc-trading-agent'
+          static_configs:
+            - targets: ['localhost:8000']  # Backend health endpoint
+        - job_name: 'connection-pool-monitor'
+          static_configs:
+            - targets: ['localhost:9091']  # Connection pool metrics
+
+processors:
+  # Batch processor dla wydajności
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+  
+  # Memory limiter dla stabilności
+  memory_limiter:
+    limit_mib: 512
+    spike_limit_mib: 128
+  
+  # Resource processor dla dodania metadanych
+  resource:
+    attributes:
+      - key: service.name
+        value: smc-trading-agent
+        action: upsert
+      - key: service.version
+        from_attribute: version
+        action: insert
+      - key: deployment.environment
+        from_attribute: env
+        action: insert
+
+exporters:
+  # Console exporter dla debugowania
+  logging:
+    verbosity: detailed
+  
+  # Prometheus exporter dla metryk
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: smc_trading
+    send_timestamps: true
+    metric_expiration: 180m
+    enable_open_metrics: true
+  
+  # OTLP exporter dla traces (Jaeger/Tempo)
+  otlp/jaeger:
+    endpoint: "http://jaeger:14250"
+    tls:
+      insecure: true
+  
+  # File exporter dla backup
+  file:
+    path: "/tmp/otel-logs.json"
+
+service:
+  pipelines:
+    # Pipeline dla metryk
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus, logging]
+    
+    # Pipeline dla traces
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/jaeger, logging]
+    
+    # Pipeline dla logów
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [file, logging]
+  
+  # Extensions dla health check i monitoring
+  extensions: [health_check, pprof, zpages]
+
+extensions:
+  # Health check endpoint
+  health_check:
+    endpoint: 0.0.0.0:13133
+  
+  # Performance profiling
+  pprof:
+    endpoint: 0.0.0.0:1777
+  
+  # zPages dla debugging
+  zpages:
+    endpoint: 0.0.0.0:55679

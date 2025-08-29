@@ -1,0 +1,211 @@
+# Prometheus Alert Rules for SMC Trading Agent
+# Reguły alertów dla krytycznych metryk systemu tradingowego
+
+groups:
+  # Alerty związane z dostępnością systemu
+  - name: smc_system_availability
+    rules:
+      - alert: SMCBackendDown
+        expr: up{job="smc-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "SMC Trading Agent Backend is down"
+          description: "Backend service has been down for more than 1 minute"
+          
+      - alert: SMCHealthCheckFailing
+        expr: smc_health_check_status != 1
+        for: 2m
+        labels:
+          severity: critical
+          component: health
+        annotations:
+          summary: "SMC Health Check Failing"
+          description: "Health check has been failing for {{ $value }} minutes"
+          
+      - alert: DatabaseConnectionLost
+        expr: smc_database_connections_active == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection lost"
+          description: "No active database connections detected"
+
+  # Alerty związane z wydajnością
+  - name: smc_performance
+    rules:
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(smc_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High request latency detected"
+          description: "95th percentile latency is {{ $value }}s for 5 minutes"
+          
+      - alert: HighErrorRate
+        expr: rate(smc_requests_total{status=~"5.."}[5m]) / rate(smc_requests_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          component: errors
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for 3 minutes"
+          
+      - alert: CPUUsageHigh
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% for 5 minutes: {{ $value }}%"
+          
+      - alert: MemoryUsageHigh
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85% for 5 minutes: {{ $value }}%"
+
+  # Alerty związane z tradingiem
+  - name: smc_trading
+    rules:
+      - alert: TradingSignalProcessingDelay
+        expr: smc_signal_processing_delay_seconds > 5.0
+        for: 1m
+        labels:
+          severity: critical
+          component: trading
+        annotations:
+          summary: "Trading signal processing delay"
+          description: "Signal processing delay is {{ $value }}s, exceeding 5s threshold"
+          
+      - alert: OrderExecutionFailureRate
+        expr: rate(smc_order_executions_total{status="failed"}[5m]) / rate(smc_order_executions_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          component: trading
+        annotations:
+          summary: "High order execution failure rate"
+          description: "Order execution failure rate is {{ $value | humanizePercentage }}"
+          
+      - alert: MarketDataStale
+        expr: time() - smc_market_data_last_update_timestamp > 60
+        for: 1m
+        labels:
+          severity: warning
+          component: market_data
+        annotations:
+          summary: "Market data is stale"
+          description: "Market data hasn't been updated for {{ $value }}s"
+          
+      - alert: ExchangeConnectionLost
+        expr: smc_exchange_connection_status != 1
+        for: 30s
+        labels:
+          severity: critical
+          component: exchange
+        annotations:
+          summary: "Exchange connection lost"
+          description: "Connection to exchange {{ $labels.exchange }} is down"
+
+  # Alerty związane z infrastrukturą
+  - name: smc_infrastructure
+    rules:
+      - alert: RedisConnectionDown
+        expr: redis_up != 1
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+        annotations:
+          summary: "Redis connection down"
+          description: "Redis instance is not responding"
+          
+      - alert: PostgreSQLConnectionDown
+        expr: pg_up != 1
+        for: 1m
+        labels:
+          severity: critical
+          component: postgresql
+        annotations:
+          summary: "PostgreSQL connection down"
+          description: "PostgreSQL instance is not responding"
+          
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10%: {{ $value }}% available"
+          
+      - alert: TooManyOpenFiles
+        expr: node_filefd_allocated / node_filefd_maximum > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Too many open files"
+          description: "File descriptor usage is above 80%: {{ $value | humanizePercentage }}"
+
+  # Alerty związane z bezpieczeństwem
+  - name: smc_security
+    rules:
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(smc_auth_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High number of unauthorized access attempts"
+          description: "{{ $value }} failed authentication attempts per second"
+          
+      - alert: SuspiciousAPIActivity
+        expr: rate(smc_api_requests_total[1m]) > 1000
+        for: 1m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "Suspicious API activity detected"
+          description: "Unusually high API request rate: {{ $value }} requests/second"
+
+  # Alerty związane z monitoringiem
+  - name: smc_monitoring
+    rules:
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "Prometheus target down"
+          description: "Target {{ $labels.job }} has been down for more than 2 minutes"
+          
+      - alert: OpenTelemetryCollectorDown
+        expr: up{job="otel-collector"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: monitoring
+        annotations:
+          summary: "OpenTelemetry Collector is down"
+          description: "OTel Collector has been down for more than 1 minute"
