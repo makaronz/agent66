@@ -234,8 +234,7 @@ def error_boundary(component: str, severity: ErrorSeverity = ErrorSeverity.MEDIU
         raise
 
 
-def safe_execute(func: Callable, component: str, 
-                severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+def safe_execute(component: str, severity: ErrorSeverity = ErrorSeverity.MEDIUM,
                 fallback: Optional[Callable] = None,
                 logger: Optional[logging.Logger] = None) -> Callable:
     """
@@ -243,11 +242,13 @@ def safe_execute(func: Callable, component: str,
     
     Wraps a function with error boundary and optional fallback.
     """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        with error_boundary(component, severity, fallback, logger):
-            return func(*args, **kwargs)
-    return wrapper
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with error_boundary(component, severity, fallback, logger):
+                return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 class HealthMonitor:

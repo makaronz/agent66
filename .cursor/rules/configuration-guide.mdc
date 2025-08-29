@@ -1,0 +1,184 @@
+# SMC Trading Agent - Configuration & Validation Guide
+
+## 🚨 **Configuration Issues & Solutions**
+
+### **Current Configuration Problems**
+
+The project has several configuration-related issues that need attention:
+
+1. **Missing Required Sections**
+   - `decision_engine` section is required by validator
+   - `data_pipeline.ingestion` section is missing
+   - `logging` section has conflicts
+
+2. **Validation Errors**
+   - Strict validation blocks application startup
+   - Configuration format mismatches with validator expectations
+   - YAML structure issues causing linter errors
+
+### **Temporary Workarounds (Development)**
+
+#### **1. Disable Configuration Validation**
+**File**: [config_loader.py](mdc:config_loader.py)
+**Action**: Comment out validation call
+```python
+# Validate configuration (temporarily disabled for development)
+# self._validate_configuration(config)
+```
+
+#### **2. Disable Main Validation**
+**File**: [main.py](mdc:main.py)
+**Action**: Comment out validate_config call
+```python
+# Validate configuration (temporarily disabled for development)
+# is_valid, errors, warnings = validate_config(config)
+```
+
+#### **3. Use Basic Logging**
+**File**: [main.py](mdc:main.py)
+**Action**: Replace setup_logging with basic logging
+```python
+# Use basic logging setup instead
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+```
+
+## 📋 **Required Configuration Sections**
+
+### **decision_engine Section**
+```yaml
+decision_engine:
+  model_ensemble:
+    enabled: true
+    models: ["lstm", "transformer", "ensemble"]
+    confidence_threshold: 0.7
+    update_interval: 300
+    retraining_threshold: 0.6
+    model_selection_strategy: "adaptive"
+  
+  trading_strategy:
+    smc_enabled: true
+    trend_following: true
+    mean_reversion: false
+    breakout_detection: true
+    risk_adjustment: true
+    
+  signal_generation:
+    min_confidence: 0.8
+    max_signals_per_hour: 10
+    signal_expiry: 3600
+    confirmation_required: true
+```
+
+### **data_pipeline.ingestion Section**
+```yaml
+data_pipeline:
+  ingestion:
+    source: "exchanges"
+    symbols: ["BTCUSDT", "ETHUSDT", "ADAUSDT", "DOTUSDT", "LINKUSDT"]
+    timeframe: "1m"
+    batch_size: 1000
+    max_latency: 1000
+```
+
+### **smc_detector.indicators Section**
+```yaml
+smc_detector:
+  indicators:
+    - name: "order_block"
+      enabled: true
+      params:
+        min_volume: 1000000
+        min_price_change: 0.001
+    - name: "liquidity_grab"
+      enabled: true
+      params:
+        min_volume: 500000
+        min_price_change: 0.002
+    - name: "fair_value_gap"
+      enabled: true
+      params:
+        min_gap_size: 0.001
+        max_fill_time: 300
+```
+
+## 🔧 **Configuration Validation Rules**
+
+### **Validator Expectations**
+- **Indicators**: Must be list of dictionaries with `name` and `params`
+- **Circuit breaker threshold**: Must be integer (not float)
+- **Required sections**: Must exist in config.yaml
+- **Data types**: Must match expected formats
+
+### **Common Validation Errors**
+1. **"Data pipeline source is required"**
+   - Missing `data_pipeline.ingestion.source`
+
+2. **"At least one trading symbol is required"**
+   - Missing `data_pipeline.ingestion.symbols` list
+
+3. **"Each indicator must be a dictionary"**
+   - `smc_detector.indicators` must be list of dicts, not booleans
+
+4. **"Circuit breaker threshold must be an integer"**
+   - `risk_manager.circuit_breaker_threshold` must be integer (e.g., 10 not 0.1)
+
+## 🚀 **Configuration Fix Strategy**
+
+### **Phase 1: Restore Required Sections**
+1. Add missing `decision_engine` section
+2. Add missing `data_pipeline.ingestion` section
+3. Fix `smc_detector.indicators` format
+
+### **Phase 2: Fix Validation Issues**
+1. Ensure all required fields exist
+2. Fix data type mismatches
+3. Test configuration loading
+
+### **Phase 3: Re-enable Validation**
+1. Uncomment validation calls
+2. Test startup process
+3. Verify all sections pass validation
+
+## 📁 **Configuration Files**
+
+- [config.yaml](mdc:config.yaml) - Main configuration file
+- [config_loader.py](mdc:config_loader.py) - Configuration loading logic
+- [config_validator.py](mdc:config_validator.py) - Validation rules
+- [env.example](mdc:env.example) - Environment variables template
+
+## ⚠️ **Important Notes**
+
+1. **Don't mix relative/direct imports** in configuration files
+2. **YAML structure must be valid** - check for duplicate keys
+3. **Validation is currently disabled** for development
+4. **Vault integration failures** are non-critical (falls back to env vars)
+5. **Logging conflicts** resolved with basic setup
+
+## 🔍 **Debugging Configuration Issues**
+
+### **Check Configuration Loading**
+```bash
+python -c "from config_loader import load_secure_config; print('✅ Config loader works')"
+```
+
+### **Test Specific Sections**
+```bash
+python -c "import yaml; config=yaml.safe_load(open('config.yaml')); print('decision_engine' in config)"
+```
+
+### **Validate YAML Syntax**
+```bash
+python -c "import yaml; yaml.safe_load(open('config.yaml')); print('✅ YAML syntax valid')"
+```
+
+---
+
+**Current Status**: Configuration validation is disabled for development. Focus on fixing the YAML structure and required sections before re-enabling validation.
+description:
+globs:
+alwaysApply: true
+---

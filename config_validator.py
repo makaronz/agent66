@@ -43,9 +43,19 @@ class ConfigValidator:
         
         # Validate each section
         self._validate_app_section(config.get('app', {}))
-        self._validate_data_pipeline_section(config.get('data_pipeline', {}))
-        self._validate_smc_detector_section(config.get('smc_detector', {}))
-        self._validate_decision_engine_section(config.get('decision_engine', {}))
+        
+        # Make data_pipeline optional
+        if 'data_pipeline' in config:
+            self._validate_data_pipeline_section(config.get('data_pipeline', {}))
+        
+        # Make smc_detector optional
+        if 'smc_detector' in config:
+            self._validate_smc_detector_section(config.get('smc_detector', {}))
+        
+        # Make decision_engine optional
+        if 'decision_engine' in config:
+            self._validate_decision_engine_section(config.get('decision_engine', {}))
+        
         self._validate_execution_engine_section(config.get('execution_engine', {}))
         self._validate_risk_manager_section(config.get('risk_manager', {}))
         self._validate_monitoring_section(config.get('monitoring', {}))

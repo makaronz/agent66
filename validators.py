@@ -15,8 +15,8 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field, validator, model_validator
 from enum import Enum
 
-from .error_handlers import DataValidationError, ErrorSeverity
-from .monitoring.data_quality_metrics import inc_quality_error, inc_anomaly
+from error_handlers import DataValidationError, ErrorSeverity
+from monitoring.data_quality_metrics import inc_quality_error, inc_anomaly
 
 
 class DataQualityLevel(Enum):

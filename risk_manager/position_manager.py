@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from enum import Enum
 import aiohttp
 
-from ..data_pipeline.exchange_connectors import ExchangeConnector, ExchangeConnectorError
+from data_pipeline.exchange_connectors import ExchangeConnector, ExchangeConnectorError
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import numpy as np
 from scipy.signal import find_peaks
 import numba
 from numba import jit, float64, int64, boolean
-from numba.typed import List
+from numba.core.types import List
 from typing import Tuple
 
 # Numba-optimized helper functions for SMC detection

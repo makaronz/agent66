@@ -157,29 +157,33 @@ class VaultClient:
         cache_time = self._cache_timestamps[key]
         return datetime.now() - cache_time < timedelta(seconds=self.cache_ttl)
     
-    def _retry_on_failure(self, func):
+    @staticmethod
+    def _retry_on_failure(func):
         """Decorator for retrying Vault operations"""
         @wraps(func)
         def wrapper(*args, **kwargs):
             last_exception = None
+            max_retries = 3  # Default retry count
             
-            for attempt in range(self.max_retries):
+            for attempt in range(max_retries):
                 try:
                     return func(*args, **kwargs)
                 except (VaultError, requests.RequestException) as e:
                     last_exception = e
-                    if attempt < self.max_retries - 1:
+                    if attempt < max_retries - 1:
                         wait_time = 2 ** attempt  # Exponential backoff
                         logger.warning(f"Vault operation failed (attempt {attempt + 1}), retrying in {wait_time}s: {e}")
                         time.sleep(wait_time)
                         
                         # Try to re-authenticate on auth errors
                         if "permission denied" in str(e).lower():
-                            self._authenticate()
+                            # Get self instance from args
+                            if args and hasattr(args[0], '_authenticate'):
+                                args[0]._authenticate()
                     else:
-                        logger.error(f"Vault operation failed after {self.max_retries} attempts: {e}")
+                        logger.error(f"Vault operation failed after {max_retries} attempts: {e}")
             
-            raise VaultClientError(f"Operation failed after {self.max_retries} attempts: {last_exception}")
+            raise VaultClientError(f"Operation failed after {max_retries} attempts: {last_exception}")
         
         return wrapper
     

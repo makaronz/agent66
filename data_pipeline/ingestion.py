@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
 
 from .exchange_connectors import ExchangeConnector, BinanceConnector, ByBitConnector, OANDAConnector
-from ..monitoring.data_quality_metrics import set_freshness
+from monitoring.data_quality_metrics import set_freshness
 from .kafka_producer import KafkaProducerManager, KafkaConfig, DataType, DataSerializer, TopicManager
 
 logger = logging.getLogger(__name__)

@@ -5,10 +5,26 @@ alwaysApply: true
 
 # Todo2 Project Context
 
-*Last updated: 08/29/2025, 08:34 PM*
+*Last updated: 08/29/2025, 10:00 PM*
 *Generated automatically from .todo2/state.todo2.json*
 
 ## Current Task Overview (Last 20 Tasks - Newest First)
+
+### T-180: Identify top 10 key files and justify selection
+- **Status:** In Progress ⚡ | **Priority:** high 🟠 | **Created:** 08/29/2025, 09:56 PM | **Updated:** 08/29/2025, 10:00 PM
+- **Tags:** ##analysis ##docs ##discovery
+- **Dependencies:** None
+- **Comments**: 1 research_with_links, 0 result, 0 notes, 0 manualsetup
+- **Status:** In Progress
+- **Key Insight:** Pick 10 key files representing docs, build, backend, frontend, deploy.
+
+### T-181: Duplicate selected 10 files into LLP/ and commit
+- **Status:** Review ❓ | **Priority:** medium 🟡 | **Created:** 08/29/2025, 09:56 PM | **Updated:** 08/29/2025, 10:00 PM
+- **Tags:** None
+- **Dependencies:** None
+- **Comments**: 0 research_with_links, 1 result, 0 notes, 0 manualsetup
+- **Status:** Review
+- **Key Insight:** Duplicated 10 selected key files into LLP/ and committed. Files: 1) README.md – project overview and architecture 2) DEPLOYMENT.md – deployment processes (Vercel/K8s) 3) package.json – scripts, toolchain, deps 4) vite.config.ts – frontend build config and dev proxy 5) src/main.tsx – React entry a...
 
 ### T-175: Dodać resource limits i requests dla wszystkich kontenerów
 - **Status:** Todo 📋 | **Priority:** high 🟠 | **Created:** 08/20/2025, 10:11 PM | **Updated:** 08/20/2025, 10:11 PM
@@ -154,33 +170,19 @@ alwaysApply: true
 - **Status:** Todo
 - **Key Insight:** *[No key insight available]*
 
-### T-167: Data compliance (RODO/PII): inwentaryzacja, retencja, RTBF
-- **Status:** Todo 📋 | **Priority:** medium 🟡 | **Created:** 08/12/2025, 12:46 AM | **Updated:** 08/12/2025, 12:46 AM
-- **Tags:** ###compliance ###gdpr
-- **Dependencies:** None
-- **Comments**: 0 research_with_links, 0 result, 0 notes, 0 manualsetup
-- **Status:** Todo
-- **Key Insight:** *[No key insight available]*
-
-### T-168: Runbooki, SLO i DR/rollback (15 min)
-- **Status:** Todo 📋 | **Priority:** medium 🟡 | **Created:** 08/12/2025, 12:46 AM | **Updated:** 08/12/2025, 12:46 AM
-- **Tags:** ###sre ###runbooks ###slo
-- **Dependencies:** None
-- **Comments**: 0 research_with_links, 0 result, 0 notes, 0 manualsetup
-- **Status:** Todo
-- **Key Insight:** *[No key insight available]*
-
 
 ## Task Statistics
-- **Total Tasks:** 179
-- **In Progress:** 14 tasks
+- **Total Tasks:** 181
+- **In Progress:** 15 tasks
 - **Todo:** 45 tasks  
 - **Done:** 107 tasks
-- **High Priority:** 99 tasks
+- **High Priority:** 100 tasks
 - **Critical Priority:** 50 tasks
 - **Tasks with Dependencies:** 17 tasks
 
 ## Recent Activity
+- T-180: Started work (08/29/2025, 10:00 PM)
+- T-181: Updated (08/29/2025, 10:00 PM)
 - T-175: Created (08/20/2025, 10:11 PM)
 - T-176: Created (08/20/2025, 10:11 PM)
 - T-177: Created (08/20/2025, 10:11 PM)
@@ -199,10 +201,8 @@ alwaysApply: true
 - T-164: Created (08/12/2025, 12:46 AM)
 - T-165: Created (08/12/2025, 12:46 AM)
 - T-166: Created (08/12/2025, 12:46 AM)
-- T-167: Created (08/12/2025, 12:46 AM)
-- T-168: Created (08/12/2025, 12:46 AM)
 
 ## Key Project Context
 This is an implementation of an automated cursor rules system that will maintain real-time awareness of Todo2 task status for enhanced AI assistance. The system monitors task changes and automatically updates this overview file to provide contextual information to Cursor chat.
 
-*This file is automatically maintained by Todo2. Last generation: 08/29/2025, 20:34:51*
+*This file is automatically maintained by Todo2. Last generation: 08/29/2025, 22:00:49*

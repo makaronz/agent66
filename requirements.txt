@@ -2,7 +2,7 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic[email]==2.5.2
-pydantic-settings==2.1.0
+pydantic-settings
 
 # Async and networking
 aiohttp==3.9.1
@@ -59,7 +59,7 @@ flake8==6.1.0
 mypy==1.7.1
 
 # Security and validation
-cryptography==41.0.8
+cryptography
 bcrypt==4.1.2
 passlib==1.7.4
 email-validator==2.1.0
@@ -86,8 +86,8 @@ ccxt==4.1.77
 oandapyV20==0.7.2
 
 # Time series analysis
-ta==0.10.2
-talib-binary==0.4.26
+# ta==0.10.2
+# talib-binary==0.4.26
 
 # Visualization (optional)
 matplotlib==3.8.2

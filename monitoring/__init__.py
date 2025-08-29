@@ -31,11 +31,9 @@ __keywords__ = ["monitoring", "observability", "health-check", "metrics", "grafa
 
 # Import monitoring components
 from .health_monitor import HealthMonitor
-from ..health_monitor import HealthMonitor
 
 # Package-level exports
 __all__ = [
-    'HealthMonitor',
     'HealthMonitor',
     '__version__',
     '__description__'

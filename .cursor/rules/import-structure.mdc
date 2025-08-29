@@ -1,0 +1,216 @@
+# SMC Trading Agent - Import Structure & Module Organization
+
+## 🚨 **Critical Import Rules**
+
+### **Python Import Structure**
+
+#### **Root Level Files** (Files in project root)
+**Use DIRECT imports only:**
+```python
+# ✅ CORRECT for root files
+from config_loader import load_secure_config
+from config_validator import validate_config
+from error_handlers import CircuitBreaker, RetryHandler
+from validators import data_validator, DataQualityLevel
+from vault_client import get_vault_client, VaultClientError
+from data_pipeline.ingestion import DataIngestion
+from smc_detector.indicators import SMCIndicators
+from decision_engine.model_ensemble import AdaptiveModelSelector
+from risk_manager.smc_risk_manager import SMCRiskManager
+from service_manager import ServiceManager
+from health_monitor import HealthMonitor
+```
+
+**❌ NEVER use relative imports in root files:**
+```python
+# ❌ WRONG for root files
+from .config_loader import load_secure_config
+from .error_handlers import CircuitBreaker
+from ..monitoring.data_quality_metrics import set_freshness
+```
+
+#### **Module Files** (Files inside packages)
+**Use RELATIVE imports within packages:**
+```python
+# ✅ CORRECT for module files
+from .exchange_connectors import ExchangeConnector, BinanceConnector
+from .kafka_producer import KafkaProducerManager
+from ..monitoring.data_quality_metrics import set_freshness
+from ..health_monitor import HealthMonitor
+```
+
+**❌ NEVER use direct imports in module files:**
+```python
+# ❌ WRONG for module files
+from config_loader import load_secure_config
+from error_handlers import CircuitBreaker
+```
+
+### **TypeScript Import Structure**
+
+#### **Always use absolute imports with @/ alias:**
+```typescript
+// ✅ CORRECT TypeScript imports
+import Layout from "@/components/Layout";
+import Dashboard from "@/pages/Dashboard";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { QueryProvider } from "@/providers/QueryProvider";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+```
+
+#### **Never use relative imports:**
+```typescript
+// ❌ WRONG TypeScript imports
+import Layout from "../components/Layout";
+import Dashboard from "./Dashboard";
+import { AuthProvider } from "../../contexts/AuthContext";
+```
+
+## 📁 **Module Organization**
+
+### **Python Package Structure**
+```
+agent66/
+├── main.py                    # Root - direct imports
+├── config_loader.py          # Root - direct imports
+├── config_validator.py       # Root - direct imports
+├── error_handlers.py         # Root - direct imports
+├── validators.py             # Root - direct imports
+├── vault_client.py           # Root - direct imports
+├── service_manager.py        # Root - direct imports
+├── health_monitor.py         # Root - direct imports
+├── data_pipeline/
+│   ├── __init__.py
+│   ├── ingestion.py          # Module - relative imports
+│   ├── exchange_connectors/
+│   │   ├── __init__.py       # Module - relative imports
+│   │   ├── binance_connector.py
+│   │   └── bybit_connector.py
+│   └── kafka_producer.py
+├── smc_detector/
+│   ├── __init__.py
+│   └── indicators.py         # Module - relative imports
+├── decision_engine/
+│   ├── __init__.py
+│   └── model_ensemble.py     # Module - relative imports
+└── risk_manager/
+    ├── __init__.py
+    ├── smc_risk_manager.py   # Module - relative imports
+    └── position_manager.py   # Module - relative imports
+```
+
+### **TypeScript Package Structure**
+```
+src/
+├── main.tsx                  # Root - @/ imports
+├── App.tsx                   # Root - @/ imports
+├── components/
+│   ├── Layout.tsx            # Module - @/ imports
+│   ├── ErrorBoundary.tsx     # Module - @/ imports
+│   └── ui/
+│       └── LoadingSpinner.tsx # Module - @/ imports
+├── pages/
+│   ├── Dashboard.tsx         # Module - @/ imports
+│   ├── TradingInterface.tsx  # Module - @/ imports
+│   └── Login.tsx             # Module - @/ imports
+├── contexts/
+│   └── AuthContext.tsx       # Module - @/ imports
+└── providers/
+    └── QueryProvider.tsx     # Module - @/ imports
+```
+
+## 🔧 **Common Import Issues & Fixes**
+
+### **Issue 1: Relative Import Beyond Top-Level Package**
+**Error**: `ImportError: attempted relative import beyond top-level package`
+**Cause**: Using `..` in root files or wrong package structure
+**Solution**: 
+- Root files: Use direct imports
+- Module files: Use relative imports within package boundaries
+
+### **Issue 2: Cannot Import Name**
+**Error**: `ImportError: cannot import name 'ClassName' from 'module'`
+**Cause**: Missing exports in `__init__.py` files
+**Solution**: Add proper exports in package `__init__.py` files
+
+**Example fix for data_pipeline/exchange_connectors/__init__.py:**
+```python
+# Import specific connectors for direct access
+try:
+    from .binance_connector import BinanceConnector
+    from .bybit_connector import ByBitConnector
+    from .oanda_connector import OANDAConnector
+except ImportError as e:
+    logger.warning(f"Could not import some connectors: {e}")
+    # Define placeholder classes if imports fail
+    BinanceConnector = None
+    ByBitConnector = None
+    OANDAConnector = None
+
+# Package exports
+__all__ = [
+    'ExchangeConnector',
+    'BinanceConnector',
+    'ByBitConnector',
+    'OANDAConnector',
+    # ... other exports
+]
+```
+
+### **Issue 3: Import Resolution in Different Contexts**
+**Error**: Import works in one context but fails in another
+**Cause**: Different working directories or Python path issues
+**Solution**: 
+- Test imports from project root: `python -c "import module"`
+- Ensure PYTHONPATH includes project root
+- Use absolute imports for root files
+
+## 🧪 **Testing Import Resolution**
+
+### **Test Python Imports**
+```bash
+# From project root
+cd /Users/arkadiuszfudali/Git/agent66
+
+# Test main module
+python -c "import main; print('✅ main.py imports successfully')"
+
+# Test specific modules
+python -c "from data_pipeline.ingestion import DataIngestion; print('✅ DataIngestion imported')"
+python -c "from risk_manager.smc_risk_manager import SMCRiskManager; print('✅ SMCRiskManager imported')"
+```
+
+### **Test TypeScript Imports**
+```bash
+# Check TypeScript compilation
+npm run check
+
+# Build to catch import errors
+npm run build:vite-only
+```
+
+## 📋 **Import Checklist**
+
+When adding new imports:
+
+1. **Check file location**: Root vs module file?
+2. **Choose import style**: Direct vs relative?
+3. **Verify package structure**: Is the module in the right package?
+4. **Check __init__.py exports**: Are classes/functions exported?
+5. **Test import resolution**: Does `python -c "import module"` work?
+
+## ⚠️ **Important Reminders**
+
+1. **Root files** (main.py, config_loader.py, etc.) → **Direct imports only**
+2. **Module files** (inside packages) → **Relative imports within package**
+3. **TypeScript files** → **Always use @/ alias imports**
+4. **Package boundaries** → **Respect package structure**
+5. **__init__.py files** → **Export all public classes/functions**
+
+---
+
+**Remember**: The import structure is critical for this project. Always verify the file's location in the project structure before choosing the import style.
+description:
+globs:
+alwaysApply: true
+---
