@@ -9,9 +9,6 @@ on:
 jobs:
   python-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: smc_trading_agent
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -40,14 +37,11 @@ jobs:
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
         with:
           name: python-coverage-xml
-          path: smc_trading_agent/coverage.xml
+          path: coverage.xml
           if-no-files-found: ignore
 
   node-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: smc_trading_agent
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -70,9 +64,6 @@ jobs:
 
   rust-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: smc_trading_agent
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -100,20 +91,17 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          cd smc_trading_agent
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install bandit safety
 
       - name: Run Bandit security scan (Python)
         run: |
-          cd smc_trading_agent
           bandit -r . -f json -o bandit-report.json || true
           bandit -r . -f txt -o bandit-report.txt || true
 
       - name: Run Safety check (Python dependencies)
         run: |
-          cd smc_trading_agent
           safety check --json --output safety-report.json || true
           safety check --output safety-report.txt || true
 
@@ -124,13 +112,10 @@ jobs:
           cache: 'npm'
 
       - name: Install Node.js dependencies
-        run: |
-          cd smc_trading_agent
-          npm ci
+        run: npm ci
 
       - name: Run ESLint security scan
         run: |
-          cd smc_trading_agent
           npx eslint . --ext .js,.jsx,.ts,.tsx --format json --output-file eslint-security-report.json || true
           npx eslint . --ext .js,.jsx,.ts,.tsx --format stylish --output-file eslint-security-report.txt || true
 
@@ -148,12 +133,12 @@ jobs:
         with:
           name: security-reports
           path: |
-            smc_trading_agent/bandit-report.json
-            smc_trading_agent/bandit-report.txt
-            smc_trading_agent/safety-report.json
-            smc_trading_agent/safety-report.txt
-            smc_trading_agent/eslint-security-report.json
-            smc_trading_agent/eslint-security-report.txt
+            bandit-report.json
+            bandit-report.txt
+            safety-report.json
+            safety-report.txt
+            eslint-security-report.json
+            eslint-security-report.txt
             semgrep-report.sarif
             trivy-fs-report.sarif
             trivy-image-report.sarif
@@ -168,9 +153,9 @@ jobs:
             
             // Check if security reports exist and add findings
             const reports = [
-              'smc_trading_agent/bandit-report.txt',
-              'smc_trading_agent/safety-report.txt',
-              'smc_trading_agent/eslint-security-report.txt'
+              'bandit-report.txt',
+              'safety-report.txt',
+              'eslint-security-report.txt'
             ];
             
             for (const report of reports) {
