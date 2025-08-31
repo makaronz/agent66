@@ -1,245 +1,187 @@
 """
-Service Manager for SMC Trading Agent Stream Processor
+Service Manager for SMC Trading Agent
 
-Manages the lifecycle of various services and components.
+Provides a small lifecycle manager used by main.py and tests.
+This version aligns the API used across the codebase: constructor
+accepts (config, logger), exposes register_service(name, component,
+health_check, critical), get_service(name), initialize_services(),
+and shutdown().
 """
 
 import asyncio
 import logging
-from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
+from typing import Dict, Any, Optional, Callable
 
-logger = logging.getLogger(__name__)
+
+@dataclass
+class ServiceInfo:
+    name: str
+    component: Any
+    status: str = "registered"
+    start_time: Optional[float] = None
+    stop_time: Optional[float] = None
+    critical: bool = False
+    health_check: Optional[Callable] = None
 
 
 class ServiceManager:
-    """
-    Service lifecycle manager.
-    
-    Manages starting, stopping, and monitoring of various services.
-    """
-    
-    def __init__(self):
-        """Initialize service manager."""
-        self.services = {}
+    """Service lifecycle manager with a stable, test-friendly API."""
+
+    def __init__(self, config: Optional[Dict[str, Any]] = None, logger: Optional[logging.Logger] = None):
+        self.config = config or {}
+        self.logger = logger or logging.getLogger(__name__)
+        self.services: Dict[str, ServiceInfo] = {}
         self.running = False
-        
-        logger.info("Service manager initialized")
-    
-    async def register_service(self, name: str, service: Any) -> bool:
-        """
-        Register a service for management.
-        
-        Args:
-            name: Service name
-            service: Service instance
-            
-        Returns:
-            bool: True if registered successfully, False otherwise
-        """
+        self._ready = False
+        self.logger.info("Service manager initialized")
+
+    def register_service(self, name: str, component: Any, health_check: Optional[Callable] = None, critical: bool = False) -> bool:
+        """Register a service for management (synchronous for simplicity)."""
         try:
             if name in self.services:
-                logger.warning(f"Service '{name}' already registered")
+                self.logger.warning(f"Service '{name}' already registered")
                 return False
-            
-            self.services[name] = {
-                'instance': service,
-                'status': 'registered',
-                'start_time': None,
-                'stop_time': None
-            }
-            
-            logger.info(f"Registered service: {name}")
+
+            self.services[name] = ServiceInfo(
+                name=name,
+                component=component,
+                critical=critical,
+                health_check=health_check,
+            )
+            self.logger.info(f"Registered service: {name}")
             return True
-            
         except Exception as e:
-            logger.error(f"Failed to register service '{name}': {e}")
+            self.logger.error(f"Failed to register service '{name}': {e}")
             return False
-    
+
     async def start_service(self, name: str) -> bool:
-        """
-        Start a specific service.
-        
-        Args:
-            name: Service name
-            
-        Returns:
-            bool: True if started successfully, False otherwise
-        """
+        """Start a single service if it exposes a start() method."""
         try:
             if name not in self.services:
-                logger.error(f"Service '{name}' not registered")
+                self.logger.error(f"Service '{name}' not registered")
                 return False
-            
-            service_info = self.services[name]
-            service = service_info['instance']
-            
-            if service_info['status'] == 'running':
-                logger.warning(f"Service '{name}' already running")
+
+            svc = self.services[name]
+            if svc.status == "running":
                 return True
-            
-            # Start the service
-            if hasattr(service, 'start'):
-                if asyncio.iscoroutinefunction(service.start):
-                    result = await service.start()
+
+            comp = svc.component
+            if hasattr(comp, 'start'):
+                if asyncio.iscoroutinefunction(comp.start):
+                    result = await comp.start()
                 else:
-                    result = service.start()
-                
-                if result:
-                    service_info['status'] = 'running'
-                    service_info['start_time'] = asyncio.get_event_loop().time()
-                    logger.info(f"Started service: {name}")
-                    return True
-                else:
-                    logger.error(f"Failed to start service: {name}")
+                    result = comp.start()
+                if result is False:
+                    self.logger.error(f"Failed to start service: {name}")
                     return False
-            else:
-                logger.warning(f"Service '{name}' has no start method")
-                return False
-                
+            svc.status = 'running'
+            svc.start_time = asyncio.get_event_loop().time()
+            self.logger.info(f"Started service: {name}")
+            return True
         except Exception as e:
-            logger.error(f"Error starting service '{name}': {e}")
+            self.logger.error(f"Error starting service '{name}': {e}")
             return False
-    
+
     async def stop_service(self, name: str) -> bool:
-        """
-        Stop a specific service.
-        
-        Args:
-            name: Service name
-            
-        Returns:
-            bool: True if stopped successfully, False otherwise
-        """
+        """Stop a single service if it exposes a stop() method."""
         try:
             if name not in self.services:
-                logger.error(f"Service '{name}' not registered")
                 return False
-            
-            service_info = self.services[name]
-            service = service_info['instance']
-            
-            if service_info['status'] != 'running':
-                logger.warning(f"Service '{name}' not running")
+            svc = self.services[name]
+            if svc.status != 'running':
                 return True
-            
-            # Stop the service
-            if hasattr(service, 'stop'):
-                if asyncio.iscoroutinefunction(service.stop):
-                    result = await service.stop()
+            comp = svc.component
+            if hasattr(comp, 'stop'):
+                if asyncio.iscoroutinefunction(comp.stop):
+                    await comp.stop()
                 else:
-                    result = service.stop()
-                
-                if result:
-                    service_info['status'] = 'stopped'
-                    service_info['stop_time'] = asyncio.get_event_loop().time()
-                    logger.info(f"Stopped service: {name}")
-                    return True
-                else:
-                    logger.error(f"Failed to stop service: {name}")
-                    return False
-            else:
-                logger.warning(f"Service '{name}' has no stop method")
-                return False
-                
+                    comp.stop()
+            svc.status = 'stopped'
+            svc.stop_time = asyncio.get_event_loop().time()
+            self.logger.info(f"Stopped service: {name}")
+            return True
         except Exception as e:
-            logger.error(f"Error stopping service '{name}': {e}")
+            self.logger.error(f"Error stopping service '{name}': {e}")
             return False
-    
+
     async def start_all_services(self) -> bool:
-        """
-        Start all registered services.
-        
-        Returns:
-            bool: True if all services started successfully, False otherwise
-        """
-        logger.info("Starting all services...")
-        
-        success = True
-        for name in self.services.keys():
+        self.logger.info("Starting all services...")
+        ok = True
+        for name in list(self.services.keys()):
             if not await self.start_service(name):
-                success = False
-        
-        if success:
-            self.running = True
-            logger.info("All services started successfully")
-        else:
-            logger.error("Some services failed to start")
-        
-        return success
-    
+                ok = False
+        self.running = ok
+        return ok
+
     async def stop_all_services(self) -> bool:
-        """
-        Stop all running services.
-        
-        Returns:
-            bool: True if all services stopped successfully, False otherwise
-        """
-        logger.info("Stopping all services...")
-        
-        success = True
-        # Stop services in reverse order
+        self.logger.info("Stopping all services...")
+        ok = True
         for name in reversed(list(self.services.keys())):
             if not await self.stop_service(name):
-                success = False
-        
+                ok = False
         self.running = False
-        
-        if success:
-            logger.info("All services stopped successfully")
-        else:
-            logger.error("Some services failed to stop")
-        
-        return success
-    
+        return ok
+
+    def get_service(self, name: str) -> Optional[Any]:
+        """Return the underlying component by name."""
+        info = self.services.get(name)
+        return info.component if info else None
+
     def get_service_status(self, name: str) -> Optional[Dict[str, Any]]:
-        """
-        Get status of a specific service.
-        
-        Args:
-            name: Service name
-            
-        Returns:
-            Dict containing service status information, None if not found
-        """
-        if name in self.services:
-            return self.services[name].copy()
-        return None
-    
+        info = self.services.get(name)
+        if not info:
+            return None
+        return {
+            'name': info.name,
+            'status': info.status,
+            'critical': info.critical,
+            'start_time': info.start_time,
+            'stop_time': info.stop_time,
+        }
+
     def get_all_services_status(self) -> Dict[str, Any]:
-        """
-        Get status of all services.
-        
-        Returns:
-            Dict containing status of all services
-        """
         return {
             'manager_running': self.running,
             'total_services': len(self.services),
-            'services': {name: info.copy() for name, info in self.services.items()}
+            'services': {n: self.get_service_status(n) for n in self.services}
         }
-    
-    def is_service_running(self, name: str) -> bool:
-        """
-        Check if a service is running.
-        
-        Args:
-            name: Service name
-            
-        Returns:
-            bool: True if service is running, False otherwise
-        """
-        if name in self.services:
-            return self.services[name]['status'] == 'running'
-        return False
-    
-    def get_running_services(self) -> List[str]:
-        """
-        Get list of running services.
-        
-        Returns:
-            List of running service names
-        """
-        return [
-            name for name, info in self.services.items()
-            if info['status'] == 'running'
-        ]
+
+    async def initialize_services(self, use_mock: bool = False) -> bool:
+        """Compatibility shim used by main(); no-op aside from marking running."""
+        try:
+            # Wire default mock providers if requested (keeps main() path working)
+            if use_mock:
+                from providers.mock import (
+                    MockDataFeed, MockAnalyzer, MockDecisionEngine, MockExecutorClient, MockRiskManager
+                )
+                self.register_service("data_feed", MockDataFeed())
+                self.register_service("analyzer", MockAnalyzer())
+                self.register_service("decision_engine", MockDecisionEngine())
+                self.register_service("executor", MockExecutorClient())
+                self.register_service("risk_manager", MockRiskManager())
+
+            # Load secrets/env if needed here (placeholder)
+            # Warm-up models/components if necessary (best-effort)
+            analyzer = self.get_service("analyzer")
+            if analyzer and hasattr(analyzer, "warm_up"):
+                try:
+                    res = analyzer.warm_up()  # sync or async
+                    if hasattr(res, "__await__"):
+                        await res
+                except Exception as e:
+                    self.logger.debug(f"Analyzer warm-up skipped: {e}")
+            self.running = True
+            self._ready = True
+            return True
+        except Exception as e:
+            self.logger.error(f"initialize_services failed: {e}")
+            self._ready = False
+            return False
+
+    async def shutdown(self) -> None:
+        await self.stop_all_services()
+
+    # Readiness helpers
+    def is_ready(self) -> bool:
+        return self._ready and self.running
