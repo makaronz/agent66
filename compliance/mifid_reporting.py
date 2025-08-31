@@ -1,11 +1,11 @@
+import os
 import pandas as pd
 from datetime import datetime
 
 class ComplianceEngine:
     def __init__(self, output_dir='reports/mifid'):
         self.output_dir = output_dir
-        if not pd.io.common.file_exists(self.output_dir):
-            pd.io.common.makedirs(self.output_dir)
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_trade_report(self, trades_data):
         """
