@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import logging
 import logging.config
 import sys
@@ -16,8 +17,14 @@ from health_monitor import HealthMonitor
 
 # Import the new offline-first components
 from database.connection_pool import initialize_pool, close_all_connections
-from risk_manager.smc_risk_manager import SMCRiskManager
-from compliance.mifid_reporting import MiFIDReporting
+from compliance.mifid_reporting import ComplianceEngine
+from interfaces import MarketBatch, Decisions, Orders
+from providers.mock import (
+    MockDataFeed, MockAnalyzer, MockDecisionEngine, MockExecutorClient, MockRiskManager
+)
+from providers.real import (
+    RealDataFeed, RealAnalyzer, RealDecisionEngine, RealExecutorClient, RealRiskManager
+)
 
 # Mock components for offline development
 class MockDataIngestion:
@@ -25,20 +32,36 @@ class MockDataIngestion:
         logging.info("MockDataIngestion: Returning mock data.")
         # In a real scenario, this would load data from a local file
         return {}
+    # Compatibility with trading loop
+    async def get_latest_data(self, *args, **kwargs):
+        return await self.get_latest_ohlcv_data(*args, **kwargs)
 
 class MockSMCIndicators:
     def detect_order_blocks(self, *args, **kwargs):
         logging.info("MockSMCIndicators: Returning mock order blocks.")
+        return []
+    async def analyze(self, *args, **kwargs):
+        logging.info("MockSMCIndicators: analyze() -> []")
         return []
 
 class MockAdaptiveModelSelector:
     def make_decision(self, *args, **kwargs):
         logging.info("MockAdaptiveModelSelector: No decision made.")
         return None
+    async def process(self, *args, **kwargs):
+        logging.info("MockAdaptiveModelSelector: process() -> []")
+        return []
 
 class MockExecutionEngine:
     def execute_trade(self, trade_details):
         logging.info(f"MockExecutionEngine: Executing trade: {trade_details}")
+    async def execute(self, decisions):
+        logging.info(f"MockExecutionEngine: execute() called with: {decisions}")
+
+class MockRiskManager:
+    async def assess(self, decisions):
+        logging.info("MockRiskManager: assess() passthrough")
+        return decisions
 
 # Global application state
 shutdown_flag = False
@@ -77,7 +100,7 @@ async def check_service_health(service_manager: ServiceManager) -> Dict[str, Any
     service_health = {}
     
     try:
-        for service_name in ['data_ingestion', 'smc_detector', 'decision_engine', 'risk_manager', 'execution_engine']:
+        for service_name in ['data_feed', 'analyzer', 'decision_engine', 'executor', 'risk_manager']:
             try:
                 service = service_manager.get_service(service_name)
                 if service:
@@ -166,7 +189,7 @@ async def update_health_status(service_manager: ServiceManager):
         # Keep only last 10 errors
         health_status['errors'] = health_status['errors'][-10:]
 
-def create_health_app() -> FastAPI:
+def create_health_app(service_manager: ServiceManager) -> FastAPI:
     """Create FastAPI app with health endpoints."""
     app = FastAPI(title="SMC Trading Agent Health Monitor", version="1.0.0")
     
@@ -212,7 +235,37 @@ def create_health_app() -> FastAPI:
             'error_count': len(health_status['errors'])
         })
     
+    @app.get("/readiness")
+    @app.get("/ready")
+    async def readiness():
+        status = 200 if service_manager.is_ready() else 503
+        return JSONResponse(status_code=status, content={
+            'ready': service_manager.is_ready(),
+            'timestamp': datetime.now().isoformat()
+        })
+
     return app
+
+async def start_health_server(health_app: FastAPI):
+    """Start the health monitoring server with the provided FastAPI app."""
+    import uvicorn
+    
+    config = uvicorn.Config(health_app, host="0.0.0.0", port=8001, log_level="info")
+    server = uvicorn.Server(config)
+    
+    # Start server in background
+    import asyncio
+    asyncio.create_task(server.serve())
+    
+    logging.info("Health monitoring server started on http://0.0.0.0:8001")
+    logging.info("Available endpoints:")
+    logging.info("  - GET /health - Basic health check")
+    logging.info("  - GET /health/detailed - Detailed health status")
+    logging.info("  - GET /health/services - Service health status")
+    logging.info("  - GET /health/connections - Connection status")
+    logging.info("  - GET /metrics - Basic metrics")
+    
+    return server
 
 async def trading_loop(service_manager):
     """Main trading loop with proper error handling and shutdown management."""
@@ -221,22 +274,19 @@ async def trading_loop(service_manager):
     while not shutdown_flag:
         try:
             # Get market data
-            market_data = await service_manager.get_service('data_ingestion').get_latest_data()
+            market_data = await service_manager.get_service('data_feed').get_latest_data()
             
             if market_data:
                 # Detect SMC patterns
-                smc_signals = await service_manager.get_service('smc_detector').analyze(market_data)
+                smc_signals = await service_manager.get_service('analyzer').analyze(market_data)
                 
                 if smc_signals:
-                    # Make trading decisions
-                    decisions = await service_manager.get_service('decision_engine').process(smc_signals)
-                    
-                    # Apply risk management
-                    risk_assessed_decisions = await service_manager.get_service('risk_manager').assess(decisions)
-                    
+                    # Make trading decisions -> orders
+                    orders = await service_manager.get_service('decision_engine').process(smc_signals)
                     # Execute trades
-                    if risk_assessed_decisions:
-                        await service_manager.get_service('execution_engine').execute(risk_assessed_decisions)
+                    exec_report = await service_manager.get_service('executor').execute(orders)
+                    # Assess risk from execution
+                    _ = await service_manager.get_service('risk_manager').assess(exec_report)
             
             # Sleep for a short interval before next iteration
             await asyncio.sleep(1)
@@ -262,22 +312,19 @@ async def trading_loop_with_health_monitoring(service_manager):
                 last_health_check = current_time
             
             # Get market data
-            market_data = await service_manager.get_service('data_ingestion').get_latest_data()
+            market_data = await service_manager.get_service('data_feed').get_latest_data()
             
             if market_data:
                 # Detect SMC patterns
-                smc_signals = await service_manager.get_service('smc_detector').analyze(market_data)
+                smc_signals = await service_manager.get_service('analyzer').analyze(market_data)
                 
                 if smc_signals:
-                    # Make trading decisions
-                    decisions = await service_manager.get_service('decision_engine').process(smc_signals)
-                    
-                    # Apply risk management
-                    risk_assessed_decisions = await service_manager.get_service('risk_manager').assess(decisions)
-                    
+                    # Make trading decisions -> orders
+                    orders = await service_manager.get_service('decision_engine').process(smc_signals)
                     # Execute trades
-                    if risk_assessed_decisions:
-                        await service_manager.get_service('execution_engine').execute(risk_assessed_decisions)
+                    exec_report = await service_manager.get_service('executor').execute(orders)
+                    # Assess risk
+                    _ = await service_manager.get_service('risk_manager').assess(exec_report)
             
             # Sleep for a short interval before next iteration
             await asyncio.sleep(1)
@@ -295,10 +342,15 @@ async def trading_loop_with_health_monitoring(service_manager):
     logger.info("Trading loop with health monitoring stopped.")
 
 async def main_async():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["offline", "online"], default="offline")
+    parser.add_argument("--exchange", choices=["binance"], default="binance")
+    args, _ = parser.parse_known_args()
+    
     # Load configuration
-    config_loader = SecureConfigLoader()
+    config_loader = SecureConfigLoader(env_file=".env")
     try:
-        config = config_loader.load_config()
+        config = config_loader.load_config("config.yaml")
     except FileNotFoundError as e:
         logging.basicConfig(level=logging.ERROR)
         logging.error(f"Configuration error: {e}")
@@ -309,8 +361,16 @@ async def main_async():
     logger = logging.getLogger(__name__)
 
     # Initialize database pool for offline use
-    db_path = config.get('database', {}).get('name', 'smc_agent_offline.db')
+    db_path = config.get('database', {}).get('name', 'data/smc_agent_offline.db')
     max_connections = config.get('database', {}).get('pool_size', 5)
+    import os
+    db_dir = os.path.dirname(db_path)
+    if not db_dir:
+        # Treat provided name as logical name; store under data/ with .db suffix
+        fname = db_path if db_path.endswith('.db') else f"{db_path}.db"
+        db_path = os.path.join('data', fname)
+        db_dir = os.path.dirname(db_path)
+    os.makedirs(db_dir, exist_ok=True)
     initialize_pool(db_path, max_connections)
     logger.info(f"Offline database pool initialized with SQLite: {db_path}")
 
@@ -319,25 +379,41 @@ async def main_async():
     health_monitor = HealthMonitor(config.get('monitoring', {}))
 
     try:
-        # Using mock components for offline operation
-        service_manager.register_service("data_ingestion", MockDataIngestion(), lambda: True)
-        service_manager.register_service("smc_detector", MockSMCIndicators(), lambda: True)
-        service_manager.register_service("decision_engine", MockAdaptiveModelSelector(), lambda: True)
-        service_manager.register_service("risk_manager", SMCRiskManager(config_loader.config_filename), lambda: True)
-        service_manager.register_service("execution_engine", MockExecutionEngine(), lambda: True)
-        service_manager.register_service("mifid_reporter", MiFIDReporting(), lambda: True)
+        if args.mode == "online":
+            service_manager.register_service("data_feed", RealDataFeed(config), lambda: True)
+            real_analyzer = RealAnalyzer(config)
+            service_manager.register_service("analyzer", real_analyzer, getattr(real_analyzer, "warm_up", None))
+            service_manager.register_service("decision_engine", RealDecisionEngine(config), lambda: True)
+            # Choose exchange-specific executor
+            if args.exchange == "binance":
+                from providers.binance import BinanceExecutorClient
+                exec_client = BinanceExecutorClient(config)
+                service_manager.register_service("executor", exec_client, getattr(exec_client, "ready", None) or (lambda: True))
+            else:
+                service_manager.register_service("executor", RealExecutorClient(config), lambda: True)
+            service_manager.register_service("risk_manager", RealRiskManager(config), lambda: True)
+        else:
+            service_manager.register_service("data_feed", MockDataFeed(), lambda: True)
+            service_manager.register_service("analyzer", MockAnalyzer(), lambda: True)
+            service_manager.register_service("decision_engine", MockDecisionEngine(), lambda: True)
+            service_manager.register_service("executor", MockExecutorClient(), lambda: True)
+            service_manager.register_service("risk_manager", MockRiskManager(), lambda: True)
+        service_manager.register_service("mifid_reporter", ComplianceEngine(), lambda: True)
 
     except Exception as e:
         logger.error(f"Failed to initialize services: {e}", exc_info=True)
         return 1
 
     # Start health monitoring server
-    app = FastAPI(title="SMC Trading Agent Health Monitor")
+    health_app = create_health_app(service_manager)
     monitoring_port = config.get('monitoring', {}).get('port', 8008)
-    server_config = uvicorn.Config(app, host="0.0.0.0", port=monitoring_port, log_level="info")
+    server_config = uvicorn.Config(health_app, host="0.0.0.0", port=monitoring_port, log_level="info")
     server = uvicorn.Server(server_config)
     server_task = asyncio.create_task(server.serve())
 
+    # Ensure readiness after service registration
+    await service_manager.initialize_services(use_mock=(args.mode == "offline"))
+    
     # Start the main trading loop
     trading_task = asyncio.create_task(trading_loop(service_manager))
 
@@ -378,8 +454,8 @@ async def main():
     
     try:
         # Initialize configuration
-        config_loader = SecureConfigLoader()
-        config = config_loader.load_config()
+        config_loader = SecureConfigLoader(env_file=".env")
+        config = config_loader.load_config("config.yaml")
         health_status['status'] = 'initializing'
         
         # Initialize service manager
@@ -393,29 +469,8 @@ async def main():
         await update_health_status(service_manager)
         
         # Start health monitoring server
-        health_app = create_health_app()
+        health_app = create_health_app(service_manager)
         health_server = await start_health_server(health_app)
-
-async def start_health_server(health_app: FastAPI):
-    """Start the health monitoring server with the provided FastAPI app."""
-    import uvicorn
-    
-    config = uvicorn.Config(health_app, host="0.0.0.0", port=8001, log_level="info")
-    server = uvicorn.Server(config)
-    
-    # Start server in background
-    import asyncio
-    task = asyncio.create_task(server.serve())
-    
-    logging.info("Health monitoring server started on http://0.0.0.0:8001")
-    logging.info("Available endpoints:")
-    logging.info("  - GET /health - Basic health check")
-    logging.info("  - GET /health/detailed - Detailed health status")
-    logging.info("  - GET /health/services - Service health status")
-    logging.info("  - GET /health/connections - Connection status")
-    logging.info("  - GET /metrics - Basic metrics")
-    
-    return server
         
         # Mark as running
         health_status['status'] = 'running'
@@ -448,7 +503,8 @@ def main_sync():
     signal.signal(signal.SIGTERM, handle_shutdown_signal)
 
     try:
-        return asyncio.run(main())
+        # Use CLI-enabled async entry
+        return asyncio.run(main_async())
     except KeyboardInterrupt:
         logging.info("Keyboard interrupt received.")
     except Exception as e:
