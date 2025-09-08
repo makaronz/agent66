@@ -9,10 +9,8 @@
       "env": {
         "DEFAULT_MINIMUM_TOKENS": ""
       },
-      "alwaysAllow": [
-        "resolve-library-id",
-        "get-library-docs"
-      ]
+      "disabled": false,
+      "autoApprove": []
     },
     "filesystem": {
       "command": "npx",
@@ -21,9 +19,12 @@
         "@modelcontextprotocol/server-filesystem",
         "/Users/arkadiuszfudali"
       ],
-      "alwaysAllow": [
-        "read_text_file",
-        "read_file"
+      "disabled": false,
+      "autoApprove": [
+        "create_directory",
+        "create_directory",
+        "write_file",
+        "write_file"
       ]
     },
     "sequentialthinking": {
@@ -31,6 +32,10 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "sequentialthinking"
       ]
     },
     "puppeteer": {
@@ -39,19 +44,19 @@
         "-y",
         "@modelcontextprotocol/server-puppeteer"
       ],
-      "alwaysAllow": [
+      "disabled": false,
+      "autoApprove": [
         "puppeteer_navigate",
-        "puppeteer_screenshot",
-        "puppeteer_click",
-        "puppeteer_fill",
-        "puppeteer_select"
+        "puppeteer_screenshot"
       ]
     },
     "time": {
       "command": "uvx",
       "args": [
         "mcp-server-time"
-      ]
+      ],
+      "disabled": false,
+      "autoApprove": []
     },
     "memory": {
       "command": "npx",
@@ -59,10 +64,10 @@
         "-y",
         "@modelcontextprotocol/server-memory"
       ],
-      "alwaysAllow": [
+      "disabled": false,
+      "autoApprove": [
         "create_entities",
-        "create_relations",
-        "delete_entities"
+        "add_observations"
       ]
     }
   }
