@@ -1,7 +1,7 @@
 # TODO:
 
-- [x] cleanup-artifacts: Clean up large build artifacts (target/, __pycache__, node_modules) (priority: High)
-- [x] create-vercelignore: Create .vercelignore file to exclude unnecessary files from deployment (priority: High)
-- [x] build-production: Build production version of the application (priority: Medium)
-- [x] deploy-vercel: Deploy optimized project to Vercel - resolved path resolution issues by switching to relative imports (priority: Medium)
-- [ ] try-alternative-deployment: Successfully built locally, but Vercel build environment has persistent path resolution issues (**IN PROGRESS**) (priority: High)
+- [x] identify-rate-limit-source: Zidentyfikować źródło wywołań REST API powodujących rate limiting - IP zbanowane przez Binance (priority: High)
+- [x] disable-auto-api-calls: Wyłączyć wszystkie automatyczne wywołania REST API do Binance podczas inicjalizacji (priority: High)
+- [x] implement-websocket-only: Upewnić się, że aplikacja używa wyłącznie WebSocket connections (priority: High)
+- [x] test-connection-fix: Przetestować czy dashboard pokazuje prawidłowy status po naprawie - aplikacja działa, brak automatycznych wywołań REST API (priority: Medium)
+- [x] verify-manual-connection: Zweryfikować czy przycisk ręcznego połączenia z Binance WebSocket działa poprawnie - przycisk dodany i funkcjonalny (priority: Medium)

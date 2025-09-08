@@ -1,0 +1,42 @@
+{
+  "id": "development-env",
+  "name": "Development Environment",
+  "values": [
+    {
+      "key": "environment",
+      "value": "development",
+      "enabled": true
+    },
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "enabled": true
+    },
+    {
+      "key": "fastapi_url",
+      "value": "http://localhost:8000",
+      "enabled": true
+    },
+    {
+      "key": "test_email",
+      "value": "test@example.com",
+      "enabled": true
+    },
+    {
+      "key": "test_password",
+      "value": "TestPassword123!",
+      "enabled": true
+    },
+    {
+      "key": "binance_testnet_key",
+      "value": "your-binance-testnet-api-key",
+      "enabled": true
+    },
+    {
+      "key": "binance_testnet_secret",
+      "value": "your-binance-testnet-secret",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+data:
+  trading-alerts.yml: |
+    groups:
+      - name: trading_performance
+        rules:
+          - alert: HighExecutionLatency
+            expr: histogram_quantile(0.95, rate(order_execution_duration_seconds_bucket[5m])) > 0.1
+            for: 2m
+            labels:
+              severity: warning
+              component: execution-engine
+            annotations:
+              summary: "High order execution latency detected"
+              description: "95th percentile execution latency is {{ $value }}s, above 100ms threshold"
+
+          - alert: TradingLossThreshold
+            expr: increase(total_pnl_usd[1h]) < -1000
+            for: 0m
+            labels:
+              severity: critical
+              component: trading-engine
+            annotations:
+              summary: "Significant trading loss detected"
+              description: "Trading loss in the last hour breached threshold"
+
+          - alert: ExchangeAPIFailure
+            expr: rate(exchange_api_errors_total[5m]) > 0.1
+            for: 1m
+            labels:
+              severity: critical
+              component: exchange-connector
+            annotations:
+              summary: "High exchange API error rate"
+              description: "Exchange API error rate is {{ $value }} errors/second"
+
+      - name: system_health
+        rules:
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod is crash looping"
+              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+
+          - alert: DatabaseConnectionHigh
+            expr: pg_stat_activity_count > 80
+            for: 2m
+            labels:
+              severity: warning
+              component: database
+            annotations:
+              summary: "High database connection count"
+              description: "Database has {{ $value }} active connections"
+
+          - alert: RedisMemoryHigh
+            expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+            for: 5m
+            labels:
+              severity: warning
+              component: redis
+            annotations:
+              summary: "Redis memory usage high"
+              description: "Redis memory usage is above 90%"
+

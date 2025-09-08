@@ -1,0 +1,331 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-monitoring-config
+  namespace: kafka
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - "/etc/prometheus/kafka-rules.yml"
+
+    scrape_configs:
+      - job_name: 'kafka-brokers'
+        static_configs:
+          - targets: 
+            - 'kafka-0.kafka-service.kafka.svc.cluster.local:9308'
+            - 'kafka-1.kafka-service.kafka.svc.cluster.local:9308'
+            - 'kafka-2.kafka-service.kafka.svc.cluster.local:9308'
+        scrape_interval: 10s
+        metrics_path: /metrics
+        
+      - job_name: 'kafka-connect'
+        static_configs:
+          - targets: ['kafka-connect-service.kafka.svc.cluster.local:8083']
+        scrape_interval: 30s
+        metrics_path: /metrics
+        
+      - job_name: 'zookeeper'
+        static_configs:
+          - targets:
+            - 'zookeeper-0.zookeeper-service.kafka.svc.cluster.local:2181'
+            - 'zookeeper-1.zookeeper-service.kafka.svc.cluster.local:2181'
+            - 'zookeeper-2.zookeeper-service.kafka.svc.cluster.local:2181'
+        scrape_interval: 30s
+        metrics_path: /metrics
+
+  kafka-rules.yml: |
+    groups:
+      - name: kafka.rules
+        rules:
+          - alert: KafkaBrokerDown
+            expr: up{job="kafka-brokers"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Kafka broker is down"
+              description: "Kafka broker {{ $labels.instance }} has been down for more than 1 minute."
+          
+          - alert: KafkaHighLatency
+            expr: kafka_producer_request_latency_avg > 100
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High Kafka producer latency"
+              description: "Kafka producer latency is {{ $value }}ms on {{ $labels.instance }}"
+          
+          - alert: KafkaHighConsumerLag
+            expr: kafka_consumer_lag_sum > 1000
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High Kafka consumer lag"
+              description: "Kafka consumer lag is {{ $value }} messages on {{ $labels.instance }}"
+          
+          - alert: KafkaUnderReplicatedPartitions
+            expr: kafka_cluster_partition_under_replicated > 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Kafka has under-replicated partitions"
+              description: "Kafka cluster has {{ $value }} under-replicated partitions"
+          
+          - alert: KafkaOfflinePartitions
+            expr: kafka_controller_offline_partitions_count > 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Kafka has offline partitions"
+              description: "Kafka cluster has {{ $value }} offline partitions"
+          
+          - alert: ZookeeperDown
+            expr: up{job="zookeeper"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Zookeeper is down"
+              description: "Zookeeper instance {{ $labels.instance }} has been down for more than 1 minute."
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-prometheus
+  namespace: kafka
+  labels:
+    app: kafka-prometheus
+spec:
+  ports:
+    - port: 9090
+      name: web
+  selector:
+    app: kafka-prometheus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-prometheus
+  namespace: kafka
+  labels:
+    app: kafka-prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-prometheus
+  template:
+    metadata:
+      labels:
+        app: kafka-prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.45.0
+          ports:
+            - containerPort: 9090
+              name: web
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--web.console.libraries=/etc/prometheus/console_libraries"
+            - "--web.console.templates=/etc/prometheus/consoles"
+            - "--storage.tsdb.retention.time=7d"
+            - "--web.enable-lifecycle"
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+            - name: prometheus-storage
+              mountPath: /prometheus
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: kafka-monitoring-config
+        - name: prometheus-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-grafana-dashboards
+  namespace: kafka
+data:
+  kafka-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Kafka Cluster Monitoring",
+        "tags": ["kafka", "streaming"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Broker Status",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "up{job=\"kafka-brokers\"}",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Messages per Second",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(kafka_server_brokertopicmetrics_messagesin_total[5m])",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Bytes In/Out per Second",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(kafka_server_brokertopicmetrics_bytesin_total[5m])",
+                "legendFormat": "Bytes In - {{instance}}"
+              },
+              {
+                "expr": "rate(kafka_server_brokertopicmetrics_bytesout_total[5m])",
+                "legendFormat": "Bytes Out - {{instance}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Consumer Lag",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "kafka_consumer_lag_sum",
+                "legendFormat": "{{consumer_group}} - {{topic}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          },
+          {
+            "id": 5,
+            "title": "Under Replicated Partitions",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "kafka_cluster_partition_under_replicated",
+                "legendFormat": "Under Replicated"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-grafana
+  namespace: kafka
+  labels:
+    app: kafka-grafana
+spec:
+  ports:
+    - port: 3000
+      name: web
+  selector:
+    app: kafka-grafana
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-grafana
+  namespace: kafka
+  labels:
+    app: kafka-grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-grafana
+  template:
+    metadata:
+      labels:
+        app: kafka-grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.0.0
+          ports:
+            - containerPort: 3000
+              name: web
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: "admin123"
+            - name: GF_INSTALL_PLUGINS
+              value: "grafana-piechart-panel"
+          volumeMounts:
+            - name: grafana-storage
+              mountPath: /var/lib/grafana
+            - name: grafana-dashboards
+              mountPath: /etc/grafana/provisioning/dashboards
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: grafana-storage
+          emptyDir: {}
+        - name: grafana-dashboards
+          configMap:
+            name: kafka-grafana-dashboards

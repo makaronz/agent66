@@ -1,0 +1,290 @@
+# SMC Trading Agent - Python Patterns & Decorators Guide
+
+## 🚨 **Critical Decorator Patterns**
+
+### **1. Static Method Decorators**
+
+#### **Problem Pattern (AVOID)**
+```python
+class VaultClient:
+    def _retry_on_failure(self, func):  # ❌ Instance method decorator
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    
+    @_retry_on_failure  # ❌ This will fail - missing 'self' argument
+    def get_secret(self, path: str):
+        # method implementation
+        pass
+```
+
+#### **Solution Pattern (USE)**
+```python
+class VaultClient:
+    @staticmethod  # ✅ Static method decorator
+    def _retry_on_failure(func):
+        def decorator(func: Callable) -> Callable:
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                # implementation
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
+    
+    @_retry_on_failure  # ✅ This will work correctly
+    def get_secret(self, path: str):
+        # method implementation
+        pass
+```
+
+### **2. Function Decorators**
+
+#### **Problem Pattern (AVOID)**
+```python
+def safe_execute(func: Callable, component: str, severity: ErrorSeverity):
+    # ❌ Wrong parameter order - func should be first
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    return wrapper
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # ❌ Wrong usage
+def execute_trade(self, trade_details: Dict[str, Any]):
+    pass
+```
+
+#### **Solution Pattern (USE)**
+```python
+def safe_execute(component: str, severity: ErrorSeverity = ErrorSeverity.MEDIUM):
+    # ✅ Correct parameter order - component first, func comes from decorator
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # ✅ Correct usage
+def execute_trade(self, trade_details: Dict[str, Any]):
+    pass
+```
+
+## 🔧 **Common Python Issues & Fixes**
+
+### **Issue 1: Decorator Parameter Mismatch**
+
+**Error**: `TypeError: 'str' object is not callable`
+**Cause**: Decorator expects function as first parameter but receives string
+**Solution**: Restructure decorator to take parameters first, then function
+
+**Before (Broken):**
+```python
+def safe_execute(func: Callable, component: str, severity: ErrorSeverity):
+    # func is first parameter
+    pass
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # Wrong order
+def method():
+    pass
+```
+
+**After (Fixed):**
+```python
+def safe_execute(component: str, severity: ErrorSeverity = ErrorSeverity.MEDIUM):
+    # component is first parameter
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # Correct order
+def method():
+    pass
+```
+
+### **Issue 2: Instance Method Decorators**
+
+**Error**: `TypeError: VaultClient._retry_on_failure() missing 1 required positional argument: 'func'`
+**Cause**: Using instance method as decorator
+**Solution**: Convert to static method or function
+
+**Before (Broken):**
+```python
+class VaultClient:
+    def _retry_on_failure(self, func):  # Instance method
+        # implementation
+        pass
+    
+    @_retry_on_failure  # Will fail - missing 'self'
+    def method(self):
+        pass
+```
+
+**After (Fixed):**
+```python
+class VaultClient:
+    @staticmethod  # Static method
+    def _retry_on_failure(func):
+        # implementation
+        pass
+    
+    @_retry_on_failure  # Will work correctly
+    def method(self):
+        pass
+```
+
+### **Issue 3: Decorator Return Type Issues**
+
+**Error**: `TypeError: 'NoneType' object is not callable`
+**Cause**: Decorator doesn't return the wrapped function
+**Solution**: Ensure decorator returns the wrapper function
+
+**Before (Broken):**
+```python
+def bad_decorator(func):
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    # ❌ Missing return statement
+```
+
+**After (Fixed):**
+```python
+def good_decorator(func):
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    return wrapper  # ✅ Return the wrapper
+```
+
+## 📋 **Decorator Best Practices**
+
+### **1. Parameter Order**
+```python
+# ✅ Correct: Parameters first, function comes from decorator
+def decorator(param1: str, param2: int = 0):
+    def wrapper(func: Callable) -> Callable:
+        @wraps(func)
+        def inner(*args, **kwargs):
+            # implementation using param1, param2
+            return func(*args, **kwargs)
+        return inner
+    return wrapper
+
+# Usage
+@decorator("value", 42)
+def function():
+    pass
+```
+
+### **2. Static Methods for Class Decorators**
+```python
+class MyClass:
+    @staticmethod
+    def class_decorator(func):
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    
+    @class_decorator  # ✅ Works correctly
+    def method(self):
+        pass
+```
+
+### **3. Proper Function Wrapping**
+```python
+import functools
+
+def my_decorator(func):
+    @functools.wraps(func)  # ✅ Preserve function metadata
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+## 🧪 **Testing Decorators**
+
+### **Test Decorator Functionality**
+```python
+# Test decorator without using it
+def test_decorator():
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# Test the decorator
+@test_decorator
+def test_function():
+    return "success"
+
+# Verify it works
+assert test_function() == "success"
+print("✅ Decorator works correctly")
+```
+
+### **Test Decorator with Parameters**
+```python
+def test_param_decorator(param: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Use param in wrapper
+            print(f"Decorator param: {param}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@test_param_decorator("test_value")
+def test_function():
+    return "success"
+
+# This should print "Decorator param: test_value" and return "success"
+result = test_function()
+```
+
+## 📁 **Files with Decorator Patterns**
+
+- [vault_client.py](mdc:vault_client.py) - `_retry_on_failure` decorator (FIXED)
+- [error_handlers.py](mdc:error_handlers.py) - `safe_execute` decorator (FIXED)
+- [main.py](mdc:main.py) - Uses `@safe_execute` decorator
+
+## ⚠️ **Common Pitfalls**
+
+1. **Parameter order**: Decorator parameters come first, function comes from decorator
+2. **Instance methods**: Don't use instance methods as decorators
+3. **Return statements**: Always return the wrapper function
+4. **Function wrapping**: Use `@functools.wraps(func)` to preserve metadata
+5. **Type hints**: Include proper type hints for better IDE support
+
+## 🔍 **Debugging Decorator Issues**
+
+### **Checklist for Decorator Problems**
+1. **Parameter order**: Are decorator parameters in correct order?
+2. **Method type**: Is the decorator a static method or function?
+3. **Return value**: Does the decorator return the wrapper function?
+4. **Function wrapping**: Is `@functools.wraps(func)` used?
+5. **Type hints**: Are the types correctly specified?
+
+### **Common Error Messages**
+- `'str' object is not callable` → Parameter order issue
+- `missing 1 required positional argument: 'func'` → Instance method decorator
+- `'NoneType' object is not callable` → Missing return statement
+- `ImportError` → Decorator import issue
+
+---
+
+**Remember**: Decorators in Python can be tricky. Always test them with simple examples before using them in complex code.
+description:
+globs:
+alwaysApply: true
+---

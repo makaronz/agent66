@@ -1,0 +1,41 @@
+{
+  "timestamp": "2025-08-17T09:15:21.247085Z",
+  "environment": "development",
+  "mode": "full",
+  "format": "json",
+  "scans": {
+    "filesystem": {
+      "file": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/trivy_scan.json",
+      "summary": {
+        "CRITICAL": 2,
+        "HIGH": 11,
+        "MEDIUM": 17,
+        "LOW": 4,
+        "UNKNOWN": 0
+      }
+    },
+    "images": []
+  },
+  "errors": [
+    "SBOM scan failed for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/python.sbom.json",
+    "SBOM scan failed for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/node.sbom.json",
+    "SBOM scan failed for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/python.sbom.xml",
+    "SBOM scan failed for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/node.sbom.xml"
+  ],
+  "aggregated": {
+    "CRITICAL": 2,
+    "HIGH": 11,
+    "MEDIUM": 17,
+    "LOW": 4,
+    "UNKNOWN": 0
+  },
+  "policy": {
+    "environment": "development",
+    "fail_on_severity": "CRITICAL",
+    "thresholds": {
+      "max_high": 25,
+      "max_medium": 100
+    }
+  },
+  "result": "FAIL"
+}

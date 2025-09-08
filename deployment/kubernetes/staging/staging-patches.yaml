@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smc-trading-agent
+  namespace: smc-trading-staging
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "smc-trading-staging-role"
+    spec:
+      containers:
+      - name: smc-agent
+        env:
+        - name: ENVIRONMENT
+          value: "staging"
+        - name: LOG_LEVEL
+          value: "DEBUG"
+        - name: VAULT_ADDR
+          value: "http://vault.vault.svc.cluster.local:8200"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"

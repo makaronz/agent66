@@ -1,0 +1,49 @@
+apiVersion: v2
+name: smc-trading-agent
+description: A Helm chart for SMC Trading Agent - Production-ready deployment
+
+# Chart version - increment for chart changes
+version: 1.0.0
+
+# Application version - matches the application version
+appVersion: "1.0.0"
+
+type: application
+
+keywords:
+  - trading
+  - smc
+  - kubernetes
+  - fintech
+  - microservices
+
+home: https://github.com/your-org/smc-trading-agent
+
+sources:
+  - https://github.com/your-org/smc-trading-agent
+
+maintainers:
+  - name: SMC Trading Team
+    email: team@smc-trading.com
+
+dependencies:
+  - name: postgresql
+    version: "12.1.9"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.3.7"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: prometheus
+    version: "15.18.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: monitoring.prometheus.enabled
+  - name: grafana
+    version: "6.50.7"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: monitoring.grafana.enabled
+
+annotations:
+  category: Trading
+  licenses: MIT

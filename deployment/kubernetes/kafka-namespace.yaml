@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka
+  labels:
+    name: kafka
+    environment: production
+    component: streaming
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka-staging
+  labels:
+    name: kafka-staging
+    environment: staging
+    component: streaming

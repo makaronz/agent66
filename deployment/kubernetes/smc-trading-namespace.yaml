@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smc-trading
+  labels:
+    name: smc-trading
+    environment: production
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: smc-trading-agent
+  namespace: smc-trading
+  labels:
+    app: smc-trading-agent
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-gateway
+  namespace: smc-trading
+  labels:
+    app: api-gateway
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: execution-engine
+  namespace: smc-trading
+  labels:
+    app: execution-engine

@@ -1,0 +1,340 @@
+# Default values for smc-trading-agent
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Application configuration
+image:
+  registry: docker.io
+  repository: smc-agent
+  tag: "v1.0.0"
+  pullPolicy: Always
+  pullSecrets: []
+
+# Deployment configuration
+replicaCount: 3
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Resource configuration
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "1000m"
+    ephemeralStorage: "1Gi"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+    ephemeralStorage: "2Gi"
+
+# Auto-scaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    http:
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    metrics:
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: smc-trading.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: smc-trading-tls
+      hosts:
+        - smc-trading.example.com
+
+# Health checks configuration
+healthChecks:
+  liveness:
+    enabled: true
+    path: /health
+    port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    path: /ready
+    port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  startup:
+    enabled: true
+    path: /health
+    port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+
+# Security configuration
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# Node selection and affinity
+nodeSelector:
+  node-type: production
+
+tolerations:
+  - key: "production-workload"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - smc-trading-agent
+        topologyKey: kubernetes.io/hostname
+    - weight: 50
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - smc-trading-agent
+        topologyKey: topology.kubernetes.io/zone
+
+# Environment variables
+env:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+
+# ConfigMap configuration
+configMap:
+  enabled: true
+  data:
+    config.yaml: |
+      environment: production
+      log_level: INFO
+      metrics:
+        enabled: true
+        port: 9090
+        path: /metrics
+      health:
+        port: 8080
+        liveness_path: /health
+        readiness_path: /ready
+      trading:
+        max_positions: 10
+        risk_limit: 0.02
+        stop_loss: 0.01
+
+# Persistent storage configuration
+persistence:
+  data:
+    enabled: true
+    storageClass: "fast-ssd"
+    accessMode: ReadWriteOnce
+    size: 50Gi
+    mountPath: /app/data
+  logs:
+    enabled: true
+    storageClass: "standard"
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    mountPath: /app/logs
+
+# Vault integration
+vault:
+  enabled: true
+  address: "http://vault.vault.svc.cluster.local:8200"
+  role: "smc-trading-role"
+  secrets:
+    database:
+      path: "secret/data/smc-trading/database"
+      template: |
+        {{- with secret "secret/data/smc-trading/database" -}}
+        export DATABASE_URL="{{ .Data.data.url }}"
+        export DATABASE_PASSWORD="{{ .Data.data.password }}"
+        {{- end }}
+    exchanges:
+      path: "secret/data/smc-trading/exchanges/binance"
+      template: |
+        {{- with secret "secret/data/smc-trading/exchanges/binance" -}}
+        export BINANCE_API_KEY="{{ .Data.data.api_key }}"
+        export BINANCE_API_SECRET="{{ .Data.data.api_secret }}"
+        {{- end }}
+        {{- with secret "secret/data/smc-trading/exchanges/bybit" -}}
+        export BYBIT_API_KEY="{{ .Data.data.api_key }}"
+        export BYBIT_API_SECRET="{{ .Data.data.api_secret }}"
+        {{- end }}
+        {{- with secret "secret/data/smc-trading/exchanges/oanda" -}}
+        export OANDA_API_KEY="{{ .Data.data.api_key }}"
+        export OANDA_ACCOUNT_ID="{{ .Data.data.account_id }}"
+        {{- end }}
+
+# Network policy configuration
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      ports:
+      - protocol: TCP
+        port: 8080
+      - protocol: TCP
+        port: 9090
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: vault
+      ports:
+      - protocol: TCP
+        port: 8200
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 80
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+      ports:
+      - protocol: UDP
+        port: 53
+
+# Monitoring configuration
+monitoring:
+  prometheus:
+    enabled: true
+    scrape: true
+    port: 9090
+    path: /metrics
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "smc-trading-agent"
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/metrics"
+
+# Pod labels
+podLabels:
+  version: "v1.0.0"
+  environment: "production"
+
+# Namespace configuration
+namespace:
+  create: true
+  name: "smc-trading"
+  labels:
+    name: "smc-trading"
+    environment: "production"
+
+# Dependencies configuration
+postgresql:
+  enabled: false
+  auth:
+    postgresPassword: "changeme"
+    database: "smc_trading"
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+
+redis:
+  enabled: false
+  auth:
+    enabled: true
+    password: "changeme"
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi

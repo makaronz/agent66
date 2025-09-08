@@ -1,0 +1,212 @@
+# AlertManager Configuration for SMC Trading Agent
+# Konfiguracja routingu i powiadomień o alertach
+
+global:
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@smc-trading-agent.com'
+  smtp_auth_username: 'alerts@smc-trading-agent.com'
+  smtp_auth_password: 'your-email-password'
+  smtp_require_tls: true
+  
+  # Slack webhook URL (replace with actual webhook)
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  
+  # Global resolve timeout
+  resolve_timeout: 5m
+
+# Templates for custom alert formatting
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing configuration
+route:
+  # Default receiver for all alerts
+  receiver: 'default-notifications'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # Wait time before sending initial notification
+  group_wait: 10s
+  
+  # Wait time before sending additional notifications for same group
+  group_interval: 10s
+  
+  # Wait time before sending resolved notifications
+  repeat_interval: 1h
+  
+  # Routing rules for different alert types
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      group_interval: 5s
+      repeat_interval: 15m
+      
+    # Trading-specific alerts
+    - match:
+        component: trading
+      receiver: 'trading-team'
+      group_by: ['alertname', 'exchange']
+      
+    # Security alerts
+    - match:
+        component: security
+      receiver: 'security-team'
+      group_wait: 0s
+      
+    # Infrastructure alerts
+    - match_re:
+        component: (database|redis|system)
+      receiver: 'infrastructure-team'
+      
+    # Performance warnings
+    - match:
+        severity: warning
+        component: performance
+      receiver: 'performance-alerts'
+      repeat_interval: 30m
+      
+    # Monitoring system alerts
+    - match:
+        component: monitoring
+      receiver: 'monitoring-team'
+
+# Inhibition rules - suppress certain alerts when others are firing
+inhibit_rules:
+  # Suppress warning alerts when critical alerts are firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']
+    
+  # Suppress individual component alerts when system is down
+  - source_match:
+      alertname: 'SMCBackendDown'
+    target_match_re:
+      alertname: '(HighLatency|HighErrorRate|DatabaseConnectionLost)'
+    equal: ['instance']
+
+# Receivers configuration
+receivers:
+  # Default receiver
+  - name: 'default-notifications'
+    email_configs:
+      - to: 'admin@smc-trading-agent.com'
+        subject: '[SMC Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+          
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'critical@smc-trading-agent.com'
+        subject: '[CRITICAL] SMC Trading Agent Alert'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Component: {{ .Labels.component }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+          
+    slack_configs:
+      - channel: '#smc-critical-alerts'
+        title: '🚨 Critical SMC Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Component:* {{ .Labels.component }}
+          *Time:* {{ .StartsAt.Format "15:04:05" }}
+          {{ end }}
+        color: 'danger'
+        
+  # Trading team alerts
+  - name: 'trading-team'
+    slack_configs:
+      - channel: '#smc-trading'
+        title: '📈 Trading System Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Exchange:* {{ .Labels.exchange }}
+          *Severity:* {{ .Labels.severity }}
+          {{ end }}
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+        
+    email_configs:
+      - to: 'trading-team@smc-trading-agent.com'
+        subject: '[Trading Alert] {{ .GroupLabels.alertname }}'
+        
+  # Security team alerts
+  - name: 'security-team'
+    email_configs:
+      - to: 'security@smc-trading-agent.com'
+        subject: '[SECURITY] {{ .GroupLabels.alertname }}'
+        body: |
+          🔒 SECURITY ALERT 🔒
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+          
+    slack_configs:
+      - channel: '#smc-security'
+        title: '🔒 Security Alert'
+        color: 'danger'
+        
+  # Infrastructure team alerts
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure@smc-trading-agent.com'
+        subject: '[Infrastructure] {{ .GroupLabels.alertname }}'
+        
+    slack_configs:
+      - channel: '#smc-infrastructure'
+        title: '🏗️ Infrastructure Alert'
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+        
+  # Performance alerts
+  - name: 'performance-alerts'
+    slack_configs:
+      - channel: '#smc-performance'
+        title: '⚡ Performance Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Component:* {{ .Labels.component }}
+          {{ end }}
+        color: 'warning'
+        
+  # Monitoring team alerts
+  - name: 'monitoring-team'
+    email_configs:
+      - to: 'monitoring@smc-trading-agent.com'
+        subject: '[Monitoring] {{ .GroupLabels.alertname }}'
+        
+# Silence configuration (optional)
+# silences:
+#   - matchers:
+#       - name: alertname
+#         value: 'MaintenanceMode'
+#     startsAt: '2025-01-01T00:00:00Z'
+#     endsAt: '2025-01-01T06:00:00Z'
+#     createdBy: 'admin'
+#     comment: 'Scheduled maintenance window'

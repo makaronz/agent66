@@ -1,0 +1,29 @@
+# Security policy configuration
+
+policy:
+  fail_on:
+    severity: CRITICAL
+  warn_on:
+    severities: [HIGH]
+  thresholds:
+    max_high: 25
+    max_medium: 100
+  allowlist:
+    cves: []
+    packages: []
+
+reporting:
+  formats: [json, table, sarif]
+  output_dir: docs/sbom
+
+environments:
+  development:
+    fail_on:
+      severity: CRITICAL
+    warn_on:
+      severities: [HIGH, MEDIUM]
+  production:
+    fail_on:
+      severity: CRITICAL
+    warn_on:
+      severities: [HIGH]
