@@ -1,0 +1,3689 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "api/app.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "app",
+          "type": {
+            "text": "express.Application"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "app",
+            "module": "api/app.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/auth-mfa.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "router"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "router",
+            "module": "api/auth-mfa.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/index.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "handler",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "VercelRequest"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "VercelResponse"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "handler",
+            "module": "api/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/server.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "app",
+            "module": "api/server.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/supabase.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "getSupabaseAdmin"
+        },
+        {
+          "kind": "function",
+          "name": "getUserFromToken",
+          "parameters": [
+            {
+              "name": "token",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "verifyUserSession",
+          "parameters": [
+            {
+              "name": "authHeader",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "getSupabaseAdmin",
+          "declaration": {
+            "name": "getSupabaseAdmin",
+            "module": "api/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getUserFromToken",
+          "declaration": {
+            "name": "getUserFromToken",
+            "module": "api/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "verifyUserSession",
+          "declaration": {
+            "name": "verifyUserSession",
+            "module": "api/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "api/supabase.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "htmlcov/coverage_html_cb_6fb7b396.js",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "public/sw.js",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/App.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "App"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "App",
+            "module": "src/App.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/SimpleApp.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SimpleApp"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SimpleApp",
+            "module": "src/SimpleApp.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/TestApp.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "TestApp"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "TestApp",
+            "module": "src/TestApp.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/main.tsx",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/supabase.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "supabase"
+        },
+        {
+          "kind": "function",
+          "name": "checkSupabaseConnection",
+          "return": {
+            "type": {
+              "text": "Promise<{ connected: boolean; error?: string }>"
+            }
+          }
+        },
+        {
+          "kind": "variable",
+          "name": "auth",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ // Sign up new user signUp: async (email: string, password: string, metadata?: any) => { const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } }); return { data, error }; }, // Sign in user signIn: async (email: string, password: string) => { const { data, error } = await supabase.auth.signInWithPassword({ email, password }); return { data, error }; }, // Sign out user signOut: async () => { const { error } = await supabase.auth.signOut(); return { error }; }, // Get current user getCurrentUser: async () => { const { data: { user }, error } = await supabase.auth.getUser(); return { user, error }; }, // Get current session getCurrentSession: async () => { const { data: { session }, error } = await supabase.auth.getSession(); return { session, error }; }, // Listen to auth changes onAuthStateChange: (callback: (event: string, session: any) => void) => { return supabase.auth.onAuthStateChange(callback); }, // Reset password resetPassword: async (email: string) => { const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` }); return { data, error }; }, // Update password updatePassword: async (password: string) => { const { data, error } = await supabase.auth.updateUser({ password }); return { data, error }; } }"
+        },
+        {
+          "kind": "variable",
+          "name": "db",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ // Users users: { get: async (userId: string) => { const { data, error } = await supabase .from('users') .select('*') .eq('id', userId) .single(); return { data, error }; }, upsert: async (userData: any) => { const { data, error } = await supabase .from('users') .upsert(userData) .select() .single(); return { data, error }; }, update: async (userId: string, updates: any) => { const { data, error } = await supabase .from('users') .update(updates) .eq('id', userId) .select() .single(); return { data, error }; } }, // User configurations configurations: { list: async (userId: string) => { const { data, error } = await supabase .from('user_configurations') .select('*') .eq('user_id', userId) .eq('is_active', true) .order('updated_at', { ascending: false }); return { data, error }; }, get: async (userId: string, configName: string) => { const { data, error } = await supabase .from('user_configurations') .select('*') .eq('user_id', userId) .eq('config_name', configName) .eq('is_active', true) .single(); return { data, error }; }, upsert: async (userId: string, configName: string, config: any) => { const { data, error } = await supabase .from('user_configurations') .upsert({ user_id: userId, config_name: configName, config_json: config, is_active: true }) .select() .single(); return { data, error }; } }, // Trading sessions sessions: { list: async (userId: string) => { const { data, error } = await supabase .from('trading_sessions') .select('*') .eq('user_id', userId) .order('created_at', { ascending: false }); return { data, error }; }, get: async (sessionId: string) => { const { data, error } = await supabase .from('trading_sessions') .select('*') .eq('id', sessionId) .single(); return { data, error }; }, create: async (sessionData: any) => { const { data, error } = await supabase .from('trading_sessions') .insert(sessionData) .select() .single(); return { data, error }; }, update: async (sessionId: string, updates: any) => { const { data, error } = await supabase .from('trading_sessions') .update(updates) .eq('id', sessionId) .select() .single(); return { data, error }; } }, // Trades trades: { list: async (userId: string, sessionId?: string) => { let query = supabase .from('trades') .select('*') .eq('user_id', userId) .order('timestamp', { ascending: false }); if (sessionId) { query = query.eq('session_id', sessionId); } const { data, error } = await query; return { data, error }; }, get: async (tradeId: string) => { const { data, error } = await supabase .from('trades') .select('*') .eq('id', tradeId) .single(); return { data, error }; }, create: async (tradeData: any) => { const { data, error } = await supabase .from('trades') .insert(tradeData) .select() .single(); return { data, error }; }, update: async (tradeId: string, updates: any) => { const { data, error } = await supabase .from('trades') .update(updates) .eq('id', tradeId) .select() .single(); return { data, error }; } }, // SMC Signals signals: { list: async (userId?: string, limit: number = 50) => { let query = supabase .from('smc_signals') .select('*') .order('created_at', { ascending: false }) .limit(limit); if (userId) { query = query.eq('user_id', userId); } const { data, error } = await query; return { data, error }; }, get: async (signalId: string) => { const { data, error } = await supabase .from('smc_signals') .select('*') .eq('id', signalId) .single(); return { data, error }; }, create: async (signalData: any) => { const { data, error } = await supabase .from('smc_signals') .insert(signalData) .select() .single(); return { data, error }; }, update: async (signalId: string, updates: any) => { const { data, error } = await supabase .from('smc_signals') .update(updates) .eq('id', signalId) .select() .single(); return { data, error }; } } }"
+        },
+        {
+          "kind": "variable",
+          "name": "realtime",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ // Subscribe to trades for a user subscribeTrades: (userId: string, callback: (payload: any) => void) => { return supabase .channel('trades') .on( 'postgres_changes', { event: '*', schema: 'public', table: 'trades', filter: `user_id=eq.${userId}` }, callback ) .subscribe(); }, // Subscribe to SMC signals subscribeSignals: (callback: (payload: any) => void, userId?: string) => { const channel = supabase.channel('smc_signals'); if (userId) { return channel .on( 'postgres_changes', { event: '*', schema: 'public', table: 'smc_signals', filter: `user_id=eq.${userId}` }, callback ) .subscribe(); } else { return channel .on( 'postgres_changes', { event: '*', schema: 'public', table: 'smc_signals' }, callback ) .subscribe(); } }, // Subscribe to trading sessions subscribeSessions: (userId: string, callback: (payload: any) => void) => { return supabase .channel('trading_sessions') .on( 'postgres_changes', { event: '*', schema: 'public', table: 'trading_sessions', filter: `user_id=eq.${userId}` }, callback ) .subscribe(); }, // Unsubscribe from channel unsubscribe: (channel: any) => { return supabase.removeChannel(channel); } }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "supabase",
+          "declaration": {
+            "name": "supabase",
+            "module": "src/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "checkSupabaseConnection",
+          "declaration": {
+            "name": "checkSupabaseConnection",
+            "module": "src/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "auth",
+          "declaration": {
+            "name": "auth",
+            "module": "src/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "db",
+          "declaration": {
+            "name": "db",
+            "module": "src/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "realtime",
+          "declaration": {
+            "name": "realtime",
+            "module": "src/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "supabase",
+            "module": "src/supabase.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/utils.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "cn",
+          "parameters": [
+            {
+              "name": "inputs",
+              "type": {
+                "text": "ClassValue[]"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "cn",
+          "declaration": {
+            "name": "cn",
+            "module": "src/utils.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/config/swagger.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "API_VERSION",
+          "type": {
+            "text": "string"
+          },
+          "default": "'v1'"
+        },
+        {
+          "kind": "variable",
+          "name": "API_BASE_PATH",
+          "default": "`/api/${API_VERSION}`"
+        },
+        {
+          "kind": "variable",
+          "name": "swaggerSpec"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "API_VERSION",
+          "declaration": {
+            "name": "API_VERSION",
+            "module": "api/config/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "API_BASE_PATH",
+          "declaration": {
+            "name": "API_BASE_PATH",
+            "module": "api/config/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "swaggerSpec",
+          "declaration": {
+            "name": "swaggerSpec",
+            "module": "api/config/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "api/config/swagger.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/config/versioning.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "API_VERSIONS",
+          "type": {
+            "text": "{\n  V1: 'v1',\n  V2: 'v2', // Future version\n  LATEST: 'v1'\n}"
+          },
+          "default": "{ V1: 'v1', V2: 'v2', // Future version LATEST: 'v1' }"
+        },
+        {
+          "kind": "variable",
+          "name": "VERSION_COMPATIBILITY",
+          "type": {
+            "text": "{\n  [API_VERSIONS.V1]: {\n    supported: true,\n    deprecated: false,\n    sunset_date: null,\n    breaking_changes: [],\n    migration_guide: null\n  },\n  [API_VERSIONS.V2]: {\n    supported: false, // Future version\n    deprecated: false,\n    sunset_date: null,\n    breaking_changes: [\n      'Authentication method changed to OAuth2',\n      'Response format standardized',\n      'Error codes restructured'\n    ],\n    migration_guide: '/docs/migration/v1-to-v2'\n  }\n}"
+          },
+          "default": "{ [API_VERSIONS.V1]: { supported: true, deprecated: false, sunset_date: null, breaking_changes: [], migration_guide: null }, [API_VERSIONS.V2]: { supported: false, // Future version deprecated: false, sunset_date: null, breaking_changes: [ 'Authentication method changed to OAuth2', 'Response format standardized', 'Error codes restructured' ], migration_guide: '/docs/migration/v1-to-v2' } }"
+        },
+        {
+          "kind": "variable",
+          "name": "VERSIONING_CONFIG",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ strategy: VersionStrategy.URL_PATH, default_version: API_VERSIONS.V1, header_name: 'X-API-Version', query_param_name: 'version', accept_header_prefix: 'application/vnd.smc', strict_versioning: false, // Allow requests without version specification version_in_response: true // Include version in response headers }"
+        },
+        {
+          "kind": "function",
+          "name": "extractVersionFromRequest",
+          "return": {
+            "type": {
+              "text": "ApiVersion | null"
+            }
+          },
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "strategy",
+              "default": "VERSIONING_CONFIG.strategy",
+              "type": {
+                "text": "VersionStrategy"
+              }
+            }
+          ],
+          "description": "Extract API version from request based on strategy"
+        },
+        {
+          "kind": "function",
+          "name": "isVersionSupported",
+          "return": {
+            "type": {
+              "text": "boolean"
+            }
+          },
+          "parameters": [
+            {
+              "name": "version",
+              "type": {
+                "text": "ApiVersion"
+              }
+            }
+          ],
+          "description": "Validate if a version is supported"
+        },
+        {
+          "kind": "function",
+          "name": "isVersionDeprecated",
+          "return": {
+            "type": {
+              "text": "boolean"
+            }
+          },
+          "parameters": [
+            {
+              "name": "version",
+              "type": {
+                "text": "ApiVersion"
+              }
+            }
+          ],
+          "description": "Check if a version is deprecated"
+        },
+        {
+          "kind": "function",
+          "name": "getVersionInfo",
+          "parameters": [
+            {
+              "name": "version",
+              "type": {
+                "text": "ApiVersion"
+              }
+            }
+          ],
+          "description": "Get version information"
+        },
+        {
+          "kind": "function",
+          "name": "versionDetectionMiddleware",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ],
+          "description": "Version detection middleware"
+        },
+        {
+          "kind": "function",
+          "name": "versionedRoute",
+          "parameters": [
+            {
+              "name": "version",
+              "type": {
+                "text": "ApiVersion"
+              }
+            },
+            {
+              "name": "handler",
+              "type": {
+                "text": "(req: Request, res: Response, next: NextFunction) => void"
+              }
+            }
+          ],
+          "description": "Version-specific route handler wrapper"
+        },
+        {
+          "kind": "function",
+          "name": "createVersionedRouter",
+          "parameters": [
+            {
+              "name": "version",
+              "type": {
+                "text": "ApiVersion"
+              }
+            }
+          ],
+          "description": "Create version-specific router"
+        },
+        {
+          "kind": "function",
+          "name": "responseTransformMiddleware",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ],
+          "description": "Response transformation middleware for version compatibility"
+        },
+        {
+          "kind": "function",
+          "name": "getVersionInfoEndpoint",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            }
+          ],
+          "description": "Get API version information endpoint"
+        },
+        {
+          "kind": "function",
+          "name": "getMigrationGuideEndpoint",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            }
+          ],
+          "description": "Migration guide endpoint"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "API_VERSIONS",
+          "declaration": {
+            "name": "API_VERSIONS",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "VERSION_COMPATIBILITY",
+          "declaration": {
+            "name": "VERSION_COMPATIBILITY",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "VERSIONING_CONFIG",
+          "declaration": {
+            "name": "VERSIONING_CONFIG",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "extractVersionFromRequest",
+          "declaration": {
+            "name": "extractVersionFromRequest",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "isVersionSupported",
+          "declaration": {
+            "name": "isVersionSupported",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "isVersionDeprecated",
+          "declaration": {
+            "name": "isVersionDeprecated",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getVersionInfo",
+          "declaration": {
+            "name": "getVersionInfo",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "versionDetectionMiddleware",
+          "declaration": {
+            "name": "versionDetectionMiddleware",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "versionedRoute",
+          "declaration": {
+            "name": "versionedRoute",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "createVersionedRouter",
+          "declaration": {
+            "name": "createVersionedRouter",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "responseTransformMiddleware",
+          "declaration": {
+            "name": "responseTransformMiddleware",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getVersionInfoEndpoint",
+          "declaration": {
+            "name": "getVersionInfoEndpoint",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getMigrationGuideEndpoint",
+          "declaration": {
+            "name": "getMigrationGuideEndpoint",
+            "module": "api/config/versioning.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "api/config/versioning.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/lib/vault-client.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "VaultClientError",
+          "members": [
+            {
+              "kind": "field",
+              "name": "name",
+              "type": {
+                "text": "string"
+              },
+              "default": "'VaultClientError'"
+            }
+          ],
+          "superclass": {
+            "name": "Error",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "VaultClient",
+          "members": [
+            {
+              "kind": "field",
+              "name": "client",
+              "type": {
+                "text": "AxiosInstance"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "vaultUrl",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "vaultToken",
+              "type": {
+                "text": "string | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "kubernetesRole",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "tokenFilePath",
+              "type": {
+                "text": "string"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "cacheTtl",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "maxRetries",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "secretCache",
+              "type": {
+                "text": "Map<string, CacheEntry>"
+              },
+              "privacy": "private",
+              "default": "new Map()"
+            },
+            {
+              "kind": "field",
+              "name": "tokenRenewalInterval",
+              "type": {
+                "text": "NodeJS.Timeout | undefined"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "authenticate",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Promise<void>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "authenticateKubernetes",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Promise<boolean>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "startTokenRenewal",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "isAuthenticated",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Promise<boolean>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "isCacheValid",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "key",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "retryOperation",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "Promise<T>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "operation",
+                  "type": {
+                    "text": "() => Promise<T>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getSecret",
+              "return": {
+                "type": {
+                  "text": "Promise<VaultSecret>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "path",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "useCache",
+                  "default": "true",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getDatabaseConfig",
+              "return": {
+                "type": {
+                  "text": "Promise<{ DATABASE_URL: string; DATABASE_PASSWORD: string }>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getExchangeConfig",
+              "return": {
+                "type": {
+                  "text": "Promise<Record<string, string>>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "exchange",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getJwtConfig",
+              "return": {
+                "type": {
+                  "text": "Promise<{ JWT_SECRET: string; ENCRYPTION_KEY: string }>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getRedisConfig",
+              "return": {
+                "type": {
+                  "text": "Promise<{ REDIS_PASSWORD: string }>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getSupabaseConfig",
+              "return": {
+                "type": {
+                  "text": "Promise<{ SUPABASE_URL: string; SUPABASE_SERVICE_ROLE_KEY: string; SUPABASE_ANON_KEY: string }>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "encryptData",
+              "return": {
+                "type": {
+                  "text": "Promise<string>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "plaintext",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "keyName",
+                  "default": "'smc-trading'",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "decryptData",
+              "return": {
+                "type": {
+                  "text": "Promise<string>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "ciphertext",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "keyName",
+                  "default": "'smc-trading'",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "invalidateCache",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "path",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "healthCheck",
+              "return": {
+                "type": {
+                  "text": "Promise<VaultHealth>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "close",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "getVaultClient",
+          "return": {
+            "type": {
+              "text": "VaultClient"
+            }
+          }
+        },
+        {
+          "kind": "function",
+          "name": "getSecretFromVault",
+          "return": {
+            "type": {
+              "text": "Promise<VaultSecret>"
+            }
+          },
+          "parameters": [
+            {
+              "name": "path",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "getConfigValue",
+          "return": {
+            "type": {
+              "text": "any"
+            }
+          },
+          "parameters": [
+            {
+              "name": "key",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "defaultValue",
+              "optional": true,
+              "type": {
+                "text": "any"
+              }
+            },
+            {
+              "name": "vaultPath",
+              "optional": true,
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "getDatabaseUrl",
+          "return": {
+            "type": {
+              "text": "Promise<string>"
+            }
+          }
+        },
+        {
+          "kind": "function",
+          "name": "getExchangeCredentials",
+          "return": {
+            "type": {
+              "text": "Promise<Record<string, string>>"
+            }
+          },
+          "parameters": [
+            {
+              "name": "exchange",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "getJwtSecret",
+          "return": {
+            "type": {
+              "text": "Promise<string>"
+            }
+          }
+        },
+        {
+          "kind": "function",
+          "name": "getEncryptionKey",
+          "return": {
+            "type": {
+              "text": "Promise<string>"
+            }
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "VaultClientError",
+          "declaration": {
+            "name": "VaultClientError",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "VaultClient",
+          "declaration": {
+            "name": "VaultClient",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getVaultClient",
+          "declaration": {
+            "name": "getVaultClient",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getSecretFromVault",
+          "declaration": {
+            "name": "getSecretFromVault",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getConfigValue",
+          "declaration": {
+            "name": "getConfigValue",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getDatabaseUrl",
+          "declaration": {
+            "name": "getDatabaseUrl",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getExchangeCredentials",
+          "declaration": {
+            "name": "getExchangeCredentials",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getJwtSecret",
+          "declaration": {
+            "name": "getJwtSecret",
+            "module": "api/lib/vault-client.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getEncryptionKey",
+          "declaration": {
+            "name": "getEncryptionKey",
+            "module": "api/lib/vault-client.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/middleware/audit.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "auditLogger",
+          "default": "new AuditLogger()"
+        },
+        {
+          "kind": "function",
+          "name": "auditMiddleware",
+          "parameters": [
+            {
+              "name": "eventType",
+              "type": {
+                "text": "AuditEventType"
+              }
+            },
+            {
+              "name": "options",
+              "default": "{}",
+              "type": {
+                "text": "{\n  resourceType?: string;\n  captureBody?: boolean;\n  captureResponse?: boolean;\n}"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "variable",
+          "name": "auditAuth",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ loginSuccess: (req: Request) => auditLogger.logEvent(AuditEventType.LOGIN_SUCCESS, req), loginFailure: (req: Request, reason: string) => auditLogger.logEvent( AuditEventType.LOGIN_FAILURE, req, { failure_reason: reason } ), logout: (req: Request) => auditLogger.logEvent(AuditEventType.LOGOUT, req), passwordChange: (req: Request) => auditLogger.logEvent(AuditEventType.PASSWORD_CHANGE, req), mfaSetup: (req: Request, method: string) => auditLogger.logEvent( AuditEventType.MFA_SETUP, req, { mfa_method: method } ), mfaVerifySuccess: (req: Request, method: string) => auditLogger.logEvent( AuditEventType.MFA_VERIFY_SUCCESS, req, { mfa_method: method } ), mfaVerifyFailure: (req: Request, method: string, reason: string) => auditLogger.logEvent( AuditEventType.MFA_VERIFY_FAILURE, req, { mfa_method: method, failure_reason: reason } ) }"
+        },
+        {
+          "kind": "variable",
+          "name": "auditTrading",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ orderPlace: (req: Request, orderData: any) => auditLogger.logEvent( AuditEventType.ORDER_PLACE, req, { order_data: orderData }, undefined, orderData.id, 'order' ), orderCancel: (req: Request, orderId: string) => auditLogger.logEvent( AuditEventType.ORDER_CANCEL, req, {}, undefined, orderId, 'order' ), balanceView: (req: Request, exchange: string) => auditLogger.logEvent( AuditEventType.BALANCE_VIEW, req, { exchange } ) }"
+        },
+        {
+          "kind": "variable",
+          "name": "auditSecurity",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ unauthorizedAccess: (req: Request, reason: string) => auditLogger.logEvent( AuditEventType.UNAUTHORIZED_ACCESS, req, { reason } ), rateLimitExceeded: (req: Request, limit: number) => auditLogger.logEvent( AuditEventType.RATE_LIMIT_EXCEEDED, req, { rate_limit: limit } ), suspiciousActivity: (req: Request, activity: string, details: any) => auditLogger.logEvent( AuditEventType.SUSPICIOUS_ACTIVITY, req, { activity, ...details } ) }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "auditLogger",
+          "declaration": {
+            "name": "auditLogger",
+            "module": "api/middleware/audit.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "auditMiddleware",
+          "declaration": {
+            "name": "auditMiddleware",
+            "module": "api/middleware/audit.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "auditAuth",
+          "declaration": {
+            "name": "auditAuth",
+            "module": "api/middleware/audit.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "auditTrading",
+          "declaration": {
+            "name": "auditTrading",
+            "module": "api/middleware/audit.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "auditSecurity",
+          "declaration": {
+            "name": "auditSecurity",
+            "module": "api/middleware/audit.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/middleware/auth.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "authenticateToken",
+          "return": {
+            "type": {
+              "text": "Promise<void>"
+            }
+          },
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "AuthenticatedRequest"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "requireMFA",
+          "return": {
+            "type": {
+              "text": "Promise<void>"
+            }
+          },
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "AuthenticatedRequest"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "verifyMFAToken",
+          "return": {
+            "type": {
+              "text": "Promise<void>"
+            }
+          },
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "AuthenticatedRequest"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "authenticateToken",
+          "declaration": {
+            "name": "authenticateToken",
+            "module": "api/middleware/auth.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "requireMFA",
+          "declaration": {
+            "name": "requireMFA",
+            "module": "api/middleware/auth.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "verifyMFAToken",
+          "declaration": {
+            "name": "verifyMFAToken",
+            "module": "api/middleware/auth.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/middleware/swagger.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "customCss",
+          "default": "` .swagger-ui .topbar { display: none; } .swagger-ui .info .title { color: #1f2937; } .swagger-ui .info .description { color: #4b5563; } .swagger-ui .scheme-container { background: #f9fafb; padding: 10px; border-radius: 4px; } .swagger-ui .btn.authorize { background-color: #3b82f6; border-color: #3b82f6; } .swagger-ui .btn.authorize:hover { background-color: #2563eb; border-color: #2563eb; } .swagger-ui .model-box { background-color: #f8fafc; } .swagger-ui .model .property { color: #1f2937; } .swagger-ui .response-col_status { color: #059669; } .swagger-ui .response-col_links { color: #3b82f6; } `"
+        },
+        {
+          "kind": "variable",
+          "name": "customSiteTitle",
+          "type": {
+            "text": "string"
+          },
+          "default": "'SMC Trading Agent API Documentation'"
+        },
+        {
+          "kind": "variable",
+          "name": "swaggerUiOptions",
+          "type": {
+            "text": "swaggerUi.SwaggerUiOptions"
+          },
+          "default": "{ customCss, customSiteTitle, customfavIcon: '/favicon.ico', swaggerOptions: { docExpansion: 'list', filter: true, showRequestDuration: true, tryItOutEnabled: true, requestInterceptor: (req: any) => { // Add API version header to all requests req.headers['X-API-Version'] = API_VERSION; return req; }, responseInterceptor: (res: any) => { // Log response for debugging in development if (process.env.NODE_ENV === 'development') { console.log('Swagger UI Response:', res.status, res.url); } return res; }, persistAuthorization: true, displayOperationId: false, displayRequestDuration: true, defaultModelsExpandDepth: 2, defaultModelExpandDepth: 2, showExtensions: true, showCommonExtensions: true, useUnsafeMarkdown: false } }"
+        },
+        {
+          "kind": "function",
+          "name": "securityWarningMiddleware",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "environmentInfoMiddleware",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "createSwaggerMiddleware"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "swaggerUi",
+          "declaration": {
+            "name": "swaggerUi",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "swaggerUiOptions",
+          "declaration": {
+            "name": "swaggerUiOptions",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "createSwaggerMiddleware",
+          "declaration": {
+            "name": "createSwaggerMiddleware",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "securityWarningMiddleware",
+          "declaration": {
+            "name": "securityWarningMiddleware",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "environmentInfoMiddleware",
+          "declaration": {
+            "name": "environmentInfoMiddleware",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "customCss",
+          "declaration": {
+            "name": "customCss",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "customSiteTitle",
+          "declaration": {
+            "name": "customSiteTitle",
+            "module": "api/middleware/swagger.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "api/middleware/swagger.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/middleware/validation.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "validateRequest",
+          "parameters": [
+            {
+              "name": "schema",
+              "type": {
+                "text": "{\n  body?: z.ZodSchema;\n  query?: z.ZodSchema;\n  params?: z.ZodSchema;\n}"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "sanitizeInput",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "createRateLimit",
+          "parameters": [
+            {
+              "name": "options",
+              "type": {
+                "text": "{\n  windowMs: number;\n  max: number;\n  message?: string;\n  skipSuccessfulRequests?: boolean;\n  keyGenerator?: (req: Request) => string;\n}"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "variable",
+          "name": "generalRateLimit"
+        },
+        {
+          "kind": "variable",
+          "name": "authRateLimit"
+        },
+        {
+          "kind": "variable",
+          "name": "tradingRateLimit"
+        },
+        {
+          "kind": "variable",
+          "name": "apiKeyRateLimit"
+        },
+        {
+          "kind": "variable",
+          "name": "marketDataRateLimit"
+        },
+        {
+          "kind": "variable",
+          "name": "corsOptions",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => { const allowedOrigins = [ 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'https://smc-trading-agent.vercel.app', process.env.FRONTEND_URL ].filter(Boolean); // Allow requests with no origin (mobile apps, etc.) if (!origin) return callback(null, true); if (allowedOrigins.includes(origin)) { callback(null, true); } else { callback(new Error('Not allowed by CORS policy'), false); } }, credentials: true, methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: [ 'Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'X-API-Key', 'X-Client-Version' ], exposedHeaders: [ 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset' ], maxAge: 86400 // 24 hours }"
+        },
+        {
+          "kind": "function",
+          "name": "securityHeaders",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "requestLogger",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "errorHandler",
+          "parameters": [
+            {
+              "name": "error",
+              "type": {
+                "text": "Error"
+              }
+            },
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            },
+            {
+              "name": "next",
+              "type": {
+                "text": "NextFunction"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "healthCheck",
+          "parameters": [
+            {
+              "name": "req",
+              "type": {
+                "text": "Request"
+              }
+            },
+            {
+              "name": "res",
+              "type": {
+                "text": "Response"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "validateRequest",
+          "declaration": {
+            "name": "validateRequest",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "sanitizeInput",
+          "declaration": {
+            "name": "sanitizeInput",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "createRateLimit",
+          "declaration": {
+            "name": "createRateLimit",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "generalRateLimit",
+          "declaration": {
+            "name": "generalRateLimit",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "authRateLimit",
+          "declaration": {
+            "name": "authRateLimit",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "tradingRateLimit",
+          "declaration": {
+            "name": "tradingRateLimit",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "apiKeyRateLimit",
+          "declaration": {
+            "name": "apiKeyRateLimit",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "marketDataRateLimit",
+          "declaration": {
+            "name": "marketDataRateLimit",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "corsOptions",
+          "declaration": {
+            "name": "corsOptions",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "securityHeaders",
+          "declaration": {
+            "name": "securityHeaders",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "requestLogger",
+          "declaration": {
+            "name": "requestLogger",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "errorHandler",
+          "declaration": {
+            "name": "errorHandler",
+            "module": "api/middleware/validation.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "healthCheck",
+          "declaration": {
+            "name": "healthCheck",
+            "module": "api/middleware/validation.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/routes/auth.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "router"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "router",
+            "module": "api/routes/auth.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/routes/binance.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "router"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "router",
+            "module": "api/routes/binance.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/routes/users.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "router"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "router",
+            "module": "api/routes/users.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/types/database.types.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "api/validation/schemas.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "registerSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "loginSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "changePasswordSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "updateProfileSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "storeApiKeysSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "testConnectionSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "placeOrderSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "cancelOrderSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "getOrderHistorySchema"
+        },
+        {
+          "kind": "variable",
+          "name": "getMarketDataSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "getTickerSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "saveConfigurationSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "setupTOTPSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "verifyTOTPSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "setupSMSSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "verifySMSSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "webAuthnRegistrationSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "webAuthnAuthenticationSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "paginationSchema"
+        },
+        {
+          "kind": "variable",
+          "name": "fileUploadSchema"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "registerSchema",
+          "declaration": {
+            "name": "registerSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "loginSchema",
+          "declaration": {
+            "name": "loginSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "changePasswordSchema",
+          "declaration": {
+            "name": "changePasswordSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "updateProfileSchema",
+          "declaration": {
+            "name": "updateProfileSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "storeApiKeysSchema",
+          "declaration": {
+            "name": "storeApiKeysSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "testConnectionSchema",
+          "declaration": {
+            "name": "testConnectionSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "placeOrderSchema",
+          "declaration": {
+            "name": "placeOrderSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "cancelOrderSchema",
+          "declaration": {
+            "name": "cancelOrderSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getOrderHistorySchema",
+          "declaration": {
+            "name": "getOrderHistorySchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getMarketDataSchema",
+          "declaration": {
+            "name": "getMarketDataSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "getTickerSchema",
+          "declaration": {
+            "name": "getTickerSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "saveConfigurationSchema",
+          "declaration": {
+            "name": "saveConfigurationSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "setupTOTPSchema",
+          "declaration": {
+            "name": "setupTOTPSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "verifyTOTPSchema",
+          "declaration": {
+            "name": "verifyTOTPSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "setupSMSSchema",
+          "declaration": {
+            "name": "setupSMSSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "verifySMSSchema",
+          "declaration": {
+            "name": "verifySMSSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "webAuthnRegistrationSchema",
+          "declaration": {
+            "name": "webAuthnRegistrationSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "webAuthnAuthenticationSchema",
+          "declaration": {
+            "name": "webAuthnAuthenticationSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "paginationSchema",
+          "declaration": {
+            "name": "paginationSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "fileUploadSchema",
+          "declaration": {
+            "name": "fileUploadSchema",
+            "module": "api/validation/schemas.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/assets/index-CvGfYhkJ.js",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/Empty.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Empty"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Empty",
+            "module": "src/components/Empty.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/ErrorBoundary.tsx",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "ErrorBoundary",
+          "members": [
+            {
+              "kind": "method",
+              "name": "getDerivedStateFromError",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "State"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "error",
+                  "type": {
+                    "text": "Error"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "componentDidCatch",
+              "parameters": [
+                {
+                  "name": "error",
+                  "type": {
+                    "text": "Error"
+                  }
+                },
+                {
+                  "name": "errorInfo",
+                  "type": {
+                    "text": "ErrorInfo"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "field",
+              "name": "state",
+              "type": {
+                "text": "object"
+              },
+              "default": "{ hasError: false }"
+            }
+          ],
+          "superclass": {
+            "name": "Component",
+            "package": "react"
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "ErrorBoundary",
+            "module": "src/components/ErrorBoundary.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/Layout.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Layout"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Layout",
+            "module": "src/components/Layout.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/contexts/AuthContext.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "useAuthContext"
+        },
+        {
+          "kind": "function",
+          "name": "AuthProvider",
+          "parameters": [
+            {
+              "name": "{ children }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "useAuthContext",
+          "declaration": {
+            "name": "useAuthContext",
+            "module": "src/contexts/AuthContext.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "AuthProvider",
+          "declaration": {
+            "name": "AuthProvider",
+            "module": "src/contexts/AuthContext.tsx"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "AuthProvider",
+            "module": "src/contexts/AuthContext.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/encryption.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "generateKey",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          }
+        },
+        {
+          "kind": "function",
+          "name": "encrypt",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          },
+          "parameters": [
+            {
+              "name": "text",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "key",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "decrypt",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          },
+          "parameters": [
+            {
+              "name": "encryptedData",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "key",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "hash",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          },
+          "parameters": [
+            {
+              "name": "data",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "generateSecureRandom",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          },
+          "parameters": [
+            {
+              "name": "length",
+              "default": "32",
+              "type": {
+                "text": "number"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "verifyHash",
+          "return": {
+            "type": {
+              "text": "boolean"
+            }
+          },
+          "parameters": [
+            {
+              "name": "data",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "hashedData",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "generateTOTPSecret",
+          "return": {
+            "type": {
+              "text": "string"
+            }
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "generateKey",
+          "declaration": {
+            "name": "generateKey",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "encrypt",
+          "declaration": {
+            "name": "encrypt",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "decrypt",
+          "declaration": {
+            "name": "decrypt",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "hash",
+          "declaration": {
+            "name": "hash",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "generateSecureRandom",
+          "declaration": {
+            "name": "generateSecureRandom",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "verifyHash",
+          "declaration": {
+            "name": "verifyHash",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "generateTOTPSecret",
+          "declaration": {
+            "name": "generateTOTPSecret",
+            "module": "src/lib/encryption.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "src/lib/encryption.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "package": "./supabase"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "*",
+          "declaration": {
+            "name": "*",
+            "package": "./utils"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "supabase",
+            "module": "./supabase"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "cn",
+          "declaration": {
+            "name": "cn",
+            "module": "./utils"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/supabase.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "supabase"
+        },
+        {
+          "kind": "function",
+          "name": "checkSupabaseConnection",
+          "return": {
+            "type": {
+              "text": "Promise<{ connected: boolean; error?: string }>"
+            }
+          }
+        },
+        {
+          "kind": "variable",
+          "name": "auth",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ // Sign up new user signUp: async (email: string, password: string, metadata?: any) => { const { data, error } = await supabase.auth.signUp({ email, password, options: { data: metadata } }); return { data, error }; }, // Sign in user signIn: async (email: string, password: string) => { const { data, error } = await supabase.auth.signInWithPassword({ email, password }); return { data, error }; }, // Sign out user signOut: async () => { const { error } = await supabase.auth.signOut(); return { error }; }, // Get current user getCurrentUser: async () => { const { data: { user }, error } = await supabase.auth.getUser(); return { user, error }; }, // Get current session getCurrentSession: async () => { const { data: { session }, error } = await supabase.auth.getSession(); return { session, error }; }, // Listen to auth changes onAuthStateChange: (callback: (event: string, session: any) => void) => { return supabase.auth.onAuthStateChange(callback); }, // Reset password resetPassword: async (email: string) => { const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` }); return { data, error }; }, // Update password updatePassword: async (password: string) => { const { data, error } = await supabase.auth.updateUser({ password }); return { data, error }; } }"
+        },
+        {
+          "kind": "variable",
+          "name": "db",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ // Users users: { get: async (userId: string) => { const { data, error } = await supabase .from('users') .select('*') .eq('id', userId) .single(); return { data, error }; }, upsert: async (userData: any) => { const { data, error } = await supabase .from('users') .upsert(userData) .select() .single(); return { data, error }; }, update: async (userId: string, updates: any) => { const { data, error } = await supabase .from('users') .update(updates) .eq('id', userId) .select() .single(); return { data, error }; } }, // User configurations configurations: { list: async (userId: string) => { const { data, error } = await supabase .from('user_configurations') .select('*') .eq('user_id', userId) .eq('is_active', true) .order('updated_at', { ascending: false }); return { data, error }; }, get: async (userId: string, configName: string) => { const { data, error } = await supabase .from('user_configurations') .select('*') .eq('user_id', userId) .eq('config_name', configName) .eq('is_active', true) .single(); return { data, error }; }, upsert: async (userId: string, configName: string, config: any) => { const { data, error } = await supabase .from('user_configurations') .upsert({ user_id: userId, config_name: configName, config_json: config, is_active: true }) .select() .single(); return { data, error }; } }, // Trading sessions sessions: { list: async (userId: string) => { const { data, error } = await supabase .from('trading_sessions') .select('*') .eq('user_id', userId) .order('created_at', { ascending: false }); return { data, error }; }, get: async (sessionId: string) => { const { data, error } = await supabase .from('trading_sessions') .select('*') .eq('id', sessionId) .single(); return { data, error }; }, create: async (sessionData: any) => { const { data, error } = await supabase .from('trading_sessions') .insert(sessionData) .select() .single(); return { data, error }; }, update: async (sessionId: string, updates: any) => { const { data, error } = await supabase .from('trading_sessions') .update(updates) .eq('id', sessionId) .select() .single(); return { data, error }; } }, // Trades trades: { list: async (userId: string, sessionId?: string) => { let query = supabase .from('trades') .select('*') .eq('user_id', userId) .order('timestamp', { ascending: false }); if (sessionId) { query = query.eq('session_id', sessionId); } const { data, error } = await query; return { data, error }; }, get: async (tradeId: string) => { const { data, error } = await supabase .from('trades') .select('*') .eq('id', tradeId) .single(); return { data, error }; }, create: async (tradeData: any) => { const { data, error } = await supabase .from('trades') .insert(tradeData) .select() .single(); return { data, error }; }, update: async (tradeId: string, updates: any) => { const { data, error } = await supabase .from('trades') .update(updates) .eq('id', tradeId) .select() .single(); return { data, error }; } }, // SMC Signals signals: { list: async (userId?: string, limit: number = 50) => { let query = supabase .from('smc_signals') .select('*') .order('created_at', { ascending: false }) .limit(limit); if (userId) { query = query.eq('user_id', userId); } const { data, error } = await query; return { data, error }; }, get: async (signalId: string) => { const { data, error } = await supabase .from('smc_signals') .select('*') .eq('id', signalId) .single(); return { data, error }; }, create: async (signalData: any) => { const { data, error } = await supabase .from('smc_signals') .insert(signalData) .select() .single(); return { data, error }; }, update: async (signalId: string, updates: any) => { const { data, error } = await supabase .from('smc_signals') .update(updates) .eq('id', signalId) .select() .single(); return { data, error }; } } }"
+        },
+        {
+          "kind": "variable",
+          "name": "realtime",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ // Subscribe to trades for a user subscribeTrades: (userId: string, callback: (payload: any) => void) => { return supabase .channel('trades') .on( 'postgres_changes', { event: '*', schema: 'public', table: 'trades', filter: `user_id=eq.${userId}` }, callback ) .subscribe(); }, // Subscribe to SMC signals subscribeSignals: (callback: (payload: any) => void, userId?: string) => { const channel = supabase.channel('smc_signals'); if (userId) { return channel .on( 'postgres_changes', { event: '*', schema: 'public', table: 'smc_signals', filter: `user_id=eq.${userId}` }, callback ) .subscribe(); } else { return channel .on( 'postgres_changes', { event: '*', schema: 'public', table: 'smc_signals' }, callback ) .subscribe(); } }, // Subscribe to trading sessions subscribeSessions: (userId: string, callback: (payload: any) => void) => { return supabase .channel('trading_sessions') .on( 'postgres_changes', { event: '*', schema: 'public', table: 'trading_sessions', filter: `user_id=eq.${userId}` }, callback ) .subscribe(); }, // Unsubscribe from channel unsubscribe: (channel: any) => { return supabase.removeChannel(channel); } }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "supabase",
+          "declaration": {
+            "name": "supabase",
+            "module": "src/lib/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "checkSupabaseConnection",
+          "declaration": {
+            "name": "checkSupabaseConnection",
+            "module": "src/lib/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "auth",
+          "declaration": {
+            "name": "auth",
+            "module": "src/lib/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "db",
+          "declaration": {
+            "name": "db",
+            "module": "src/lib/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "realtime",
+          "declaration": {
+            "name": "realtime",
+            "module": "src/lib/supabase.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "supabase",
+            "module": "src/lib/supabase.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/lib/utils.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "cn",
+          "parameters": [
+            {
+              "name": "inputs",
+              "type": {
+                "text": "ClassValue[]"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "cn",
+          "declaration": {
+            "name": "cn",
+            "module": "src/lib/utils.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/hooks/useAuth.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "useAuth",
+          "return": {
+            "type": {
+              "text": "AuthState & AuthActions"
+            }
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "useAuth",
+          "declaration": {
+            "name": "useAuth",
+            "module": "src/hooks/useAuth.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "useAuth",
+            "module": "src/hooks/useAuth.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/hooks/useMarketData.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "useMarketData",
+          "parameters": [
+            {
+              "name": "options",
+              "default": "{}",
+              "type": {
+                "text": "UseMarketDataOptions"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "useMarketData",
+          "declaration": {
+            "name": "useMarketData",
+            "module": "src/hooks/useMarketData.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MarketData",
+          "declaration": {
+            "name": "MarketData",
+            "module": "src/hooks/useMarketData.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MarketDataState",
+          "declaration": {
+            "name": "MarketDataState",
+            "module": "src/hooks/useMarketData.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/hooks/useRealtime.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "useRealtime",
+          "return": {
+            "type": {
+              "text": "RealtimeState & RealtimeActions"
+            }
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "useRealtime",
+          "declaration": {
+            "name": "useRealtime",
+            "module": "src/hooks/useRealtime.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "useRealtime",
+            "module": "src/hooks/useRealtime.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/hooks/useTheme.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "useTheme"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "useTheme",
+          "declaration": {
+            "name": "useTheme",
+            "module": "src/hooks/useTheme.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Analytics.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Analytics"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Analytics",
+            "module": "src/pages/Analytics.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Configuration.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Configuration"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Configuration",
+            "module": "src/pages/Configuration.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Dashboard.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Dashboard"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Dashboard",
+            "module": "src/pages/Dashboard.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Home.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Home"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Home",
+            "module": "src/pages/Home.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Login.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Login"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Login",
+            "module": "src/pages/Login.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/MFASettings.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "MFASettings"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MFASettings",
+            "module": "src/pages/MFASettings.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Monitoring.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Monitoring"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Monitoring",
+            "module": "src/pages/Monitoring.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Reports.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Reports"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Reports",
+            "module": "src/pages/Reports.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/Research.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "Research"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Research",
+            "module": "src/pages/Research.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/RiskManagement.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "RiskManagement"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "RiskManagement",
+            "module": "src/pages/RiskManagement.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/pages/TradingInterface.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "TradingInterface"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "TradingInterface",
+            "module": "src/pages/TradingInterface.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/services/backgroundPatternDetection.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "backgroundPatternDetection",
+          "default": "new BackgroundPatternDetectionService()"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "backgroundPatternDetection",
+          "declaration": {
+            "name": "backgroundPatternDetection",
+            "module": "src/services/backgroundPatternDetection.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "backgroundPatternDetection",
+            "module": "src/services/backgroundPatternDetection.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/services/binanceApi.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "binanceApi",
+          "default": "new BinanceApiService()"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "binanceApi",
+          "declaration": {
+            "name": "binanceApi",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "MarketData",
+          "declaration": {
+            "name": "MarketData",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceKline",
+          "declaration": {
+            "name": "BinanceKline",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceTicker",
+          "declaration": {
+            "name": "BinanceTicker",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceExchangeInfo",
+          "declaration": {
+            "name": "BinanceExchangeInfo",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceOrderBook",
+          "declaration": {
+            "name": "BinanceOrderBook",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceError",
+          "declaration": {
+            "name": "BinanceError",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceAccountUpdate",
+          "declaration": {
+            "name": "BinanceAccountUpdate",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceBalanceUpdate",
+          "declaration": {
+            "name": "BinanceBalanceUpdate",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BinanceOrderUpdate",
+          "declaration": {
+            "name": "BinanceOrderUpdate",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "UserDataStreamEvent",
+          "declaration": {
+            "name": "UserDataStreamEvent",
+            "module": "src/services/binanceApi.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "ListenKeyResponse",
+          "declaration": {
+            "name": "ListenKeyResponse",
+            "module": "src/services/binanceApi.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/services/smcSignalGenerator.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "smcSignalGenerator",
+          "default": "new SMCSignalGenerator()"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "smcSignalGenerator",
+          "declaration": {
+            "name": "smcSignalGenerator",
+            "module": "src/services/smcSignalGenerator.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "smcSignalGenerator",
+            "module": "src/services/smcSignalGenerator.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/types/database.types.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/auth/AuthGuard.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "AuthGuard",
+          "parameters": [
+            {
+              "name": "{\n  children,\n  fallback,\n  requireAuth = true\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "AuthGuard",
+            "module": "src/components/auth/AuthGuard.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/auth/AuthModal.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "AuthModal",
+          "parameters": [
+            {
+              "name": "{\n  isOpen,\n  onClose,\n  initialMode = 'login'\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "AuthModal",
+            "module": "src/components/auth/AuthModal.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/auth/ForgotPasswordForm.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "ForgotPasswordForm",
+          "parameters": [
+            {
+              "name": "{\n  onSuccess,\n  onBackToLogin\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "ForgotPasswordForm",
+            "module": "src/components/auth/ForgotPasswordForm.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/auth/LoginForm.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LoginForm",
+          "parameters": [
+            {
+              "name": "{\n  onSuccess,\n  onSwitchToRegister,\n  onForgotPassword\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "LoginForm",
+            "module": "src/components/auth/LoginForm.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/auth/RegisterForm.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "RegisterForm",
+          "parameters": [
+            {
+              "name": "{\n  onSuccess,\n  onSwitchToLogin\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "RegisterForm",
+            "module": "src/components/auth/RegisterForm.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/auth/SimpleAuthGuard.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SimpleAuthGuard",
+          "parameters": [
+            {
+              "name": "{ children }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SimpleAuthGuard",
+            "module": "src/components/auth/SimpleAuthGuard.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/charts/TradingViewChart.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "TradingViewChart",
+          "parameters": [
+            {
+              "name": "{\n  symbol,\n  interval = '15m',\n  theme = 'light',\n  height = 400,\n  className = ''\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "TradingViewChart",
+            "module": "src/components/charts/TradingViewChart.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/mfa/BackupCodes.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "BackupCodes",
+          "parameters": [
+            {
+              "name": "{ enabled, remainingCodes, onStatusChange }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "BackupCodes",
+            "module": "src/components/mfa/BackupCodes.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/mfa/MFAEducation.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "MFAEducation"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "MFAEducation",
+            "module": "src/components/mfa/MFAEducation.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/mfa/SMSSetup.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SMSSetup",
+          "parameters": [
+            {
+              "name": "{ enabled, onStatusChange }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SMSSetup",
+            "module": "src/components/mfa/SMSSetup.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/mfa/SecurityDashboard.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "SecurityDashboard"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SecurityDashboard",
+            "module": "src/components/mfa/SecurityDashboard.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/mfa/TOTPSetup.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "TOTPSetup",
+          "parameters": [
+            {
+              "name": "{ enabled, onStatusChange }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "TOTPSetup",
+            "module": "src/components/mfa/TOTPSetup.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/mfa/WebAuthnSetup.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "WebAuthnSetup",
+          "parameters": [
+            {
+              "name": "{ enabled, onStatusChange }"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "WebAuthnSetup",
+            "module": "src/components/mfa/WebAuthnSetup.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/realtime/LiveSignals.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LiveSignals",
+          "parameters": [
+            {
+              "name": "{\n  className = '',\n  maxSignals = 20,\n  showFilters = true\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "LiveSignals",
+            "module": "src/components/realtime/LiveSignals.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/realtime/LiveTrades.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LiveTrades",
+          "parameters": [
+            {
+              "name": "{\n  className = '',\n  maxTrades = 15,\n  showFilters = true\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "LiveTrades",
+            "module": "src/components/realtime/LiveTrades.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/realtime/RealtimeStatus.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "RealtimeStatus",
+          "parameters": [
+            {
+              "name": "{\n  className = '',\n  showDetails = false\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "RealtimeStatus",
+            "module": "src/components/realtime/RealtimeStatus.tsx"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/components/ui/LoadingSpinner.tsx",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "LoadingSpinner",
+          "parameters": [
+            {
+              "name": "{\n  size = 'md',\n  color = 'blue',\n  className = ''\n}"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "LoadingSpinner",
+            "module": "src/components/ui/LoadingSpinner.tsx"
+          }
+        }
+      ]
+    }
+  ]
+}

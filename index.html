@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Meta Tags -->
+    <title>SMC Trading Agent - Smart Market Structure Trading Platform</title>
+    <meta name="title" content="SMC Trading Agent - Smart Market Structure Trading Platform" />
+    <meta name="description" content="Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies." />
+    <meta name="keywords" content="SMC trading, Smart Money Concepts, trading platform, market structure, forex trading, crypto trading, technical analysis" />
+    <meta name="author" content="SMC Trading Agent" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://smc-trading-agent.vercel.app/" />
+    <meta property="og:title" content="SMC Trading Agent - Smart Market Structure Trading Platform" />
+    <meta property="og:description" content="Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="SMC Trading Agent" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://smc-trading-agent.vercel.app/" />
+    <meta property="twitter:title" content="SMC Trading Agent - Smart Market Structure Trading Platform" />
+    <meta property="twitter:description" content="Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies." />
+    <meta property="twitter:image" content="/og-image.png" />
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="theme-color" content="#1f2937" />
+    <meta name="msapplication-TileColor" content="#1f2937" />
+    <link rel="canonical" href="https://smc-trading-agent.vercel.app/" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/App.tsx" />
+    <link rel="preload" href="/src/index.css" as="style" />
+    
+    <!-- DNS prefetch for potential external resources -->
+    <link rel="dns-prefetch" href="//api.binance.com" />
+    <link rel="dns-prefetch" href="//api.bybit.com" />
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "SMC Trading Agent",
+      "description": "Advanced trading platform using Smart Money Concepts (SMC) for market analysis, risk management, and automated trading strategies.",
+      "url": "https://smc-trading-agent.vercel.app/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "SMC Trading Agent"
+      }
+    }
+    </script>
+    <script type="module">
+      if (import.meta.hot?.on) {
+        import.meta.hot.on('vite:error', (error) => {
+          if (error.err) {
+            console.error([error.err.message, error.err.frame].filter(Boolean).join('\n'));
+          }
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      console.log('HTML script tag executing');
+      console.log('Root element exists:', !!document.getElementById('root'));
+      
+      const rootEl = document.getElementById('root');
+      
+      // Set a timeout to check if React has rendered
+      setTimeout(() => {
+        if (rootEl && (!rootEl.innerHTML || rootEl.innerHTML.trim() === '')) {
+          rootEl.innerHTML = `
+            <div style="padding: 20px; background: #ff4444; color: white; font-family: Arial, sans-serif;">
+              <h1>React Failed to Render</h1>
+              <p>The React application did not render within 3 seconds.</p>
+              <p>This indicates a JavaScript error or module loading issue.</p>
+              <p>Check the browser console for errors.</p>
+              <button onclick="window.location.reload()" style="padding: 10px 20px; background: white; color: #ff4444; border: none; border-radius: 4px; cursor: pointer;">Reload Page</button>
+            </div>
+          `;
+          console.error('React failed to render - showing fallback message');
+        } else {
+          console.log('React appears to have rendered successfully');
+        }
+      }, 3000);
+      
+      window.addEventListener('load', () => {
+        console.log('Window load event fired');
+      });
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log('DOMContentLoaded event fired');
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

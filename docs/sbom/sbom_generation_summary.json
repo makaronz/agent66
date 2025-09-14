@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-08-17T11:16:56.278809",
+  "project_root": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent",
+  "generated_sboms": {
+    "nodejs": {
+      "path": "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/node.sbom.xml",
+      "size_bytes": 1109714,
+      "status": "success"
+    }
+  },
+  "status": "success"
+}

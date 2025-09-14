@@ -1,0 +1,92 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ include "smc-trading-agent.namespace" . }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "smc-trading-agent.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ include "smc-trading-agent.namespace" . }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ include "smc-trading-agent.namespace" . }} svc -w {{ include "smc-trading-agent.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ include "smc-trading-agent.namespace" . }} {{ include "smc-trading-agent.fullname" . }} --template "{{ "{{" }} range (index .status.loadBalancer.ingress 0) {{ "}}" }}{{ "{{" }}.{{ "}}" }}{{ "{{" }} end {{ "}}" }}")
+  echo http://$SERVICE_IP:{{ .Values.service.ports.http.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ include "smc-trading-agent.namespace" . }} -l "app.kubernetes.io/name={{ include "smc-trading-agent.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ include "smc-trading-agent.namespace" . }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ include "smc-trading-agent.namespace" . }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Check the status of your deployment:
+   kubectl get pods --namespace {{ include "smc-trading-agent.namespace" . }} -l "app.kubernetes.io/name={{ include "smc-trading-agent.name" . }},app.kubernetes.io/instance={{ .Release.Name }}"
+
+3. View application logs:
+   kubectl logs --namespace {{ include "smc-trading-agent.namespace" . }} -l "app.kubernetes.io/name={{ include "smc-trading-agent.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -f
+
+4. Access Prometheus metrics:
+{{- if .Values.ingress.enabled }}
+   Metrics are available at: http{{ if .Values.ingress.tls }}s{{ end }}://{{ (index .Values.ingress.hosts 0).host }}/metrics
+{{- else }}
+   kubectl --namespace {{ include "smc-trading-agent.namespace" . }} port-forward svc/{{ include "smc-trading-agent.fullname" . }} 9090:9090
+   Then visit: http://localhost:9090/metrics
+{{- end }}
+
+5. Health check endpoints:
+   - Liveness: /health
+   - Readiness: /ready
+   - Metrics: /metrics
+
+{{- if .Values.autoscaling.enabled }}
+6. Horizontal Pod Autoscaler is enabled:
+   kubectl get hpa --namespace {{ include "smc-trading-agent.namespace" . }} {{ include "smc-trading-agent.fullname" . }}
+{{- end }}
+
+{{- if .Values.persistence.data.enabled }}
+7. Persistent storage is configured:
+   - Data volume: {{ .Values.persistence.data.size }} ({{ .Values.persistence.data.storageClass }})
+   {{- if .Values.persistence.logs.enabled }}
+   - Logs volume: {{ .Values.persistence.logs.size }} ({{ .Values.persistence.logs.storageClass }})
+   {{- end }}
+{{- end }}
+
+{{- if .Values.vault.enabled }}
+8. Vault integration is enabled:
+   - Vault address: {{ .Values.vault.address }}
+   - Role: {{ .Values.vault.role }}
+   Make sure Vault is properly configured and accessible.
+{{- end }}
+
+{{- if .Values.networkPolicy.enabled }}
+9. Network policies are enabled for enhanced security.
+{{- end }}
+
+10. Useful commands:
+    # Scale the deployment
+    kubectl scale --namespace {{ include "smc-trading-agent.namespace" . }} deployment/{{ include "smc-trading-agent.fullname" . }} --replicas=5
+    
+    # Update configuration
+    helm upgrade {{ .Release.Name }} ./smc-trading-agent --namespace {{ include "smc-trading-agent.namespace" . }}
+    
+    # Rollback to previous version
+    helm rollback {{ .Release.Name }} --namespace {{ include "smc-trading-agent.namespace" . }}
+    
+    # View Helm release history
+    helm history {{ .Release.Name }} --namespace {{ include "smc-trading-agent.namespace" . }}
+
+{{- if not .Values.vault.enabled }}
+⚠️  WARNING: Vault integration is disabled. Make sure to configure secrets manually.
+{{- end }}
+
+{{- if not .Values.monitoring.prometheus.enabled }}
+⚠️  WARNING: Prometheus monitoring is disabled. Consider enabling it for production deployments.
+{{- end }}
+
+{{- if eq .Values.replicaCount 1 }}
+⚠️  WARNING: Running with only 1 replica. Consider increasing for high availability.
+{{- end }}
+
+For more information, visit: https://github.com/your-org/smc-trading-agent

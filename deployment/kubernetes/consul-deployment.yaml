@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consul
+  namespace: vault
+  labels:
+    app: consul
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consul
+  template:
+    metadata:
+      labels:
+        app: consul
+    spec:
+      containers:
+      - name: consul
+        image: hashicorp/consul:1.17.0
+        args:
+          - "agent"
+          - "-server"
+          - "-bootstrap-expect=1"
+          - "-ui"
+          - "-data-dir=/consul/data"
+          - "-config-dir=/consul/config"
+          - "-client=0.0.0.0"
+        ports:
+        - containerPort: 8500
+          name: ui-port
+        - containerPort: 8600
+          name: alt-port
+        volumeMounts:
+        - name: consul-data
+          mountPath: /consul/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: consul-data
+        persistentVolumeClaim:
+          claimName: consul-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul
+  namespace: vault
+  labels:
+    app: consul
+spec:
+  type: ClusterIP
+  ports:
+  - name: consul-port
+    port: 8500
+    targetPort: 8500
+  selector:
+    app: consul

@@ -1,0 +1,395 @@
+# Exchange Failover Configuration
+# This file defines failover settings for production deployment
+
+# Global failover settings
+failover:
+  environment: production # production, staging, testnet
+
+  # Health monitoring settings
+  health_check_interval: 30 # seconds
+  recovery_check_interval: 60 # seconds
+  failover_timeout: 10 # seconds
+
+  # Event history
+  max_event_history: 1000
+
+  # Monitoring and alerting
+  enable_monitoring: true
+  enable_alerting: true
+  alert_webhook_url: "${FAILOVER_ALERT_WEBHOOK_URL}"
+
+# Exchange configurations with failover priorities
+exchanges:
+  binance:
+    enabled: true
+    priority: 1 # Lower number = higher priority (primary)
+    testnet: false
+
+    # Failover-specific settings
+    failover_priority: 1
+    health_check_enabled: true
+    auto_recovery_enabled: true
+
+    # Thresholds for failover triggers
+    thresholds:
+      max_consecutive_failures: 5
+      max_latency_ms: 1000
+      min_success_rate_percent: 80
+      max_rate_limit_violations: 3
+      min_data_quality_score: 70
+
+    # Recovery settings
+    recovery:
+      min_health_score_for_recovery: 85
+      recovery_test_duration_seconds: 60
+      auto_failback_enabled: true
+      failback_delay_seconds: 300 # 5 minutes
+
+  bybit:
+    enabled: true
+    priority: 2 # Secondary exchange
+    testnet: false
+
+    failover_priority: 2
+    health_check_enabled: true
+    auto_recovery_enabled: true
+
+    thresholds:
+      max_consecutive_failures: 5
+      max_latency_ms: 1200 # Slightly higher tolerance
+      min_success_rate_percent: 75
+      max_rate_limit_violations: 2
+      min_data_quality_score: 70
+
+    recovery:
+      min_health_score_for_recovery: 80
+      recovery_test_duration_seconds: 60
+      auto_failback_enabled: false # Don't auto-failback to secondary
+      failback_delay_seconds: 600 # 10 minutes
+
+  oanda:
+    enabled: true
+    priority: 3 # Tertiary exchange (forex only)
+    testnet: false
+
+    failover_priority: 3
+    health_check_enabled: true
+    auto_recovery_enabled: true
+
+    # OANDA-specific thresholds (forex has different characteristics)
+    thresholds:
+      max_consecutive_failures: 3
+      max_latency_ms: 2000 # Higher tolerance for forex
+      min_success_rate_percent: 85
+      max_rate_limit_violations: 1
+      min_data_quality_score: 80
+
+    recovery:
+      min_health_score_for_recovery: 85
+      recovery_test_duration_seconds: 120
+      auto_failback_enabled: false
+      failback_delay_seconds: 900 # 15 minutes
+
+# Failover rules configuration
+failover_rules:
+  # High priority rules (immediate failover)
+  - trigger: connection_failure
+    threshold: 1
+    duration_seconds: 0
+    priority: 1
+    enabled: true
+    description: "Immediate failover on connection loss"
+
+  - trigger: circuit_breaker_open
+    threshold: 1
+    duration_seconds: 0
+    priority: 1
+    enabled: true
+    description: "Immediate failover when circuit breaker opens"
+
+  # Medium priority rules (failover after sustained issues)
+  - trigger: api_error
+    threshold: 5 # 5 consecutive failures
+    duration_seconds: 30
+    priority: 2
+    enabled: true
+    description: "Failover after sustained API errors"
+
+  - trigger: high_latency
+    threshold: 1000 # 1000ms
+    duration_seconds: 60
+    priority: 2
+    enabled: true
+    description: "Failover due to high latency"
+
+  - trigger: health_check_failure
+    threshold: 120 # 2 minutes without successful health check
+    duration_seconds: 0
+    priority: 2
+    enabled: true
+    description: "Failover when health checks fail"
+
+  # Lower priority rules (failover after extended issues)
+  - trigger: rate_limit_exceeded
+    threshold: 3 # 3 violations
+    duration_seconds: 120
+    priority: 3
+    enabled: true
+    description: "Failover due to excessive rate limiting"
+
+  - trigger: data_quality_issue
+    threshold: 70 # Below 70% quality score
+    duration_seconds: 300
+    priority: 3
+    enabled: true
+    description: "Failover due to poor data quality"
+
+# Backoff and recovery strategies
+recovery_strategies:
+  default_strategy: adaptive_backoff
+
+  strategies:
+    exponential_backoff:
+      initial_delay: 1.0
+      max_delay: 300.0
+      multiplier: 2.0
+      jitter_factor: 0.1
+
+    adaptive_backoff:
+      initial_delay: 1.0
+      max_delay: 300.0
+      multiplier: 2.0
+      jitter_factor: 0.1
+      adaptation_factor: 0.2
+
+    circuit_breaker:
+      failure_threshold: 5
+      timeout_seconds: 60
+      half_open_max_requests: 3
+
+# Monitoring and metrics
+monitoring:
+  enabled: true
+
+  # Metrics collection
+  collect_health_metrics: true
+  collect_performance_metrics: true
+  collect_failover_metrics: true
+
+  # Metric retention
+  metric_retention_hours: 168 # 7 days
+
+  # Prometheus integration
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+
+    # Custom metrics
+    custom_metrics:
+      - name: exchange_health_score
+        type: gauge
+        description: "Health score for each exchange"
+        labels: [exchange, environment]
+
+      - name: failover_events_total
+        type: counter
+        description: "Total number of failover events"
+        labels: [from_exchange, to_exchange, trigger, success]
+
+      - name: failover_duration_seconds
+        type: histogram
+        description: "Duration of failover operations"
+        labels: [from_exchange, to_exchange]
+        buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0]
+
+      - name: exchange_request_latency_seconds
+        type: histogram
+        description: "Request latency for each exchange"
+        labels: [exchange, operation]
+        buckets: [0.01, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0]
+
+# Alerting configuration
+alerting:
+  enabled: true
+
+  # Alert channels
+  channels:
+    slack:
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      channel: "#trading-alerts"
+      username: "SMC-Failover-Bot"
+
+    email:
+      enabled: true
+      smtp_server: "${SMTP_SERVER}"
+      smtp_port: 587
+      username: "${SMTP_USERNAME}"
+      password: "${SMTP_PASSWORD}"
+      from_address: "alerts@smc-trading.com"
+      to_addresses:
+        - "ops@smc-trading.com"
+        - "dev@smc-trading.com"
+
+    webhook:
+      enabled: true
+      url: "${ALERT_WEBHOOK_URL}"
+      timeout_seconds: 10
+      retry_attempts: 3
+
+  # Alert rules
+  rules:
+    - name: failover_occurred
+      condition: "failover_event.success == true"
+      severity: warning
+      message: "Failover completed: {{ from_exchange }} -> {{ to_exchange }} ({{ trigger }})"
+      channels: [slack, email]
+
+    - name: failover_failed
+      condition: "failover_event.success == false"
+      severity: critical
+      message: "Failover FAILED: {{ from_exchange }} -> {{ to_exchange }} ({{ error_message }})"
+      channels: [slack, email, webhook]
+
+    - name: exchange_unhealthy
+      condition: "health_score < 50"
+      severity: warning
+      message: "Exchange {{ exchange }} health degraded: {{ health_score }}%"
+      channels: [slack]
+      throttle_minutes: 15
+
+    - name: all_exchanges_failed
+      condition: "active_exchange == null"
+      severity: critical
+      message: "CRITICAL: All exchanges have failed! Manual intervention required."
+      channels: [slack, email, webhook]
+
+    - name: primary_exchange_recovered
+      condition: "primary_exchange_recovered == true"
+      severity: info
+      message: "Primary exchange {{ exchange }} has recovered and is available for failback"
+      channels: [slack]
+
+# Testing and validation
+testing:
+  enabled: true
+
+  # Automated testing schedule
+  test_schedule:
+    enabled: false # Disable in production
+    cron: "0 2 * * 0" # Weekly at 2 AM Sunday
+
+  # Test scenarios
+  scenarios:
+    - name: connection_failure
+      description: "Test failover on connection failure"
+      enabled: true
+
+    - name: high_latency
+      description: "Test failover on high latency"
+      enabled: true
+
+    - name: manual_failover
+      description: "Test manual failover capability"
+      enabled: true
+
+    - name: recovery_scenario
+      description: "Test exchange recovery and failback"
+      enabled: true
+
+  # Test environment settings
+  test_environment:
+    use_testnet: true
+    mock_failures: true
+    test_duration_seconds: 300
+    cleanup_after_test: true
+
+# Logging configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Log destinations
+  handlers:
+    console:
+      enabled: true
+      level: INFO
+
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "/var/log/smc-trading/failover.log"
+      max_size_mb: 100
+      backup_count: 5
+
+    syslog:
+      enabled: false
+      facility: local0
+      address: ["localhost", 514]
+
+  # Structured logging
+  structured_logging:
+    enabled: true
+    format: json
+    include_trace_id: true
+
+    # Additional fields
+    extra_fields:
+      service: smc-trading-failover
+      version: "${APP_VERSION}"
+      environment: "${ENVIRONMENT}"
+
+# Security settings
+security:
+  # API key rotation
+  api_key_rotation:
+    enabled: true
+    rotation_interval_hours: 168 # Weekly
+    overlap_period_minutes: 30
+
+  # Encryption
+  encryption:
+    enabled: true
+    algorithm: AES-256-GCM
+    key_source: vault # vault, env, file
+
+  # Access control
+  access_control:
+    enabled: true
+    allowed_ips: [] # Empty means all IPs allowed
+    require_authentication: true
+
+    # API access
+    api_access:
+      enabled: true
+      require_api_key: true
+      rate_limit_per_minute: 60
+
+# Performance tuning
+performance:
+  # Connection pooling
+  connection_pooling:
+    enabled: true
+    max_connections_per_exchange: 10
+    connection_timeout_seconds: 30
+    idle_timeout_seconds: 300
+
+  # Request optimization
+  request_optimization:
+    enabled: true
+    batch_requests: true
+    max_batch_size: 100
+    request_timeout_seconds: 10
+
+  # Memory management
+  memory_management:
+    max_memory_mb: 512
+    gc_threshold: 0.8
+    cleanup_interval_seconds: 300
+
+  # Threading
+  threading:
+    max_worker_threads: 10
+    thread_pool_size: 5
+    async_task_limit: 100

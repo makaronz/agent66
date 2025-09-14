@@ -1,18 +1,54 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vite
+.vercel
+.env
+
+# Security scanning cache
+.trivy-cache/
+*.db
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+*.sqlite3
+
+# Rust
+target/
+
+# Testing and coverage
+coverage.xml
+coverage.svg
+
 # Todo2 - AI-powered task management directories
 .cursor/rules/todo2-overview.mdc
 .cursor/rules/todo2.mdc
 .cursor/mcp.json
 .todo2/
-exposed-assets (1)/
-exposed-assets (2)/
-SMC_Trading_App_Overview_PL_PDF.md
-SMC_Trading_App_Overview_PL.md
-SMC_Trading_App_Overview_PL.pdf
-diagrams/data_sources.mmd
-diagrams/data_sources.png
-diagrams/risk_management.mmd
-diagrams/risk_management.png
-diagrams/system_architecture.mmd
-diagrams/system_architecture.png
-diagrams/user_workflow.mmd
-diagrams/user_workflow.png

@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smc-trading-agent
+  namespace: smc-trading
+  labels:
+    app: smc-trading-agent
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: smc-trading-agent
+  template:
+    metadata:
+      labels:
+        app: smc-trading-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "smc-trading-role"
+        vault.hashicorp.com/agent-inject-secret-database: "secret/data/smc-trading/database"
+        vault.hashicorp.com/agent-inject-template-database: |
+          {{- with secret "secret/data/smc-trading/database" -}}
+          export DATABASE_URL="{{ .Data.data.url }}"
+          export DATABASE_PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-exchanges: "secret/data/smc-trading/exchanges/binance"
+        vault.hashicorp.com/agent-inject-template-exchanges: |
+          {{- with secret "secret/data/smc-trading/exchanges/binance" -}}
+          export BINANCE_API_KEY="{{ .Data.data.api_key }}"
+          export BINANCE_API_SECRET="{{ .Data.data.api_secret }}"
+          {{- end }}
+          {{- with secret "secret/data/smc-trading/exchanges/bybit" -}}
+          export BYBIT_API_KEY="{{ .Data.data.api_key }}"
+          export BYBIT_API_SECRET="{{ .Data.data.api_secret }}"
+          {{- end }}
+          {{- with secret "secret/data/smc-trading/exchanges/oanda" -}}
+          export OANDA_API_KEY="{{ .Data.data.api_key }}"
+          export OANDA_ACCOUNT_ID="{{ .Data.data.account_id }}"
+          {{- end }}
+    spec:
+      serviceAccountName: smc-trading-agent
+      containers:
+      - name: smc-agent
+        image: smc-agent:latest
+        env:
+        - name: VAULT_ADDR
+          value: "http://vault.vault.svc.cluster.local:8200"
+        - name: ENVIRONMENT
+          value: "production"
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            source /vault/secrets/database
+            source /vault/secrets/exchanges
+            exec python main.py
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smc-trading-agent-service
+  namespace: smc-trading
+  labels:
+    app: smc-trading-agent
+spec:
+  selector:
+    app: smc-trading-agent
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+    - name: metrics
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: smc-trading-agent-hpa
+  namespace: smc-trading
+  labels:
+    app: smc-trading-agent
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: smc-trading-agent
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
