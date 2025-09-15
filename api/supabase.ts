@@ -12,22 +12,22 @@ async function initializeSupabaseClient(): Promise<void> {
   }
 
   // Check if Vault is disabled in development
-  console.log('[supabase] VAULT_ENABLED value:', process.env.VAULT_ENABLED);
   if (process.env.VAULT_ENABLED === 'false') {
-    console.warn('[supabase] Vault disabled, using environment variables for Supabase config');
-    
-    // Use environment variables directly
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://fqhuoszrysapxrvyaqao.supabase.co';
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxaHVvc3pyeXNhcHhydnlhcWFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDgyMzAxMiwiZXhwIjoyMDcwMzk5MDEyfQ.jKJuos3KqupDwVSswUbDE-xZMiCDAFgz6vnth-ZhA7Q';
-    
+  if (process.env.VAULT_ENABLED === 'false') {
+    // Use environment variables directly (no hard-coded fallbacks)
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('[supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY when VAULT_ENABLED=false');
+    }
+
     supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
-    
-    console.log('Supabase client initialized with environment variables (Vault disabled)');
     return;
   }
 
@@ -47,25 +47,23 @@ async function initializeSupabaseClient(): Promise<void> {
       }
     );
     
-    console.log('Supabase client initialized with Vault secrets');
   } catch (error) {
     console.warn('Failed to initialize Supabase with Vault, using environment fallback:', error);
-    
-    // Fallback to environment variables
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://fqhuoszrysapxrvyaqao.supabase.co';
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxaHVvc3pyeXNhcHhydnlhcWFvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDgyMzAxMiwiZXhwIjoyMDcwMzk5MDEyfQ.jKJuos3KqupDwVSswUbDE-xZMiCDAFgz6vnth-ZhA7Q';
-    
+    // Fallback to environment variables (no hard-coded defaults)
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('[supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment');
+    }
+
     supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
-    
-    
-    console.log('Supabase client initialized with environment variables');
   }
-}
 
 // Initialize lazily - will be called when getSupabaseAdmin() is first used
 // This ensures dotenv has loaded environment variables first
