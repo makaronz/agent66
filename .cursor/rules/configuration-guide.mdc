@@ -106,148 +106,76 @@ app.use(cors({
 }));
 ```
 
-## 📋 **Required Configuration Sections**
+---
 
-### **decision_engine Section**
-```yaml
-decision_engine:
-  model_ensemble:
-    enabled: true
-    models: ["lstm", "transformer", "ensemble"]
-    confidence_threshold: 0.7
-    update_interval: 300
-    retraining_threshold: 0.6
-    model_selection_strategy: "adaptive"
-  
-  trading_strategy:
-    smc_enabled: true
-    trend_following: true
-    mean_reversion: false
-    breakout_detection: true
-    risk_adjustment: true
-    
-  signal_generation:
-    min_confidence: 0.8
-    max_signals_per_hour: 10
-    signal_expiry: 3600
-    confirmation_required: true
-```
+## 📋 **Environment Variable Checklist**
 
-### **data_pipeline.ingestion Section**
-```yaml
-data_pipeline:
-  ingestion:
-    source: "exchanges"
-    symbols: ["BTCUSDT", "ETHUSDT", "ADAUSDT", "DOTUSDT", "LINKUSDT"]
-    timeframe: "1m"
-    batch_size: 1000
-    max_latency: 1000
-```
+### **Backend Required Variables**
+- ✅ `PORT` - Server port (default: 5001)
+- ✅ `MONGO_URI` - MongoDB connection string
+- ✅ `JWT_SECRET` - Secret key for JWT signing (must be strong)
+- ✅ `JWT_EXPIRES_IN` - Token expiration (e.g., "1d", "7d")
+- ⚠️ `OPENWEATHERMAP_API_KEY` - Optional, for weather feature
 
-### **smc_detector.indicators Section**
-```yaml
-smc_detector:
-  indicators:
-    - name: "order_block"
-      enabled: true
-      params:
-        min_volume: 1000000
-        min_price_change: 0.001
-    - name: "liquidity_grab"
-      enabled: true
-      params:
-        min_volume: 500000
-        min_price_change: 0.002
-    - name: "fair_value_gap"
-      enabled: true
-      params:
-        min_gap_size: 0.001
-        max_fill_time: 300
-```
+### **Frontend Required Variables**
+- ✅ `REACT_APP_API_URL` - Backend API URL (e.g., http://localhost:5001/api)
 
-## 🔧 **Configuration Validation Rules**
-
-### **Validator Expectations**
-- **Indicators**: Must be list of dictionaries with `name` and `params`
-- **Circuit breaker threshold**: Must be integer (not float)
-- **Required sections**: Must exist in config.yaml
-- **Data types**: Must match expected formats
-
-### **Common Validation Errors**
-1. **"Data pipeline source is required"**
-   - Missing `data_pipeline.ingestion.source`
-
-2. **"At least one trading symbol is required"**
-   - Missing `data_pipeline.ingestion.symbols` list
-
-3. **"Each indicator must be a dictionary"**
-   - `smc_detector.indicators` must be list of dicts, not booleans
-
-4. **"Circuit breaker threshold must be an integer"**
-   - `risk_manager.circuit_breaker_threshold` must be integer (e.g., 10 not 0.1)
-
-## 🚀 **Configuration Fix Strategy**
-
-### **Phase 1: Restore Required Sections**
-1. Add missing `decision_engine` section
-2. Add missing `data_pipeline.ingestion` section
-3. Fix `smc_detector.indicators` format
-
-### **Phase 2: Fix Validation Issues**
-1. Ensure all required fields exist
-2. Fix data type mismatches
-3. Test configuration loading
-
-### **Phase 3: Re-enable Validation**
-1. Uncomment validation calls
-2. Test startup process
-3. Verify all sections pass validation
+### **Security Best Practices**
+1. **Never commit .env files** - Use .env.example as template
+2. **Strong JWT_SECRET** - Use 32+ character random string
+3. **Production values** - Different secrets for production
+4. **HTTPS in production** - Always use HTTPS for API_URL in production
 
 ## 📁 **Configuration Files**
 
-### **Current Application**
-- [backend/.env.example](mdc:backend/.env.example) - Backend configuration template
-- [frontend/.env.example](mdc:frontend/.env.example) - Frontend configuration template
-- [backend/src/server.ts](mdc:backend/src/server.ts) - Server configuration
-- [frontend/src/App.tsx](mdc:frontend/src/App.tsx) - React app configuration
+### **Backend Configuration**
+- [backend/.env.example](mdc:backend/.env.example) - Environment template
+- [backend/src/server.ts](mdc:backend/src/server.ts) - Server startup and middleware  
+- [backend/tsconfig.json](mdc:backend/tsconfig.json) - TypeScript compiler config
+- [backend/package.json](mdc:backend/package.json) - Dependencies and scripts
 
-### **Legacy System (app_old/)**
-- [app_old/config.yaml](mdc:app_old/config.yaml) - Legacy main configuration file
-- [app_old/config_loader.py](mdc:app_old/config_loader.py) - Legacy configuration loading logic
-- [app_old/config_validator.py](mdc:app_old/config_validator.py) - Legacy validation rules
-- [app_old/env.example](mdc:app_old/env.example) - Legacy environment variables template
+### **Frontend Configuration**
+- [frontend/.env.example](mdc:frontend/.env.example) - Environment template
+- [frontend/src/index.tsx](mdc:frontend/src/index.tsx) - React entry point
+- [frontend/tailwind.config.js](mdc:frontend/tailwind.config.js) - Tailwind CSS config
+- [frontend/tsconfig.json](mdc:frontend/tsconfig.json) - TypeScript compiler config
+- [frontend/package.json](mdc:frontend/package.json) - Dependencies and scripts
 
-## ⚠️ **Important Notes**
+---
 
-1. **Don't mix relative/direct imports** in configuration files
-2. **YAML structure must be valid** - check for duplicate keys
-3. **Validation is currently disabled** for development
-4. **Vault integration failures** are non-critical (falls back to env vars)
-5. **Logging conflicts** resolved with basic setup
+## 🔍 **Debugging Configuration**
 
-## 🔍 **Debugging Legacy Configuration Issues (app_old/)**
-
-### **Check Configuration Loading**
+### **Verify Environment Variables**
 ```bash
-cd app_old
-python -c "from config_loader import load_secure_config; print('✅ Config loader works')"
+# Backend
+cd backend
+cat .env | grep -v "^#"  # Show non-comment lines
+
+# Frontend
+cd frontend
+cat .env | grep -v "^#"
 ```
 
-### **Test Specific Sections**
+### **Test MongoDB Connection**
 ```bash
-cd app_old  
-python -c "import yaml; config=yaml.safe_load(open('config.yaml')); print('decision_engine' in config)"
+# Test connection string
+mongosh "mongodb://localhost:27017/trading-app"
+
+# Or use MongoDB Compass GUI
 ```
 
-### **Validate YAML Syntax**
+### **Verify TypeScript Config**
 ```bash
-cd app_old
-python -c "import yaml; yaml.safe_load(open('config.yaml')); print('✅ YAML syntax valid')"
+# Backend
+cd backend && npx tsc --noEmit
+
+# Frontend  
+cd frontend && npx tsc --noEmit
 ```
 
 ---
 
-**Legacy Status**: Configuration validation is disabled for development. This applies only to app_old/ legacy system.
+**Note**: Legacy Python/YAML configuration is in `app_old/config.yaml` for reference.
 description:
 globs:
 alwaysApply: true

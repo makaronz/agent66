@@ -168,11 +168,25 @@ const LoginForm = () => {
 export default LoginForm;
 ```
 
-### **2. Function Decorators**
+---
 
-#### **Problem Pattern (AVOID)**
-```python
-def safe_execute(func: Callable, component: str, severity: ErrorSeverity):
+## 📚 **Additional Resources**
+
+For TypeScript best practices:
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/)
+- [Redux Toolkit TypeScript](https://redux-toolkit.js.org/usage/usage-with-typescript)
+
+For legacy Python patterns (app_old/):
+- See `app_old/` directory for Python decorator patterns  
+- Python-specific rules archived with legacy code
+
+**Archived Python Content**: All Python decorator documentation has been moved to app_old/ with the legacy code.
+
+description:
+globs:
+alwaysApply: true
+---
     # ❌ Wrong parameter order - func should be first
     @wraps(func)
     def wrapper(*args, **kwargs):
