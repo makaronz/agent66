@@ -1,37 +1,56 @@
-# SMC Trading Agent - Development Rules & Guidelines
+# Trading App v2 - Development Rules & Guidelines
 
 ## 🏗️ **Project Architecture Overview**
 
-This is a comprehensive Smart Money Concepts (SMC) trading system built with:
+**⚠️ MIGRATION NOTICE: This repository was restructured on October 3, 2025**
+
+### **Current Active Application (Main)**
+This is a modern full-stack trading application built with:
+- **Frontend**: React 18.2 + TypeScript + Redux Toolkit (port 3000)
+- **Backend**: Node.js + Express 4.18 + TypeScript + MongoDB (port 5001)
+- **Database**: MongoDB 8.x (Mongoose ODM)
+- **Deployment**: Vercel (Frontend), Heroku/AWS (Backend)
+
+### **Legacy System (Archived to app_old/)**
+Previous Smart Money Concepts (SMC) trading system:
 - **Frontend**: React + TypeScript + Vite (port 5173)
 - **Backend**: Python FastAPI + Rust execution engine
 - **Database**: PostgreSQL + Redis
-- **Deployment**: Vercel (Frontend), Kubernetes (Backend)
+- **Location**: `/app_old` directory
 
 ## 🚨 **Critical Import Rules**
 
-### **Python Import Structure**
-- **Root level files** (main.py, validators.py, etc.) use **direct imports**
-- **Module files** use **relative imports** within their packages
-- **NEVER mix** relative and direct imports in the same file
+### **TypeScript Import Structure (Current Backend & Frontend)**
 
-**✅ Correct imports for root files:**
-```python
-from config_loader import load_secure_config
-from data_pipeline.ingestion import DataIngestion
-from risk_manager.smc_risk_manager import SMCRiskManager
+#### **Backend (Express + TypeScript)**
+- Standard **ES module imports** with TypeScript
+- Relative imports for local files
+- No `@/` alias in backend
+
+**✅ Correct backend imports:**
+```typescript
+import express from 'express';
+import { authGuard } from './middleware/auth';
+import { User } from './models/User';
+import { validateRequest } from './middleware/validation';
 ```
 
-**✅ Correct imports for module files:**
-```python
-from .exchange_connectors import ExchangeConnector
-from ..monitoring.data_quality_metrics import set_freshness
+#### **Frontend (React + TypeScript)**
+- Standard **relative imports** (no @/ alias currently configured)
+- Import from React, Redux Toolkit, etc.
+
+**✅ Correct frontend imports:**
+```typescript
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser } from '../store/slices/authSlice';
+import LoginForm from './components/LoginForm';
 ```
 
-### **TypeScript Import Structure**
-- Use **absolute imports** with `@/` alias
-- All imports resolve from `src/` directory
-- Follow the pattern: `@/components/`, `@/pages/`, `@/hooks/`
+### **Legacy Python Import Structure (app_old/ only)**
+- **Root level files** in app_old/ use **direct imports**
+- **Module files** use **relative imports** within packages
+- See app_old/ documentation for Python-specific patterns
 
 ## 🔧 **Common Issues & Fixes**
 
@@ -68,66 +87,85 @@ def _retry_on_failure(func):
 
 ## 📁 **Key File Locations**
 
-### **Core Application Files**
-- [main.py](mdc:main.py) - Main application entry point
-- [config.yaml](mdc:config.yaml) - Configuration file (has validation issues)
-- [package.json](mdc:package.json) - Frontend dependencies and scripts
-- [requirements.txt](mdc:requirements.txt) - Python dependencies
+### **Current Application (Root Level)**
+- [README.md](mdc:README.md) - Main project documentation
+- [backend/package.json](mdc:backend/package.json) - Backend dependencies
+- [frontend/package.json](mdc:frontend/package.json) - Frontend dependencies
 
-### **Critical Python Modules**
-- [vault_client.py](mdc:vault_client.py) - Secure configuration management
-- [error_handlers.py](mdc:error_handlers.py) - Error handling and decorators
-- [validators.py](mdc:validators.py) - Data validation logic
-- [config_loader.py](mdc:config_loader.py) - Configuration loading (validation disabled)
+### **Backend Structure**
+- [backend/src/server.ts](mdc:backend/src/server.ts) - Express server entry point
+- [backend/src/routes/](mdc:backend/src/routes/) - API route handlers
+- [backend/src/models/](mdc:backend/src/models/) - Mongoose models (User, Post)
+- [backend/src/middleware/](mdc:backend/src/middleware/) - Auth & validation middleware
+- [backend/.env](mdc:backend/.env) - Environment configuration
 
 ### **Frontend Structure**
-- [src/main.tsx](mdc:src/main.tsx) - React application entry point
-- [src/App.tsx](mdc:src/App.tsx) - Main application component
-- [vite.config.ts](mdc:vite.config.ts) - Vite build configuration
-- [tsconfig.json](mdc:tsconfig.json) - TypeScript configuration
+- [frontend/src/App.tsx](mdc:frontend/src/App.tsx) - React app entry
+- [frontend/src/components/](mdc:frontend/src/components/) - React components
+- [frontend/src/store/](mdc:frontend/src/store/) - Redux store & slices
+- [frontend/.env](mdc:frontend/.env) - Frontend environment config
+
+### **Legacy System (Archived)**
+- [app_old/main.py](mdc:app_old/main.py) - Legacy Python entry point
+- [app_old/config.yaml](mdc:app_old/config.yaml) - Legacy configuration
+- [app_old/src/](mdc:app_old/src/) - Legacy React/Rust code
+- See app_old/ for complete legacy documentation
 
 ## 🚀 **Development Workflow**
 
-### **Starting Development Environment**
+### **Starting Current Application**
 ```bash
-# Frontend (port 5173)
-npm run client:dev
+# Backend (port 5001)
+cd backend
+npm install
+npm run dev
 
-# Backend (Python)
+# Frontend (port 3000)  
+cd frontend
+npm install
+npm start
+
+# Run tests
+cd backend && npm test
+cd frontend && npm test
+```
+
+### **Testing Application**
+```bash
+# Verify backend API
+curl http://localhost:5001/api
+
+# Verify Swagger docs
+open http://localhost:5001/api-docs
+
+# Verify frontend
+open http://localhost:3000
+```
+
+### **Legacy System (app_old/)**
+```bash
+# For working with legacy Python/Rust code
+cd app_old
 python main.py
 
-# Type checking
-npm run check
-
-# Build
-npm run build:vite-only
+# Test Python imports (legacy)
+cd app_old && python -c "import main; print('✅ All imports working')"
 ```
 
-### **Testing Import Resolution**
-```bash
-# Test Python imports
-python -c "import main; print('✅ All imports working')"
+## ⚠️ **Known Issues & Considerations**
 
-# Test TypeScript compilation
-npm run check
-```
+### **Current Application**
+- **Port 5000 Conflict**: macOS ControlCenter uses port 5000, backend uses 5001
+- **Frontend Vulnerabilities**: 10 npm vulnerabilities detected (3 moderate, 7 high)
+  - Run `cd frontend && npm audit fix` to address
+- **OpenWeatherMap API**: Weather route requires API key in backend/.env
 
-## ⚠️ **Known Issues & Workarounds**
+### **Legacy System (app_old/ only)**
+**Note**: These issues apply only to archived code in app_old/
 
-### **1. Configuration Validation**
-- **Issue**: Strict validation blocks startup
-- **Workaround**: Disabled in `config_loader.py` and `main.py`
-- **Status**: Needs proper config.yaml fixes
-
-### **2. Vault Integration**
-- **Issue**: Authentication failures
-- **Workaround**: Falls back to environment variables
-- **Status**: Non-critical for development
-
-### **3. Logging Configuration**
-- **Issue**: Complex logging config conflicts
-- **Workaround**: Use basic logging setup
-- **Status**: Functional but not optimal
+- **Configuration Validation**: Disabled in app_old/config_loader.py
+- **Vault Integration**: Falls back to environment variables  
+- **Logging Configuration**: Uses basic logging setup
 
 ## 🎯 **Development Priorities**
 
@@ -159,13 +197,20 @@ When encountering issues:
 
 ## 📚 **Reference Links**
 
-- [TASK_log.md](mdc:TASK_log.md) - Task execution history
-- [README.md](mdc:README.md) - Project documentation
-- [DEPLOYMENT.md](mdc:DEPLOYMENT.md) - Deployment instructions
+### **Current Application**
+- [README.md](mdc:README.md) - Main project documentation
+- [backend/README.md](mdc:backend/README.md) - Backend documentation
+- [frontend/README.md](mdc:frontend/README.md) - Frontend documentation
+- [MIGRATION_PLAN_APP_V2.md](mdc:MIGRATION_PLAN_APP_V2.md) - Migration details
+
+### **Legacy System (Archived)**
+- [app_old/TASK_log.md](mdc:app_old/TASK_log.md) - Legacy task history
+- [app_old/DEPLOYMENT.md](mdc:app_old/DEPLOYMENT.md) - Legacy deployment docs
+- [app_old/README.md](mdc:app_old/README.md) - Legacy system documentation
 
 ---
 
-**Remember**: This project has complex import dependencies. Always verify import paths and use the correct import style for each file's location in the project structure.
+**Remember**: As of October 3, 2025, the main application is backend/ + frontend/. Legacy Python/Rust code is archived in app_old/.
 description:
 globs:
 alwaysApply: true

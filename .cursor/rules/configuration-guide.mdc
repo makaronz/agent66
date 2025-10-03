@@ -1,6 +1,15 @@
-# SMC Trading Agent - Configuration & Validation Guide
+# Trading App v2 - Configuration Guide
 
-## 🚨 **Configuration Issues & Solutions**
+**⚠️ LEGACY NOTICE: This guide applies to archived Python/Rust system in app_old/**
+
+**For current application configuration, see:**
+- [backend/.env.example](mdc:backend/.env.example) - Backend environment variables
+- [frontend/.env.example](mdc:frontend/.env.example) - Frontend environment variables
+- [README.md](mdc:README.md) - Current application setup
+
+---
+
+## 🚨 **Legacy Configuration Issues & Solutions (app_old/ only)**
 
 ### **Current Configuration Problems**
 
@@ -19,7 +28,7 @@ The project has several configuration-related issues that need attention:
 ### **Temporary Workarounds (Development)**
 
 #### **1. Disable Configuration Validation**
-**File**: [config_loader.py](mdc:config_loader.py)
+**File**: [app_old/config_loader.py](mdc:app_old/config_loader.py)
 **Action**: Comment out validation call
 ```python
 # Validate configuration (temporarily disabled for development)
@@ -27,7 +36,7 @@ The project has several configuration-related issues that need attention:
 ```
 
 #### **2. Disable Main Validation**
-**File**: [main.py](mdc:main.py)
+**File**: [app_old/main.py](mdc:app_old/main.py)
 **Action**: Comment out validate_config call
 ```python
 # Validate configuration (temporarily disabled for development)
@@ -35,7 +44,7 @@ The project has several configuration-related issues that need attention:
 ```
 
 #### **3. Use Basic Logging**
-**File**: [main.py](mdc:main.py)
+**File**: [app_old/main.py](mdc:app_old/main.py)
 **Action**: Replace setup_logging with basic logging
 ```python
 # Use basic logging setup instead
@@ -145,10 +154,17 @@ smc_detector:
 
 ## 📁 **Configuration Files**
 
-- [config.yaml](mdc:config.yaml) - Main configuration file
-- [config_loader.py](mdc:config_loader.py) - Configuration loading logic
-- [config_validator.py](mdc:config_validator.py) - Validation rules
-- [env.example](mdc:env.example) - Environment variables template
+### **Current Application**
+- [backend/.env.example](mdc:backend/.env.example) - Backend configuration template
+- [frontend/.env.example](mdc:frontend/.env.example) - Frontend configuration template
+- [backend/src/server.ts](mdc:backend/src/server.ts) - Server configuration
+- [frontend/src/App.tsx](mdc:frontend/src/App.tsx) - React app configuration
+
+### **Legacy System (app_old/)**
+- [app_old/config.yaml](mdc:app_old/config.yaml) - Legacy main configuration file
+- [app_old/config_loader.py](mdc:app_old/config_loader.py) - Legacy configuration loading logic
+- [app_old/config_validator.py](mdc:app_old/config_validator.py) - Legacy validation rules
+- [app_old/env.example](mdc:app_old/env.example) - Legacy environment variables template
 
 ## ⚠️ **Important Notes**
 
@@ -158,26 +174,29 @@ smc_detector:
 4. **Vault integration failures** are non-critical (falls back to env vars)
 5. **Logging conflicts** resolved with basic setup
 
-## 🔍 **Debugging Configuration Issues**
+## 🔍 **Debugging Legacy Configuration Issues (app_old/)**
 
 ### **Check Configuration Loading**
 ```bash
+cd app_old
 python -c "from config_loader import load_secure_config; print('✅ Config loader works')"
 ```
 
 ### **Test Specific Sections**
 ```bash
+cd app_old  
 python -c "import yaml; config=yaml.safe_load(open('config.yaml')); print('decision_engine' in config)"
 ```
 
 ### **Validate YAML Syntax**
 ```bash
+cd app_old
 python -c "import yaml; yaml.safe_load(open('config.yaml')); print('✅ YAML syntax valid')"
 ```
 
 ---
 
-**Current Status**: Configuration validation is disabled for development. Focus on fixing the YAML structure and required sections before re-enabling validation.
+**Legacy Status**: Configuration validation is disabled for development. This applies only to app_old/ legacy system.
 description:
 globs:
 alwaysApply: true

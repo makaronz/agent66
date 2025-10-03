@@ -1,6 +1,14 @@
-# SMC Trading Agent - Python Patterns & Decorators Guide
+# Python Patterns & Decorators Guide (Legacy System Reference)
 
-## 🚨 **Critical Decorator Patterns**
+**⚠️ LEGACY NOTICE: This guide applies to archived Python code in app_old/**
+
+**Current application uses TypeScript/Node.js - see:**
+- [backend/src/](mdc:backend/src/) - Express TypeScript backend
+- [frontend/src/](mdc:frontend/src/) - React TypeScript frontend
+
+---
+
+## 🚨 **Legacy Python Decorator Patterns (app_old/ reference)**
 
 ### **1. Static Method Decorators**
 
@@ -252,11 +260,11 @@ def test_function():
 result = test_function()
 ```
 
-## 📁 **Files with Decorator Patterns**
+## 📁 **Files with Decorator Patterns (Legacy - app_old/)**
 
-- [vault_client.py](mdc:vault_client.py) - `_retry_on_failure` decorator (FIXED)
-- [error_handlers.py](mdc:error_handlers.py) - `safe_execute` decorator (FIXED)
-- [main.py](mdc:main.py) - Uses `@safe_execute` decorator
+- [app_old/vault_client.py](mdc:app_old/vault_client.py) - `_retry_on_failure` decorator (FIXED)
+- [app_old/error_handlers.py](mdc:app_old/error_handlers.py) - `safe_execute` decorator (FIXED)
+- [app_old/main.py](mdc:app_old/main.py) - Uses `@safe_execute` decorator
 
 ## ⚠️ **Common Pitfalls**
 
