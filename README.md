@@ -1,296 +1,213 @@
-# SMC Trading Agent
+# Trading App v2
 
-A comprehensive Smart Money Concepts (SMC) trading system built with React, TypeScript, Python, and Rust. The system provides automated trading capabilities with advanced market structure analysis, risk management, and real-time execution.
+Modern full-stack trading application with real-time market data, user authentication, and MongoDB persistence.
 
 ## 🏗️ Architecture
 
-- **Frontend**: React + TypeScript + Vite
-- **API Gateway**: Node.js + Express + TypeScript
-- **Trading Engine**: Python (FastAPI) with ML/AI capabilities
-- **Execution Engine**: Rust for high-performance order execution
-- **Database**: PostgreSQL with Supabase
-- **Cache**: Redis
-- **Deployment**: Vercel (Frontend), Kubernetes (Backend)
+### Backend
+- **Location:** `/backend`
+- **Stack:** Node.js + Express + TypeScript + MongoDB
+- **Port:** 5001
+- **Features:**
+  - JWT Authentication
+  - RESTful API
+  - Swagger Documentation (`/api-docs`)
+  - Weather integration (OpenWeatherMap)
+  - MongoDB with Mongoose ODM
+
+### Frontend  
+- **Location:** `/frontend`
+- **Stack:** React 18 + Redux Toolkit + TypeScript
+- **Port:** 3000
+- **Features:**
+  - Modern UI with Tailwind CSS
+  - Redux state management
+  - Protected routes
+  - Form validation with Zod
+  - React Hook Form
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js 22.x
+- MongoDB 8.x running locally
+- npm or pnpm
 
-- Node.js 18+
-- Python 3.11+
-- Rust 1.70+
-- PostgreSQL 14+
-- Redis 6+
-
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone <repository-url>
-   cd smc_trading_agent
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   # Frontend and API
-   npm install
-
-   # Python dependencies
-   pip install -r requirements.txt
-
-   # Rust dependencies
-   cargo build
-   ```
-
-3. **Environment setup**
-
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Database setup**
-
-   ```bash
-   # Run migrations
-   npm run db:migrate
-
-   # Seed data (optional)
-   npm run db:seed
-   ```
-
-### Development
-
+### Backend Setup
 ```bash
-# Start all services
-npm run dev
-
-# Or start individually:
-npm run client:dev    # Frontend (port 5173)
-npm run server:dev    # API Gateway (port 3000)
-python main.py        # Trading Engine (port 8000)
-cargo run            # Execution Engine (port 8080)
+cd backend
+npm install
+cp .env.example .env
+# Edit .env with your configuration
+npm run dev  # Starts on http://localhost:5001
 ```
 
-## 📦 Deployment
-
-### Vercel Deployment (Frontend + API)
-
-1. **Install Vercel CLI**
-
-   ```bash
-   npm install -g vercel
-   ```
-
-2. **Configure environment variables**
-
-   ```bash
-   # Copy production template
-   cp .env.production .env.local
-
-   # Set required variables in Vercel dashboard:
-   # - VITE_SUPABASE_URL
-   # - VITE_SUPABASE_ANON_KEY
-   # - SUPABASE_SERVICE_ROLE_KEY
-   # - ENCRYPTION_KEY
-   # - BINANCE_API_KEY
-   # - BINANCE_API_SECRET
-   ```
-
-3. **Deploy**
-
-   ```bash
-   # Preview deployment
-   npm run deploy:preview
-
-   # Production deployment
-   npm run deploy:vercel
-   ```
-
-### Kubernetes Deployment (Backend Services)
-
+### Frontend Setup
 ```bash
-# Build and push images
-npm run build:images
-
-# Deploy to staging
-kubectl apply -f deployment/k8s/staging/
-
-# Deploy to production
-kubectl apply -f deployment/k8s/production/
+cd frontend
+npm install
+cp .env.example .env
+# Edit .env with backend API URL
+npm start  # Starts on http://localhost:3000
 ```
+
+---
+
+## 📖 API Documentation
+
+Once backend is running, visit:
+- **Swagger UI:** http://localhost:5001/api-docs
+- **API Base:** http://localhost:5001/api
+
+### Main Endpoints
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/posts` - Get all posts
+- `POST /api/posts` - Create post (requires auth)
+- `GET /api/weather?city=Warsaw` - Get weather (requires auth)
+
+---
+
+## 🔧 Development
+
+### Backend Development
+```bash
+cd backend
+npm run dev    # Start with tsx watch
+npm run build  # Build TypeScript
+npm test       # Run tests
+```
+
+### Frontend Development
+```bash
+cd frontend
+npm start      # Development server
+npm run build  # Production build
+npm test       # Run tests
+```
+
+---
+
+## 📁 Project Structure
+
+```
+/
+├── backend/          # Express API server
+│   ├── src/
+│   │   ├── server.ts
+│   │   ├── routes/   # API routes
+│   │   ├── models/   # Mongoose models
+│   │   ├── middleware/
+│   │   └── config/
+│   └── package.json
+│
+├── frontend/         # React application
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   ├── store/    # Redux store
+│   │   └── ...
+│   └── package.json
+│
+└── app_old/          # Legacy trading system (archived)
+    ├── Python trading system
+    ├── Rust execution engine
+    └── ... (archived code)
+```
+
+---
+
+## 🌍 Environment Variables
+
+### Backend (.env)
+```
+PORT=5001
+NODE_ENV=development
+MONGO_URI=mongodb://localhost:27017/trading-app
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=1d
+OPENWEATHERMAP_API_KEY=optional
+```
+
+### Frontend (.env)
+```
+REACT_APP_API_URL=http://localhost:5001/api
+```
+
+---
+
+## 🔐 Security
+
+- JWT-based authentication
+- bcrypt password hashing
+- Helmet.js security headers
+- CORS configuration
+- Zod input validation
+- Rate limiting on API endpoints
+
+---
 
 ## 🧪 Testing
 
 ```bash
-# Run comprehensive test suite
-npm test                    # All tests
-npm run test:frontend       # React/TypeScript tests
-npm run api:test           # Node.js API tests
-pytest                     # Python backend tests
-cargo test                 # Rust execution engine tests
-npm run test:e2e           # End-to-end tests
-npm run test:integration   # Integration tests
+# Backend tests
+cd backend && npm test
 
-# Coverage reports
-npm run coverage           # Generate coverage reports
-pytest --cov=.            # Python coverage
+# Frontend tests
+cd frontend && npm test
 ```
 
-### Test Status (Latest Audit)
+---
 
-- **Unit Tests**: 90%+ coverage across all components
-- **Integration Tests**: Exchange connectors, API contracts
-- **Performance Tests**: Load testing for high-frequency scenarios
-- **Security Tests**: Vulnerability scanning with Trivy
+## 📦 Deployment
 
-## 🔒 Security
+### Backend
+- **Platform:** Heroku, AWS, or similar
+- **Database:** MongoDB Atlas (production)
+- **Env:** Configure production environment variables
 
-### Current Implementation
+### Frontend
+- **Platform:** Vercel, Netlify
+- **Build:** `npm run build` creates optimized production build
+- **API URL:** Update `REACT_APP_API_URL` to production backend
 
-- **Security headers**: Configured in `vercel.json` and `nginx.conf`
-- **Input validation**: Zod schemas for TypeScript, Pydantic for Python
-- **Authentication**: Supabase Auth with MFA support
-- **Rate limiting**: Implemented across all API endpoints
-- **Secrets management**: Environment variables, never committed
+---
 
-### Security Audit Findings (2025)
+## 📚 Legacy Code
 
-Based on recent security assessment:
+Previous Python/Rust trading system has been archived to `/app_old` folder.  
+See `app_old/README.md` for legacy system documentation.
 
-✅ **Implemented**:
+**Migration Date:** October 3, 2025  
+**Backup Location:** `../agent66_backup_20251003_133207`
 
-- Supabase Auth with Row Level Security (RLS)
-- Input validation and sanitization
-- HTTPS enforcement and secure headers
-
-⚠️ **In Progress**:
-
-- Content Security Policy (CSP) and Helmet.js integration
-- mTLS between internal services
-- Enhanced rate limiting with Redis
-- Secrets rotation automation
-
-🔄 **Planned**:
-
-- Post-quantum cryptography implementation
-- RBAC/ABAC authorization model
-- STRIDE threat modeling completion
-- Security scanning in CI/CD pipeline
-
-See [Security Gap Assessment](docs/audit/security_gap_assessment.md) for detailed analysis.
-
-## 📊 Monitoring & Observability
-
-### Current Implementation
-
-- **Health checks**: `/health` endpoints on all services
-- **Metrics**: Prometheus-compatible metrics collection
-- **Logging**: Structured JSON logs with correlation IDs
-- **Alerts**: Configured for critical system events
-
-### Observability Stack
-
-- **Metrics**: Prometheus + Grafana dashboards
-- **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
-- **Tracing**: OpenTelemetry distributed tracing (planned)
-- **APM**: Application Performance Monitoring
-- **Alerting**: AlertManager with Slack/email notifications
-
-### Key Metrics Tracked
-
-- **Trading Performance**: Win rate, Sharpe ratio, drawdown
-- **System Health**: CPU, memory, disk usage
-- **API Performance**: Response times, error rates
-- **Exchange Connectivity**: Latency, success rates
-- **Risk Metrics**: Position sizes, VaR calculations
-
-### Monitoring Endpoints
-
-```bash
-# Health checks
-curl http://localhost:8008/health    # Python orchestrator
-curl http://localhost:3002/health    # Node.js API
-curl http://localhost:8080/health    # Rust execution engine
-
-# Metrics
-curl http://localhost:8008/metrics   # Prometheus metrics
-```
-
-See [Monitoring Assessment](docs/audit/monitoring_observability_assessment.md) for detailed configuration.
-
-## 🛠️ Development Tools
-
-```bash
-# Code quality
-npm run lint          # ESLint
-npm run type-check    # TypeScript
-npm run format        # Prettier
-
-# Security scanning
-npm run security:scan # Trivy + Semgrep
-
-# Documentation
-npm run docs:generate # API documentation
-npm run docs:serve    # Serve docs locally
-
-# Build analysis
-npm run build:analyze # Bundle analyzer
-```
-
-## 📚 API Documentation
-
-API documentation is available at:
-
-- Development: `http://localhost:3000/docs`
-- Production: `https://your-domain.vercel.app/docs`
+---
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and security scans
-5. Submit a pull request
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
-## 🔍 Recent Audit & Improvements (2025)
+---
 
-### Context-7 Architecture Audit Completed
+## 📝 License
 
-A comprehensive audit using the Context-7 framework has been completed, providing detailed analysis of:
+This project is proprietary and confidential.
 
-- **System Architecture**: Multi-service orchestration patterns
-- **Entry Points**: Python, Node.js, React, and Rust integration
-- **Data Flow**: Kafka streaming and database interactions
-- **Security Posture**: Gap analysis and hardening roadmap
-- **Deployment Configuration**: Kubernetes and Docker optimization
-- **Integration Points**: API contracts and service boundaries
+---
 
-### Key Improvements Implemented
+## 🔗 Links
 
-✅ **Enhanced Error Handling**: Circuit breakers and retry mechanisms  
-✅ **Comprehensive Testing**: 90%+ code coverage with integration tests  
-✅ **Documentation**: Complete audit trail and technical specifications  
-✅ **Monitoring**: Health checks and metrics collection  
-✅ **Risk Management**: Advanced position sizing and VaR calculations
+- [Backend README](./backend/README.md)
+- [Frontend README](./frontend/README.md)
+- [Migration Plan](./MIGRATION_PLAN_APP_V2.md)
+- [Backup Location](../agent66_backup_20251003_133207)
 
-### Roadmap (Next 6 Months)
+---
 
-🔄 **Security Hardening**: CSP, mTLS, secrets management  
-🔄 **CI/CD Pipeline**: Automated testing, security scanning, SBOM generation  
-🔄 **Observability**: OpenTelemetry tracing and advanced alerting  
-🔄 **Performance**: Rust-Python bridge optimization  
-🔄 **Compliance**: GDPR/PII data handling and retention policies
-
-### Audit Documentation
-
-- [Repository Audit Report](docs/audit/repository_audit_report.md)
-- [Architecture Analysis](docs/audit/architecture_context7.md)
-- [Security Assessment](docs/audit/security_gap_assessment.md)
-- [Recommendations Roadmap](docs/audit/recommendations_roadmap.md)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Last Updated:** October 3, 2025
