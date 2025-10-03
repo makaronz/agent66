@@ -52,3 +52,5 @@ coverage.svg
 .cursor/rules/todo2.mdc
 .cursor/mcp.json
 .todo2/
+app_old 
+MIGRATION_PLAN_APP_V2.md
