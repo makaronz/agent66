@@ -1,58 +1,109 @@
 # Trading App v2 - Configuration Guide
 
-**⚠️ LEGACY NOTICE: This guide applies to archived Python/Rust system in app_old/**
+## 🔧 **Environment Configuration**
 
-**For current application configuration, see:**
-- [backend/.env.example](mdc:backend/.env.example) - Backend environment variables
-- [frontend/.env.example](mdc:frontend/.env.example) - Frontend environment variables
-- [README.md](mdc:README.md) - Current application setup
+### **Backend Configuration**
+
+**File**: `backend/.env`
+
+```bash
+# Server
+PORT=5001
+NODE_ENV=development
+
+# Database
+MONGO_URI=mongodb://localhost:27017/trading-app
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=1d
+
+# External APIs (Optional)
+OPENWEATHERMAP_API_KEY=your-api-key-here
+```
+
+### **Frontend Configuration**
+
+**File**: `frontend/.env`
+
+```bash
+# Backend API URL
+REACT_APP_API_URL=http://localhost:5001/api
+```
 
 ---
 
-## 🚨 **Legacy Configuration Issues & Solutions (app_old/ only)**
+## 🚀 **Setup Instructions**
 
-### **Current Configuration Problems**
-
-The project has several configuration-related issues that need attention:
-
-1. **Missing Required Sections**
-   - `decision_engine` section is required by validator
-   - `data_pipeline.ingestion` section is missing
-   - `logging` section has conflicts
-
-2. **Validation Errors**
-   - Strict validation blocks application startup
-   - Configuration format mismatches with validator expectations
-   - YAML structure issues causing linter errors
-
-### **Temporary Workarounds (Development)**
-
-#### **1. Disable Configuration Validation**
-**File**: [app_old/config_loader.py](mdc:app_old/config_loader.py)
-**Action**: Comment out validation call
-```python
-# Validate configuration (temporarily disabled for development)
-# self._validate_configuration(config)
+### **Backend Setup**
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your values
+npm install
+npm run dev
 ```
 
-#### **2. Disable Main Validation**
-**File**: [app_old/main.py](mdc:app_old/main.py)
-**Action**: Comment out validate_config call
-```python
-# Validate configuration (temporarily disabled for development)
-# is_valid, errors, warnings = validate_config(config)
+### **Frontend Setup**
+```bash
+cd frontend
+cp .env.example .env
+# Edit .env with backend URL
+npm install
+npm start
 ```
 
-#### **3. Use Basic Logging**
-**File**: [app_old/main.py](mdc:app_old/main.py)
-**Action**: Replace setup_logging with basic logging
-```python
-# Use basic logging setup instead
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
+---
+
+## 🚨 **Common Configuration Issues**
+
+### **1. Missing Environment Variables**
+**Problem**: Application won't start without required env vars
+**Solution**: Copy .env.example and fill in values
+```bash
+# Backend
+cd backend
+cp .env.example .env
+# Edit .env - set JWT_SECRET, MONGO_URI
+
+# Frontend  
+cd frontend
+cp .env.example .env
+# Edit .env - set REACT_APP_API_URL
+```
+
+### **2. MongoDB Not Running**
+**Problem**: Backend fails with "MongoDB connection error"
+**Solution**: Start MongoDB service
+```bash
+# macOS with Homebrew
+brew services start mongodb-community
+
+# Verify it's running
+ps aux | grep mongod
+```
+
+### **3. Port Already in Use**
+**Problem**: "Port 5001 already in use"
+**Solution**: Kill process or change port
+```bash
+# Find process using port
+lsof -i :5001
+
+# Kill process
+kill -9 <PID>
+
+# Or change PORT in backend/.env
+```
+
+### **4. CORS Errors in Browser**
+**Problem**: "CORS policy blocked"
+**Solution**: Ensure backend CORS allows frontend origin
+```typescript
+// backend/src/server.ts - verify this is present
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000' 
+}));
 ```
 
 ## 📋 **Required Configuration Sections**

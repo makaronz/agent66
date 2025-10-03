@@ -2,88 +2,93 @@
 
 ## 🏗️ **Project Architecture Overview**
 
-**⚠️ MIGRATION NOTICE: This repository was restructured on October 3, 2025**
-
-### **Current Active Application (Main)**
 This is a modern full-stack trading application built with:
 - **Frontend**: React 18.2 + TypeScript + Redux Toolkit (port 3000)
 - **Backend**: Node.js + Express 4.18 + TypeScript + MongoDB (port 5001)
 - **Database**: MongoDB 8.x (Mongoose ODM)
+- **Authentication**: JWT with bcrypt password hashing
 - **Deployment**: Vercel (Frontend), Heroku/AWS (Backend)
 
-### **Legacy System (Archived to app_old/)**
-Previous Smart Money Concepts (SMC) trading system:
-- **Frontend**: React + TypeScript + Vite (port 5173)
-- **Backend**: Python FastAPI + Rust execution engine
-- **Database**: PostgreSQL + Redis
-- **Location**: `/app_old` directory
+**Note**: Legacy Python/Rust trading system is archived in `app_old/` - October 3, 2025
 
 ## 🚨 **Critical Import Rules**
 
-### **TypeScript Import Structure (Current Backend & Frontend)**
+### **Backend (Express + TypeScript)**
+Use standard **ES module imports** with relative paths:
 
-#### **Backend (Express + TypeScript)**
-- Standard **ES module imports** with TypeScript
-- Relative imports for local files
-- No `@/` alias in backend
-
-**✅ Correct backend imports:**
 ```typescript
+// ✅ CORRECT backend imports
 import express from 'express';
+import { Router } from 'express';
 import { authGuard } from './middleware/auth';
 import { User } from './models/User';
+import { Post } from './models/Post';
 import { validateRequest } from './middleware/validation';
+import swaggerUi from 'swagger-ui-express';
 ```
 
-#### **Frontend (React + TypeScript)**
-- Standard **relative imports** (no @/ alias currently configured)
-- Import from React, Redux Toolkit, etc.
+### **Frontend (React + TypeScript)**
+Use **relative imports** for local modules:
 
-**✅ Correct frontend imports:**
 ```typescript
+// ✅ CORRECT frontend imports
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '../store/slices/authSlice';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { store } from './store/store';
+import { loginUser, registerUser } from './store/slices/authSlice';
 import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
+import Dashboard from './components/Dashboard';
 ```
 
-### **Legacy Python Import Structure (app_old/ only)**
-- **Root level files** in app_old/ use **direct imports**
-- **Module files** use **relative imports** within packages
-- See app_old/ documentation for Python-specific patterns
+**Key patterns:**
+- External packages: Named imports (`{ }`) or default imports
+- Local components: Default imports with relative paths (`./` or `../`)
+- Redux: Named exports from slices
+- React Router: Named exports for routing components
 
 ## 🔧 **Common Issues & Fixes**
 
-### **1. Decorator Issues**
-**Problem**: `TypeError: 'str' object is not callable`
-**Solution**: Ensure decorators are properly defined as static methods or functions
-
-**✅ Correct decorator pattern:**
-```python
-@staticmethod
-def _retry_on_failure(func):
-    def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            # implementation
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
+### **1. Port 5000 Conflict (macOS)**
+**Problem**: Port 5000 occupied by macOS ControlCenter
+**Solution**: Backend uses port 5001 instead
+```bash
+# Check .env files
+PORT=5001  # backend/.env
+REACT_APP_API_URL=http://localhost:5001/api  # frontend/.env
 ```
 
-### **2. Import Resolution Issues**
-**Problem**: `ImportError: attempted relative import with no known parent package`
-**Solution**: 
-- Root files: Use direct imports
-- Module files: Use relative imports
-- Check file location in project structure
+### **2. Module Resolution (TypeScript)**
+**Problem**: Cannot find module '../components/LoginForm'
+**Solution**: Check relative path and file extension
+```typescript
+// ✅ Correct - no .tsx extension needed
+import LoginForm from './components/LoginForm';
+import { loginUser } from '../store/slices/authSlice';
+```
 
-### **3. Configuration Validation Issues**
-**Problem**: Strict validation blocking startup
-**Solution**: 
-- Temporarily disable validation in `config_loader.py`
-- Comment out `validate_config` calls in `main.py`
-- Use basic logging setup instead of complex config
+### **3. MongoDB Connection**
+**Problem**: MongoDB connection failed
+**Solution**: Ensure MongoDB is running
+```bash
+# Check MongoDB status
+ps aux | grep mongod
+
+# Start MongoDB if needed (macOS)
+brew services start mongodb-community
+
+# Verify connection
+mongo --eval "db.version()"
+```
+
+### **4. CORS Issues**
+**Problem**: Frontend can't connect to backend
+**Solution**: Backend has CORS middleware configured for localhost:3000
+```typescript
+// backend/src/server.ts
+app.use(cors({ origin: 'http://localhost:3000' }));
+```
 
 ## 📁 **Key File Locations**
 
@@ -169,31 +174,36 @@ cd app_old && python -c "import main; print('✅ All imports working')"
 
 ## 🎯 **Development Priorities**
 
-### **High Priority (Fix First)**
-1. ✅ Import resolution issues - **FIXED**
-2. ✅ Decorator syntax errors - **FIXED**
-3. ✅ Module export issues - **FIXED**
-4. ⚠️ Configuration validation - **PARTIALLY FIXED**
+### **High Priority**
+1. ✅ App v2 migration to root - **COMPLETED (Oct 3, 2025)**
+2. ✅ Backend startup (tsx + port 5001) - **WORKING**
+3. ✅ Frontend startup (React + Redux) - **WORKING**
+4. ✅ Registration functionality - **ADDED**
+5. ⚠️ Frontend vulnerabilities (10 found) - **NEEDS FIXING**
 
 ### **Medium Priority**
-1. Fix config.yaml structure and validation
-2. Restore proper logging configuration
-3. Fix Vault integration issues
+1. Fix frontend npm audit vulnerabilities
+2. Add OpenWeatherMap API key for weather feature
+3. Improve error handling and logging
+4. Add more comprehensive tests
 
 ### **Low Priority**
-1. Optimize build configuration
-2. Add comprehensive error handling
-3. Improve configuration management
+1. Migrate from Redux to Zustand (optional)
+2. Add React Query for data fetching
+3. Implement caching with Redis
+4. Add Docker compose for development
 
 ## 🔍 **Debugging Checklist**
 
 When encountering issues:
 
-1. **Check import structure** - Root vs module files
-2. **Verify decorator syntax** - Static methods vs instance methods
-3. **Test import resolution** - Use `python -c "import module"`
-4. **Check configuration** - Validate config.yaml structure
-5. **Review error messages** - Look for specific import/validation errors
+1. **Check MongoDB connection** - Ensure MongoDB is running
+2. **Verify ports** - Backend 5001, Frontend 3000
+3. **Check environment variables** - backend/.env and frontend/.env
+4. **Test TypeScript compilation** - `npm run build`
+5. **Review console errors** - Browser dev tools for frontend, terminal for backend
+6. **Check CORS configuration** - Backend allows localhost:3000
+7. **Verify JWT configuration** - JWT_SECRET must be set in backend/.env
 
 ## 📚 **Reference Links**
 

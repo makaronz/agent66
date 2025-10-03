@@ -1,238 +1,166 @@
 # Trading App v2 - Import Structure & Module Organization
 
-**⚠️ MIGRATION NOTICE: Repository restructured on October 3, 2025**
+## 🏗️ **Application Stack**
 
-## 🏗️ **Current Application Structure**
+- **Backend**: Express + TypeScript + MongoDB (port 5001)
+- **Frontend**: React 18.2 + Redux Toolkit + TypeScript (port 3000)
+- **Full TypeScript codebase** with ES modules
 
-### **Active Application: backend/ + frontend/**
-- Backend: Express + TypeScript + MongoDB
-- Frontend: React 18 + Redux Toolkit + TypeScript
-- No Python modules in main application
-
-### **Legacy System: app_old/**
-- Python FastAPI + Rust execution engine
-- All Python modules archived to app_old/
+**Note**: Legacy Python/Rust system archived in `app_old/`
 
 ---
 
 ## 🚨 **Critical Import Rules**
 
-### **TypeScript Import Structure (Current Application)**
+### **Backend (Express + TypeScript)**
 
-#### **Backend (Express + TypeScript)**
-**Use standard ES module imports:**
+Use **standard ES module imports** with relative paths:
+
 ```typescript
-// ✅ CORRECT for backend
-import express from 'express';
-import { Router } from 'express';
+// ✅ CORRECT backend imports
+
+// External packages
+import express, { Express, Request, Response } from 'express';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+
+// Local modules (relative imports)
 import { authGuard } from './middleware/auth';
+import { validateRequest } from './middleware/validation';
 import { User } from './models/User';
-import swaggerUi from 'swagger-ui-express';
+import { Post } from './models/Post';
+import authRoutes from './routes/auth';
+import postRoutes from './routes/posts';
 ```
 
-#### **Frontend (React + TypeScript)**
-**Use relative imports:**
+**Key Rules:**
+- No `@/` alias in backend
+- Use relative paths: `./`, `../`
+- No file extensions in imports
+- Named exports use `{ }` syntax
+
+### **Frontend (React + TypeScript)**
+
+Use **relative imports** for all local files:
+
 ```typescript
-// ✅ CORRECT for frontend
+// ✅ CORRECT frontend imports
+
+// External packages
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import toast from 'react-hot-toast';
+
+// Local modules (relative imports)
 import { store } from './store/store';
+import { loginUser, registerUser } from './store/slices/authSlice';
+import type { AppDispatch, RootState } from './store/store';
 import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
 import Dashboard from './components/Dashboard';
+import PrivateRoute from './components/PrivateRoute';
 ```
 
----
-
-## 📁 **Legacy Python Import Structure (app_old/ only)**
-
-### **Python Import Structure**
-
-#### **Root Level Files** (Files in app_old/ root)
-**Use DIRECT imports only:**
-```python
-# ✅ CORRECT for root files in app_old/
-from config_loader import load_secure_config
-from config_validator import validate_config
-from error_handlers import CircuitBreaker, RetryHandler
-from validators import data_validator, DataQualityLevel
-from vault_client import get_vault_client, VaultClientError
-from data_pipeline.ingestion import DataIngestion
-from smc_detector.indicators import SMCIndicators
-from decision_engine.model_ensemble import AdaptiveModelSelector
-from risk_manager.smc_risk_manager import SMCRiskManager
-from service_manager import ServiceManager
-from health_monitor import HealthMonitor
-```
-
-**❌ NEVER use relative imports in root files:**
-```python
-# ❌ WRONG for root files
-from .config_loader import load_secure_config
-from .error_handlers import CircuitBreaker
-from ..monitoring.data_quality_metrics import set_freshness
-```
-
-#### **Module Files** (Files inside packages)
-**Use RELATIVE imports within packages:**
-```python
-# ✅ CORRECT for module files
-from .exchange_connectors import ExchangeConnector, BinanceConnector
-from .kafka_producer import KafkaProducerManager
-from ..monitoring.data_quality_metrics import set_freshness
-from ..health_monitor import HealthMonitor
-```
-
-**❌ NEVER use direct imports in module files:**
-```python
-# ❌ WRONG for module files
-from config_loader import load_secure_config
-from error_handlers import CircuitBreaker
-```
-
-### **Legacy TypeScript Structure (app_old/src/ only)**
-
-#### **Old structure used @/ alias:**
-```typescript
-// ✅ CORRECT for app_old/src/ TypeScript
-import Layout from "@/components/Layout";
-import Dashboard from "@/pages/Dashboard";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { QueryProvider } from "@/providers/QueryProvider";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-```
-
-**Note**: This pattern applies only to legacy code in app_old/src/
+**Key Rules:**
+- No `@/` alias configured (could be added later)
+- Use relative paths: `./components/`, `../store/`
+- No file extensions (.tsx) in imports
+- Type imports use `type` keyword when possible
 
 ## 📁 **Module Organization**
 
-### **Current Application Structure**
-
-#### **Backend (Express + TypeScript)**
+### **Backend Structure**
 ```
 backend/
 ├── src/
-│   ├── server.ts             # Express server
+│   ├── server.ts             # Express server + MongoDB setup
 │   ├── routes/
-│   │   ├── auth.ts           # Authentication routes
-│   │   ├── posts.ts          # Post management
-│   │   └── weather.ts        # Weather API integration
+│   │   ├── auth.ts           # POST /auth/register, /auth/login
+│   │   ├── posts.ts          # CRUD operations for posts
+│   │   └── weather.ts        # GET /weather?city=X (requires API key)
 │   ├── models/
-│   │   ├── User.ts           # Mongoose User model
-│   │   └── Post.ts           # Mongoose Post model
+│   │   ├── User.ts           # Mongoose User schema (email, password hash)
+│   │   └── Post.ts           # Mongoose Post schema (title, content, author)
 │   ├── middleware/
-│   │   ├── auth.ts           # JWT authentication
-│   │   └── validation.ts     # Request validation
-│   └── config/
-│       └── swagger.ts        # API documentation
-├── package.json
-└── tsconfig.json
+│   │   ├── auth.ts           # JWT authentication guard
+│   │   └── validation.ts     # Zod request validation
+│   ├── config/
+│   │   └── swagger.ts        # OpenAPI/Swagger configuration
+│   └── tests/
+│       └── user.test.ts      # Jest tests
+├── .env.example              # Environment template
+├── package.json              # Dependencies + scripts (tsx, nodemon)
+├── tsconfig.json             # TypeScript config (ES2022)
+└── jest.config.js            # Jest configuration
 ```
 
-#### **Frontend (React + Redux Toolkit)**
+### **Frontend Structure**
 ```
 frontend/
 ├── src/
-│   ├── App.tsx               # Main app component
-│   ├── index.tsx             # React entry point
+│   ├── index.tsx             # React DOM entry point
+│   ├── App.tsx               # Router + Provider setup
 │   ├── components/
-│   │   ├── LoginForm.tsx     # Login component
-│   │   ├── RegisterForm.tsx  # Registration component
-│   │   ├── Dashboard.tsx     # Dashboard view
+│   │   ├── LoginForm.tsx     # Login with Zod validation
+│   │   ├── RegisterForm.tsx  # Registration with password confirm
+│   │   ├── Dashboard.tsx     # Main dashboard view
 │   │   ├── AddDataForm.tsx   # Data entry form
-│   │   └── PrivateRoute.tsx  # Route protection
-│   └── store/
-│       ├── store.ts          # Redux store config
-│       └── slices/
-│           ├── authSlice.ts  # Auth state management
-│           └── postSlice.ts  # Post state management
-├── package.json
-└── tailwind.config.js
-```
-
-### **Legacy Python Package Structure (app_old/ only)**
-```
-app_old/
-├── main.py                    # Root - direct imports
-├── config_loader.py          # Root - direct imports
-├── config_validator.py       # Root - direct imports
-├── error_handlers.py         # Root - direct imports
-├── validators.py             # Root - direct imports
-├── vault_client.py           # Root - direct imports
-├── data_pipeline/
-│   ├── __init__.py
-│   ├── ingestion.py          # Module - relative imports
-│   └── exchange_connectors/
-│       ├── __init__.py       # Module - relative imports
-│       └── binance_connector.py
-├── smc_detector/
-│   ├── __init__.py
-│   └── indicators.py         # Module - relative imports
-└── risk_manager/
-    ├── __init__.py
-    └── smc_risk_manager.py   # Module - relative imports
-```
-
-### **Legacy TypeScript Structure (app_old/src/ only)**
-```
-app_old/src/
-├── main.tsx                  # Root - @/ imports
-├── App.tsx                   # Root - @/ imports
-├── components/
-│   ├── Layout.tsx            # Module - @/ imports
-│   └── ui/LoadingSpinner.tsx # Module - @/ imports
-├── pages/
-│   ├── Dashboard.tsx         # Module - @/ imports
-│   └── TradingInterface.tsx  # Module - @/ imports
-└── contexts/
-    └── AuthContext.tsx       # Module - @/ imports
+│   │   └── PrivateRoute.tsx  # Protected route wrapper
+│   ├── store/
+│   │   ├── store.ts          # Redux store configuration
+│   │   └── slices/
+│   │       ├── authSlice.ts  # Auth state (token, user, loading)
+│   │       └── postSlice.ts  # Posts state management
+│   ├── index.css             # Tailwind CSS imports
+│   └── setupTests.ts         # Jest + React Testing Library
+├── public/
+│   └── index.html            # HTML template
+├── .env.example              # Environment template
+├── package.json              # Dependencies (React 18, Redux Toolkit)
+├── tailwind.config.js        # Tailwind configuration
+└── tsconfig.json             # TypeScript config (JSX support)
 ```
 
 ## 🔧 **Common Import Issues & Fixes**
 
-### **Issue 1: Relative Import Beyond Top-Level Package**
-**Error**: `ImportError: attempted relative import beyond top-level package`
-**Cause**: Using `..` in root files or wrong package structure
+### **Issue 1: Module Not Found (TypeScript)**
+**Error**: `Cannot find module './components/LoginForm'`
+**Cause**: Incorrect relative path or missing file
 **Solution**: 
-- Root files: Use direct imports
-- Module files: Use relative imports within package boundaries
-
-### **Issue 2: Cannot Import Name**
-**Error**: `ImportError: cannot import name 'ClassName' from 'module'`
-**Cause**: Missing exports in `__init__.py` files
-**Solution**: Add proper exports in package `__init__.py` files
-
-**Example fix for data_pipeline/exchange_connectors/__init__.py:**
-```python
-# Import specific connectors for direct access
-try:
-    from .binance_connector import BinanceConnector
-    from .bybit_connector import ByBitConnector
-    from .oanda_connector import OANDAConnector
-except ImportError as e:
-    logger.warning(f"Could not import some connectors: {e}")
-    # Define placeholder classes if imports fail
-    BinanceConnector = None
-    ByBitConnector = None
-    OANDAConnector = None
-
-# Package exports
-__all__ = [
-    'ExchangeConnector',
-    'BinanceConnector',
-    'ByBitConnector',
-    'OANDAConnector',
-    # ... other exports
-]
+```typescript
+// ✅ Check relative path is correct
+import LoginForm from './components/LoginForm';  // same directory
+import { store } from '../store/store';          // parent directory
 ```
 
-### **Issue 3: Import Resolution in Different Contexts**
-**Error**: Import works in one context but fails in another
-**Cause**: Different working directories or Python path issues
-**Solution**: 
-- Test imports from project root: `python -c "import module"`
-- Ensure PYTHONPATH includes project root
-- Use absolute imports for root files
+### **Issue 2: Named vs Default Exports**
+**Error**: `'LoginForm' is not exported from './components/LoginForm'`
+**Cause**: Mixing named and default exports
+**Solution**:
+```typescript
+// ✅ Default export (most components)
+export default LoginForm;
+import LoginForm from './components/LoginForm';
+
+// ✅ Named export (actions, types)
+export const loginUser = createAsyncThunk(...);
+import { loginUser } from './store/slices/authSlice';
+```
+
+### **Issue 3: Type Import Optimization**
+**Error**: TypeScript performance issues with large imports
+**Solution**: Use `type` keyword for type-only imports
+```typescript
+// ✅ Optimized type imports
+import type { AppDispatch, RootState } from './store/store';
+import type { LoginFormInputs } from './types';
+```
 
 ## 🧪 **Testing Import Resolution**
 
@@ -253,47 +181,59 @@ cd backend && npm test
 cd frontend && npm test
 ```
 
-### **Test Legacy Python Imports (app_old/ only)**
+### **Verify Import Changes Work**
 ```bash
-# From app_old directory
-cd /Users/arkadiuszfudali/Git/agent66/app_old
+# After adding imports, verify compilation
+cd backend && npm run build
+cd frontend && npm test -- --passWithNoTests
 
-# Test main module
-python -c "import main; print('✅ main.py imports successfully')"
-
-# Test specific modules
-python -c "from data_pipeline.ingestion import DataIngestion; print('✅ DataIngestion imported')"
-python -c "from risk_manager.smc_risk_manager import SMCRiskManager; print('✅ SMCRiskManager imported')"
+# Check for import errors in console
+npm start  # Watch for import errors in output
 ```
 
 ## 📋 **Import Checklist**
 
-When adding new imports:
+When adding new TypeScript imports:
 
-1. **Check file location**: Root vs module file?
-2. **Choose import style**: Direct vs relative?
-3. **Verify package structure**: Is the module in the right package?
-4. **Check __init__.py exports**: Are classes/functions exported?
-5. **Test import resolution**: Does `python -c "import module"` work?
+1. **External or local?** - External uses package name, local uses relative path
+2. **Named or default export?** - Check how the module exports
+3. **Type-only import?** - Use `import type { }` for types
+4. **Correct relative path?** - `./` same dir, `../` parent dir
+5. **Test compilation** - Run `npm run build` to verify
 
-## ⚠️ **Important Reminders**
+## ⚠️ **Import Best Practices**
 
-### **Current Application (backend/ + frontend/)**
-1. **Backend TypeScript** → Standard ES module imports with relative paths
-2. **Frontend TypeScript** → Relative imports (no @/ alias configured)
-3. **Both use TypeScript** → Type safety throughout
-4. **No Python code** → All Python is in app_old/
+### **Backend**
+1. ✅ Use ES module `import` syntax (not `require`)
+2. ✅ Relative paths for local modules
+3. ✅ Named imports for middleware, types
+4. ✅ Default imports for routes, models
+5. ✅ No file extensions in import paths
 
-### **Legacy System (app_old/ only)**  
-1. **Root Python files** → **Direct imports only**
-2. **Module Python files** → **Relative imports within package**
-3. **Legacy TypeScript** → **@/ alias imports** (app_old/src/)
-4. **Package boundaries** → **Respect package structure**
-5. **__init__.py files** → **Export all public classes/functions**
+### **Frontend**
+1. ✅ Relative imports for all local files
+2. ✅ Default imports for components
+3. ✅ Named imports for hooks, actions, types
+4. ✅ Group imports: external, then local
+5. ✅ Use `type` keyword for type-only imports
+
+### **Common Patterns**
+```typescript
+// ✅ Import grouping example
+// 1. External packages
+import React from 'react';
+import { useDispatch } from 'react-redux';
+import { z } from 'zod';
+
+// 2. Local modules  
+import { loginUser } from '../store/slices/authSlice';
+import type { AppDispatch } from '../store/store';
+import LoginForm from './components/LoginForm';
+```
 
 ---
 
-**Remember**: As of October 3, 2025, the main application is TypeScript-based (backend/ + frontend/). Python code is archived in app_old/ for reference only.
+**Remember**: This is a full TypeScript application. No Python imports in active codebase (see `app_old/` for legacy Python reference).
 description:
 globs:
 alwaysApply: true
