@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../store/slices/authSlice';
 import { AppDispatch, RootState } from '../store/store';
 
@@ -56,9 +56,15 @@ const LoginForm = () => {
           />
           {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
         </div>
-        <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-blue-300">
+        <button type="submit" disabled={loading} className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-blue-300 mb-4">
           {loading ? 'Logging in...' : 'Login'}
         </button>
+        <p className="text-center text-gray-600">
+          Don't have an account?{' '}
+          <Link to="/register" className="text-green-500 hover:text-green-600 font-semibold">
+            Register here
+          </Link>
+        </p>
       </form>
     </div>
   );

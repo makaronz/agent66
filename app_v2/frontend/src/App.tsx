@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { store } from './store/store';
 import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
 import Dashboard from './components/Dashboard';
 import AddDataForm from './components/AddDataForm';
 import PrivateRoute from './components/PrivateRoute';
@@ -16,6 +17,7 @@ function App() {
         <div className="App">
           <Routes>
             <Route path="/login" element={<LoginForm />} />
+            <Route path="/register" element={<RegisterForm />} />
             <Route path="/" element={<PrivateRoute />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/add" element={<AddDataForm />} />
