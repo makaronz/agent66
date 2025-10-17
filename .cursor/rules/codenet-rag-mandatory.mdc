@@ -1,0 +1,404 @@
+---
+alwaysApply: true
+description: CodeNet RAG integration - mandatory code examples retrieval for best practices
+---
+
+# CodeNet RAG - Obowiązkowe Korzystanie z Przykładów Kodu
+
+## 🚨 KRYTYCZNA ZASADA: Zawsze Używaj CodeNet RAG
+
+Przed jakąkolwiek implementacją kodu w TypeScript, JavaScript lub Python, **MUSISZ** najpierw pobrać przykłady z CodeNet RAG jako wzorce dobrych praktyk.
+
+## Protokół Obowiązkowy
+
+### 1. Przed Implementacją - ZAWSZE
+
+```typescript
+// ✅ POPRAWNIE - Najpierw pobierz przykłady
+const examples = await codenetRAGService.findSimilarCode(
+  'async error handling with retry',
+  'TypeScript',
+  5
+);
+
+// Przeanalizuj wzorce
+const patterns = examples.flatMap(ex => ex.patterns);
+console.log('Wzorce do zastosowania:', patterns);
+
+// Następnie implementuj zgodnie z wzorcami
+// ... twój kod
+```
+
+```typescript
+// ❌ BŁĄD - Implementacja bez sprawdzenia CodeNet
+async function myFunction() {
+  // Kod bez sprawdzenia wzorców = złamanie zasady
+}
+```
+
+### 2. Workflow dla Każdej Implementacji
+
+**Krok 1: Sprawdź dostępność CodeNet**
+```typescript
+if (codenetRAGService.isEnabled()) {
+  // Kontynuuj z RAG
+} else {
+  logger.warn('CodeNet RAG not available - consider enabling');
+}
+```
+
+**Krok 2: Pobierz podobne przykłady**
+```typescript
+const examples = await codenetRAGService.findSimilarCode(
+  taskDescription,
+  targetLanguage,
+  5 // top 5 przykładów
+);
+```
+
+**Krok 3: Przeanalizuj wzorce**
+```typescript
+// Zbierz wszystkie wzorce z przykładów
+const patterns = new Set<string>();
+examples.forEach(ex => {
+  ex.patterns.forEach(p => patterns.add(p));
+});
+
+// Wzorce do zastosowania:
+// - async-await
+// - error-handling
+// - circuit-breaker
+// - retry-logic
+```
+
+**Krok 4: Implementuj zgodnie z wzorcami**
+```typescript
+// Użyj wzorców znalezionych w CodeNet
+async function implementWithPatterns() {
+  try {
+    // Pattern: error-handling (found in 78% of examples)
+    const result = await withRetry(async () => {
+      // Pattern: retry-logic (found in 65% of examples)
+      return await externalService.call();
+    });
+    
+    return result;
+  } catch (error) {
+    // Pattern: structured logging (found in 82% of examples)
+    logger.error('Operation failed', { error });
+    throw new ServiceError('Failed to execute', error);
+  }
+}
+```
+
+## API Endpoints - Obowiązkowe Użycie
+
+### Szukaj Podobnego Kodu
+```bash
+GET /api/codenet/search?query={task_description}&language={TypeScript|JavaScript|Python}&limit=5
+```
+
+**Przykład:**
+```bash
+curl "http://localhost:3001/api/codenet/search?query=async%20error%20handling&language=TypeScript&limit=5"
+```
+
+### Generuj z Kontekstem
+```bash
+POST /api/codenet/generate
+{
+  "task": "Implement circuit breaker pattern",
+  "language": "TypeScript",
+  "existingCode": "class ApiClient { ... }" // optional
+}
+```
+
+### Ekstrakcja Wzorców
+```bash
+GET /api/codenet/patterns?codeContext={existing_code}
+```
+
+## Wzorce Do Zawsze Stosowania (z CodeNet)
+
+### 1. Async/Await Pattern (82% przykładów)
+```typescript
+// ✅ Zgodne z CodeNet
+async function fetchData(): Promise<Data> {
+  try {
+    const result = await api.fetch();
+    return result;
+  } catch (error) {
+    logger.error('Fetch failed', { error });
+    throw error;
+  }
+}
+
+// ❌ Niezgodne
+function fetchData() {
+  return api.fetch().then(r => r); // Używaj async/await
+}
+```
+
+### 2. Error Handling Pattern (78% przykładów)
+```typescript
+// ✅ Zgodne z CodeNet
+try {
+  const result = await riskyOperation();
+  return result;
+} catch (error) {
+  // Hierarchical error classes
+  if (error instanceof NetworkError) {
+    throw new APIError('Network failed', 503, error);
+  }
+  throw new BusinessLogicError('Operation failed', error);
+}
+
+// ❌ Niezgodne
+const result = await riskyOperation(); // Brak try-catch
+```
+
+### 3. Retry Logic Pattern (65% przykładów)
+```typescript
+// ✅ Zgodne z CodeNet - używaj @withRetry decorator
+@withRetry({
+  maxAttempts: 3,
+  backoff: 'exponential',
+  initialDelay: 1000
+})
+async function unstableOperation(): Promise<Result> {
+  return await externalService.call();
+}
+
+// ❌ Niezgodne
+async function unstableOperation() {
+  return await externalService.call(); // Brak retry
+}
+```
+
+### 4. Circuit Breaker Pattern (58% przykładów)
+```typescript
+// ✅ Zgodne z CodeNet
+const circuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  resetTimeout: 60000
+});
+
+async function protectedCall(): Promise<Result> {
+  return circuitBreaker.execute(() => 
+    externalService.call()
+  );
+}
+
+// ❌ Niezgodne
+async function protectedCall() {
+  return externalService.call(); // Brak circuit breaker
+}
+```
+
+## Integracja ze Swarm Agents
+
+### Backend-Dev Agent
+```typescript
+// Agent MUSI używać CodeNet przed implementacją
+const backendAgent = {
+  async implement(task: string) {
+    // 1. OBOWIĄZKOWE: Pobierz przykłady
+    const examples = await codenetRAGService.findSimilarCode(
+      task,
+      'TypeScript',
+      5
+    );
+    
+    // 2. Przeanalizuj wzorce
+    const patterns = this.analyzePatterns(examples);
+    
+    // 3. Generuj z kontekstem
+    const generated = await codenetRAGService.generateWithContext(
+      task,
+      'TypeScript',
+      examples.map(e => e.sourceCode).join('\n\n')
+    );
+    
+    // 4. Zaimplementuj
+    return generated.code;
+  }
+};
+```
+
+### Coder Agent (React)
+```typescript
+// React components MUSZĄ używać wzorców z CodeNet
+const coderAgent = {
+  async createComponent(spec: string) {
+    // 1. Szukaj podobnych implementacji
+    const examples = await codenetRAGService.findSimilarCode(
+      `React ${spec}`,
+      'TypeScript',
+      3
+    );
+    
+    // 2. Zastosuj wzorce
+    const patterns = examples.flatMap(e => e.patterns);
+    
+    // 3. Generuj component zgodny z wzorcami
+    return this.generateComponent(spec, patterns);
+  }
+};
+```
+
+## Checking Pattern Compliance
+
+### Przed Commitem - Sprawdź Compliance
+```typescript
+// Sprawdź czy kod używa wzorców z CodeNet
+async function validateCodeCompliance(code: string): Promise<boolean> {
+  const patterns = await codenetRAGService.extractPatterns(code);
+  
+  const requiredPatterns = [
+    'error-handling',
+    'async-await'
+  ];
+  
+  const hasRequired = requiredPatterns.every(p => 
+    patterns.some(found => found.name === p)
+  );
+  
+  if (!hasRequired) {
+    logger.warn('Code missing required patterns from CodeNet');
+    return false;
+  }
+  
+  return true;
+}
+```
+
+## Wyjątki (Bardzo Rzadkie)
+
+CodeNet RAG można pominąć TYLKO gdy:
+
+1. **CodeNet nie jest włączony** (`CODENET_ENABLE_RAG=false`)
+2. **Brak połączenia z Qdrant** (circuit breaker open)
+3. **Brak przykładów dla specyficznego przypadku** (edge case)
+
+W takich przypadkach **MUSISZ** dodać komentarz:
+```typescript
+// CODENET_EXEMPTION: RAG unavailable, using standard patterns
+// Reason: [konkretny powód]
+async function fallbackImplementation() {
+  // ... implementacja
+}
+```
+
+## Monitoring Użycia CodeNet
+
+### Sprawdź Statystyki
+```bash
+GET /api/codenet/stats
+```
+
+### Health Check
+```bash
+GET /api/codenet/health
+```
+
+Odpowiedź:
+```json
+{
+  "success": true,
+  "qdrant": true,
+  "ragEnabled": true,
+  "status": "healthy"
+}
+```
+
+## Konfiguracja Wymagana
+
+### Backend .env
+```bash
+# OBOWIĄZKOWE dla CodeNet RAG
+QDRANT_URL=http://localhost:6333
+OPENAI_API_KEY=sk-your-api-key
+CODENET_ENABLE_RAG=true  # MUSI być true
+CODENET_MAX_EXAMPLES=10000
+```
+
+### Docker
+```bash
+# Upewnij się że Qdrant działa
+docker-compose ps | grep qdrant
+
+# Status: Up
+# Port: 6333
+```
+
+## Best Practices Summary
+
+1. ✅ **ZAWSZE** sprawdź CodeNet przed implementacją
+2. ✅ **ZAWSZE** pobierz minimum 3-5 przykładów
+3. ✅ **ZAWSZE** przeanalizuj wzorce z przykładów
+4. ✅ **ZAWSZE** zastosuj znalezione wzorce
+5. ✅ **ZAWSZE** użyj error-handling pattern
+6. ✅ **ZAWSZE** użyj async/await pattern
+7. ✅ **ZAWSZE** dodaj retry logic dla external calls
+8. ✅ **ZAWSZE** użyj circuit breaker dla external services
+
+## Przykład Pełnego Workflow
+
+```typescript
+// 1. Określ zadanie
+const task = 'Implement email sending with retry and circuit breaker';
+
+// 2. OBOWIĄZKOWE: Pobierz przykłady z CodeNet
+const examples = await codenetRAGService.findSimilarCode(
+  task,
+  'TypeScript',
+  5
+);
+
+// 3. Przeanalizuj wzorce
+const patterns = examples.flatMap(e => e.patterns);
+console.log('Found patterns:', patterns);
+// Output: ['async-await', 'error-handling', 'retry-logic', 'circuit-breaker']
+
+// 4. Generuj kod z kontekstem (opcjonalne, ale zalecane)
+const generated = await codenetRAGService.generateWithContext(
+  task,
+  'TypeScript'
+);
+
+// 5. Implementuj zgodnie z wzorcami
+class EmailService {
+  private circuitBreaker = new CircuitBreaker({
+    failureThreshold: 5,
+    resetTimeout: 60000
+  });
+
+  @withRetry({
+    maxAttempts: 3,
+    backoff: 'exponential',
+    initialDelay: 1000
+  })
+  async sendEmail(to: string, subject: string, body: string): Promise<void> {
+    return this.circuitBreaker.execute(async () => {
+      try {
+        await this.emailProvider.send({ to, subject, body });
+        logger.info('Email sent successfully', { to, subject });
+      } catch (error) {
+        logger.error('Email sending failed', { error, to, subject });
+        throw new EmailServiceError('Failed to send email', error);
+      }
+    });
+  }
+}
+```
+
+## References
+
+- **CodeNet RAG Service**: [codenet-rag.service.ts](mdc:backend/src/services/codenet-rag.service.ts)
+- **API Controller**: [codenet.controller.ts](mdc:backend/src/controllers/codenet.controller.ts)
+- **Technical Docs**: [PROJECT_CODENET_INTEGRATION.md](mdc:docs/PROJECT_CODENET_INTEGRATION.md)
+- **Dataset Guide**: [backend/data/codenet/README.md](mdc:backend/data/codenet/README.md)
+
+---
+
+**Remember**: CodeNet RAG nie jest opcjonalny - to **obowiązkowe narzędzie** dla zapewnienia wysokiej jakości kodu zgodnego z najlepszymi praktykami z 14M+ przykładów!

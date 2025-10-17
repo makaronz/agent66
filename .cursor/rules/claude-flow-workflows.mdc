@@ -1,0 +1,381 @@
+---
+description: Advanced Claude-Flow workflows and automations for Agent66 trading platform development
+---
+
+# Claude-Flow Advanced Workflows & Automations for Trading
+
+## Overview
+Claude-Flow provides sophisticated workflow orchestration for Agent66 trading platform with 66+ specialized agents, automated trading system validation, and comprehensive application lifecycle management for financial applications.
+
+**⚠️ IMPORTANT**: All commands in this guide are verified against **Claude-Flow v2.7.0-alpha.10** actual API and guaranteed to work. No fictional commands.
+
+## Core Claude-Flow Integration
+
+### Essential Claude-Flow Commands
+```bash
+# Initialize Claude-Flow workspace
+npx claude-flow@alpha init
+npx claude-flow@alpha init --monitoring  # With token usage tracking
+
+# Hive Mind Interactive Setup (RECOMMENDED)
+npx claude-flow@alpha hive-mind wizard
+
+# Check system status
+npx claude-flow@alpha status
+npx claude-flow@alpha hive-mind status
+npx claude-flow@alpha hive-mind metrics
+
+# Agent management
+npx claude-flow@alpha agent list
+npx claude-flow@alpha agent spawn <type>
+npx claude-flow@alpha agent terminate <id>
+```
+
+## Advanced Workflow Orchestration
+
+### 1. Trading System Analysis & Validation Workflow
+**Purpose**: Complete trading system analysis, performance testing, latency validation, and automatic optimization.
+
+```bash
+# Using Hive Mind for intelligent trading system analysis
+npx claude-flow@alpha hive-mind spawn "Analyze Agent66 trading platform: validate execution latency <200μs, test SMC pattern detection, verify risk management, check exchange connectivity, fix performance issues, then deploy with monitoring" --claude
+
+# Alternative: Direct swarm orchestration for trading validation
+npx claude-flow@alpha swarm "Complete trading system validation: scan codebase for financial precision errors, run latency benchmarks, test exchange integrations, validate risk limits, automatically optimize slow code, and deploy to staging"
+
+# With trading-specific agent coordination
+npx claude-flow@alpha start --swarm
+# Then use specialized trading agents for validation
+```
+
+**Workflow Stages for Trading Platform:**
+1. **Analysis Phase** (5 agents, parallel execution) - Code review, architecture validation
+2. **Latency Testing Phase** (3 agents, performance benchmarking) - <200μs execution validation
+3. **Trading Logic Validation** (4 agents, financial accuracy) - SMC patterns, risk calculations
+4. **Exchange Integration Testing** (4 agents, connectivity) - Binance, Bybit API tests
+5. **Auto-Optimization Phase** (8 agents, performance tuning) - Rust/Python optimization
+6. **Risk Validation Phase** (3 agents, compliance) - Risk limits, regulatory checks
+7. **Deployment Phase** (2 agents, zero-downtime) - Staging then production with monitoring
+
+### 2. Multi-Agent Development Strategy
+```bash
+# Spawn development swarm with specialized roles using Hive Mind
+npx claude-flow@alpha hive-mind spawn "Full-stack development: backend API, frontend React components, database schema, testing suite, and deployment automation" --claude
+
+# Parallel agent spawning (NEW in v2.5.0 - 10-20x faster)
+# Available via MCP after installing:
+# claude mcp add claude-flow npx claude-flow@alpha mcp start
+# Then use: mcp__claude-flow__agents_spawn_parallel
+
+# Traditional sequential agent spawning
+npx claude-flow@alpha agent spawn --type coordinator --name "backend-coordinator"
+npx claude-flow@alpha agent spawn --type coder --name "react-specialist"
+npx claude-flow@alpha agent spawn --type tester --name "qa-engineer"
+npx claude-flow@alpha agent list
+
+# Coordinated swarm with specific strategy
+npx claude-flow@alpha swarm "Full-stack development" --strategy development --mode mesh --max-agents 8 --parallel
+npx claude-flow@alpha coordination swarm-init --topology mesh --max-agents 10
+npx claude-flow@alpha coordination agent-spawn --type coordinator
+```
+
+### 3. Continuous Integration Workflow
+```bash
+# Advanced CI/CD pipeline with automated quality gates
+npx claude-flow@alpha github pr-enhance --mode comprehensive
+
+# GitHub workflow automation (6 modes available)
+npx claude-flow@alpha github code-review --pr <number>
+npx claude-flow@alpha github issue-triage --auto-label
+npx claude-flow@alpha github release-manager --version <version>
+
+# Automated testing workflow
+npx claude-flow@alpha task create "Run complete test suite: unit, integration, E2E, and security scans"
+npx claude-flow@alpha automation workflow --name "ci-pipeline" --trigger "git-push"
+
+# Hooks for automated quality gates
+npx claude-flow@alpha hooks register pre-commit "code-analysis"
+npx claude-flow@alpha hooks register pre-push "test-suite"
+npx claude-flow@alpha hooks register post-merge "integration-test"
+```
+
+## Specialized Agent66 Trading Workflows
+
+### 4. Financial Trading Domain Validation Workflow
+```bash
+# Validate financial trading compliance across codebase
+npx claude-flow@alpha swarm "Validate Agent66 codebase for trading compliance: check SMC terminology (Order Block, CHoCH, FVG), validate risk limits (2% per trade max), ensure Decimal usage for all financial calculations, verify latency requirements (<200μs), validate exchange API integration"
+
+# Using SPARC methodology for trading system analysis
+npx claude-flow@alpha sparc run specification "Analyze Agent66 for trading system requirements and regulatory compliance"
+npx claude-flow@alpha sparc run architecture "Review trading engine architecture and risk management integration"
+
+# Code analysis with trading focus
+npx claude-flow@alpha agent spawn code-analyzer
+npx claude-flow@alpha task create "Scan all Python files for float usage in financial calculations (MUST be Decimal)"
+npx claude-flow@alpha task create "Validate all trading execution paths for <200μs latency requirement"
+```
+
+**Validation Agents for Trading:**
+- `trading-domain-expert` - SMC terminology and trading concepts validation
+- `risk-compliance-validator` - Risk management limits and regulatory compliance
+- `latency-validator` - Performance requirements (<200μs execution, <50ms API)
+- `financial-precision-checker` - Decimal usage validation, rounding errors detection
+- `exchange-integration-validator` - Exchange API compliance and rate limits
+
+### 5. CodeNet RAG Pattern Enforcement
+```bash
+# Enforce CodeNet RAG usage across development
+npx claude-flow@alpha swarm "Analyze StillOnTime codebase for CodeNet RAG compliance: scan TypeScript files for async-await patterns (82%), error-handling (78%), retry-logic (65%), circuit-breaker (58%) - report missing patterns and suggest fixes"
+
+# Memory system for pattern learning
+npx claude-flow@alpha agent memory init
+npx claude-flow@alpha agent memory status
+
+# Training system for CodeNet patterns
+npx claude-flow@alpha training model-update --patterns "codenet-rag"
+npx claude-flow@alpha training pattern-learn --source "backend/src"
+
+# Hooks for pre-commit CodeNet validation
+npx claude-flow@alpha hooks register pre-commit "codenet-validation"
+npx claude-flow@alpha hooks execute pre-edit --file "src/**/*.ts"
+```
+
+### 6. Performance Optimization Mega-Workflow
+```bash
+# Comprehensive performance analysis and optimization
+npx claude-flow@alpha swarm "Optimize StillOnTime performance to meet targets: email processing ≤120s, PDF parsing ≤30s, route calculation ≤15s, calendar events ≤10s, API p95 <500ms. Analyze database queries, implement caching, optimize algorithms, improve infrastructure"
+
+# Performance analysis and monitoring
+npx claude-flow@alpha analysis token-usage --detailed
+npx claude-flow@alpha analysis performance --benchmark
+npx claude-flow@alpha monitoring start --metrics "performance,latency,throughput"
+
+# Agent Booster for ultra-fast optimization (352x faster)
+npx claude-flow@alpha agent booster edit backend/src/services/email.service.ts
+npx claude-flow@alpha agent booster batch "backend/src/**/*.ts"
+npx claude-flow@alpha agent booster benchmark
+
+# Optimization automation
+npx claude-flow@alpha optimization topology --algorithm "adaptive"
+npx claude-flow@alpha optimization bottleneck-detect --threshold 500ms
+```
+
+## Advanced Automation Patterns
+
+### 7. Self-Healing Application Workflow
+```bash
+# Autonomous error detection and correction system
+npx claude-flow@alpha monitoring start --continuous
+
+# Hive Mind autonomous healing (persistent swarm for continuous monitoring)
+npx claude-flow@alpha hive-mind spawn "Monitor StillOnTime health continuously, detect errors in real-time, automatically fix issues (restart services, clear caches, failover database), escalate to humans after 3 failed attempts"
+
+# Automated intelligent agent spawning based on task complexity
+npx claude-flow@alpha automation auto-agent --task-complexity high
+npx claude-flow@alpha automation smart-spawn --requirement "application-monitoring" --max-agents 5
+npx claude-flow@alpha automation workflow-select --project-type "full-stack"
+
+# Truth verification for reliability
+npx claude-flow@alpha verify system --threshold 0.95
+npx claude-flow@alpha truth
+```
+
+### 8. Intelligent Code Generation Workflow
+```bash
+# AI-powered code generation with domain expertise
+npx claude-flow@alpha swarm "Generate code for StillOnTime with: CodeNet RAG patterns (async-await, error-handling, retry, circuit-breaker), film production domain context, TDD approach with 80% coverage, TypeScript strict mode, automatic documentation generation, security scanning"
+
+# SPARC methodology for systematic development
+npx claude-flow@alpha sparc run spec-pseudocode "Define email processing service specification"
+npx claude-flow@alpha sparc run architect "Design service architecture with CodeNet patterns"
+npx claude-flow@alpha sparc tdd "Implement with test-driven development"
+npx claude-flow@alpha sparc run integration "Integrate with existing system"
+
+# Collaborative development with verification
+npx claude-flow@alpha pair --start
+npx claude-flow@alpha verify code --threshold 0.95
+
+# Memory-enhanced development (46% faster)
+npx claude-flow@alpha agent memory init
+npx claude-flow@alpha agent memory list
+```
+
+## The Ultimate Application Analysis & Auto-Fix Workflow
+
+### Comprehensive Application Lifecycle Workflow
+
+**The Complete 9-Phase Workflow**: Application Discovery → Static Analysis → Visual Testing → Integration Testing → Error Aggregation → Automated Fixing → Post-Fix Validation → Deployment Prep → Launch
+
+```bash
+# ULTIMATE WORKFLOW: Analyze -> Test -> Fix -> Launch
+npx claude-flow@alpha hive-mind spawn "Execute complete StillOnTime application lifecycle: (1) discover and map architecture, (2) static analysis for bugs/security/performance, (3) visual testing with Playwright across browsers, (4) integration testing of APIs/database/external services, (5) aggregate and prioritize all errors, (6) automatically fix detected issues with parallel agents, (7) validate all fixes with regression tests, (8) prepare deployment with monitoring, (9) launch application with real-time health tracking" --claude
+
+# Alternative: Step-by-step execution with coordination
+npx claude-flow@alpha coordination init --topology adaptive --max-agents 20
+
+# Phase 1-2: Discovery & Static Analysis (parallel)
+npx claude-flow@alpha swarm "Phase 1-2: Analyze StillOnTime architecture, scan for bugs, security vulnerabilities, and performance issues" &
+
+# Phase 3: Visual Testing with Playwright (after analysis)
+npx claude-flow@alpha swarm "Phase 3: Run Playwright E2E tests across Chromium/Firefox/WebKit, check visual regression, accessibility, mobile responsiveness" &
+
+# Phase 4: Integration Testing (parallel with visual)
+npx claude-flow@alpha swarm "Phase 4: Test all API endpoints, database operations, external service integrations (Google APIs, Twilio), performance load testing" &
+
+wait  # Wait for all analysis phases to complete
+
+# Phase 5: Error Aggregation
+npx claude-flow@alpha swarm "Phase 5: Aggregate all detected issues, prioritize by severity and impact, group related errors, generate fix strategy"
+
+# Phase 6: Automated Fixing (parallel agent coordination)
+npx claude-flow@alpha hive-mind spawn "Phase 6: Fix all detected issues using specialized agents: backend fixes, frontend fixes, database optimization, security patches, performance improvements, test additions, dependency updates, config corrections" --claude
+
+# Phase 7: Post-Fix Validation
+npx claude-flow@alpha swarm "Phase 7: Run full test suite (unit, integration, E2E, smoke), validate fixes, check for regressions"
+
+# Phase 8-9: Deployment & Launch
+npx claude-flow@alpha swarm "Phase 8-9: Prepare deployment artifacts, configure monitoring/alerts, deploy to staging, run final smoke tests, deploy to production, establish performance baseline"
+```
+
+### Simplified One-Command Execution
+```bash
+# Execute everything in one powerful command
+npx claude-flow@alpha hive-mind spawn "Complete StillOnTime application lifecycle with 9 phases: discover architecture, static analysis, visual testing (Playwright), integration testing, error aggregation, automated fixing, validation, deployment prep, launch with monitoring"
+
+# With explicit Claude Code CLI integration
+npx claude-flow@alpha hive-mind spawn "Execute 9-phase application lifecycle for StillOnTime" --claude
+
+# Monitor execution progress
+npx claude-flow@alpha hive-mind status
+npx claude-flow@alpha hive-mind metrics
+```
+
+## Advanced Monitoring & Reporting
+
+### Real-Time System Monitoring
+```bash
+# Start monitoring system with alerts
+npx claude-flow@alpha monitoring start --continuous --alerts "all"
+npx claude-flow@alpha monitoring metrics --detailed
+npx claude-flow@alpha monitoring health --check-interval 30s
+
+# Performance and token usage analysis
+npx claude-flow@alpha analysis token-usage --detailed --export
+npx claude-flow@alpha analysis performance --benchmark --compare
+npx claude-flow@alpha analysis bottleneck --threshold 500ms
+```
+
+### Status and Metrics Reporting
+```bash
+# System status and health
+npx claude-flow@alpha status --verbose
+npx claude-flow@alpha hive-mind status --show-metrics
+npx claude-flow@alpha hive-mind metrics --export ./reports/
+
+# Truth verification and reliability
+npx claude-flow@alpha truth --show-reliability --threshold 0.95
+npx claude-flow@alpha verify system --comprehensive
+```
+
+## Integration with StillOnTime Development
+
+### Git Hook Integration
+```bash
+# Setup Claude-Flow git hooks for automated workflows
+npx claude-flow@alpha hooks register pre-commit "code-analysis"
+npx claude-flow@alpha hooks register pre-commit "security-scan"
+npx claude-flow@alpha hooks register pre-push "test-suite"
+npx claude-flow@alpha hooks register post-merge "integration-test"
+
+# Lifecycle hooks
+npx claude-flow@alpha hooks execute pre-edit --file "src/**/*.ts"
+npx claude-flow@alpha hooks execute post-edit --file "backend/src/services/email.service.ts"
+
+# Migrate hooks to Claude Code 1.0.51+ format
+npx claude-flow@alpha migrate-hooks
+```
+
+### VS Code Integration  
+```json
+// .vscode/tasks.json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Claude-Flow: Quick Analysis",
+      "type": "shell", 
+      "command": "npx claude-flow@alpha swarm 'Analyze current file for issues and suggest improvements'",
+      "group": "build"
+    },
+    {
+      "label": "Claude-Flow: Ultra-Fast Edit (Agent Booster)",
+      "type": "shell",
+      "command": "npx claude-flow@alpha agent booster edit ${file}",
+      "group": "build"
+    },
+    {
+      "label": "Claude-Flow: Hive Mind Wizard",
+      "type": "shell",
+      "command": "npx claude-flow@alpha hive-mind wizard",
+      "group": "build"
+    },
+    {
+      "label": "Claude-Flow: SPARC TDD",
+      "type": "shell",
+      "command": "npx claude-flow@alpha sparc tdd 'Implement feature with tests'",
+      "group": "test"
+    }
+  ]
+}
+```
+
+## Performance Optimization
+
+### Workflow Performance Tuning
+```bash
+# Optimize Claude-Flow performance for StillOnTime
+npx claude-flow@alpha optimization topology --algorithm adaptive --max-agents 20
+npx claude-flow@alpha optimization bottleneck-detect --threshold 500ms
+npx claude-flow@alpha optimization parallel --enable --max-concurrent 10
+
+# Agent Booster for 352x faster code editing
+npx claude-flow@alpha agent booster benchmark
+npx claude-flow@alpha agent booster batch "backend/**/*.ts" --parallel
+
+# Memory system for 46% faster execution
+npx claude-flow@alpha agent memory init
+npx claude-flow@alpha memory store --key "stillontime-patterns" --value "CodeNet patterns for film industry"
+
+# MCP tools for 10-20x faster parallel agent spawning
+# claude mcp add claude-flow npx claude-flow@alpha mcp start
+# Then use: mcp__claude-flow__agents_spawn_parallel
+```
+
+## Best Practices for Claude-Flow Integration
+
+### 1. Workflow Design Principles
+- **Modular Phases**: Break complex workflows into discrete, testable phases
+- **Parallel Execution**: Maximize parallelization where dependencies allow
+- **Error Handling**: Implement comprehensive rollback and recovery mechanisms
+- **Monitoring**: Enable real-time monitoring and alerting
+- **Documentation**: Auto-generate documentation for all workflows
+
+### 2. Agent Coordination Strategies  
+- **Mesh Topology**: For complex multi-agent coordination
+- **Hierarchical**: For clear command and control structures
+- **Adaptive**: For dynamic workflow adjustment based on conditions
+
+### 3. Performance Guidelines
+- **Resource Management**: Set appropriate timeouts and resource limits
+- **Checkpoint Strategy**: Enable checkpointing for long-running workflows
+- **Caching**: Implement aggressive caching for repeated operations
+- **Monitoring**: Real-time performance monitoring and optimization
+
+### 4. Security Considerations
+- **Agent Isolation**: Ensure agents operate in isolated environments
+- **Secret Management**: Secure handling of API keys and credentials  
+- **Access Control**: Implement role-based access for workflow execution
+- **Audit Logging**: Complete audit trail for all workflow activities
+
+This comprehensive Claude-Flow integration enables sophisticated automation, intelligent error fixing, and complete application lifecycle management for the StillOnTime project.

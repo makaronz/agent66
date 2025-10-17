@@ -1,50 +1,24 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 
-export interface IUser extends Document {
-  name: string;
-  email: string;
-  password?: string;
-}
+export const UserRoleEnum = z.enum(['ADMIN', 'SUPERVISOR', 'SUPERVISOR_USER', 'CREW', 'CLIENT', 'GUEST']);
 
-const UserSchema: Schema = new Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true,
-    index: true,
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6,
-    select: false, // Do not return password by default
-  },
-}, {
-  timestamps: true,
+export const UserSchema = z.object({
+  id: z.string().optional(),
+  email: z.string().email(),
+  firstName: z.string().min(2),
+  lastName: z.string().min(2),
+  role: UserRoleEnum.default('CREW'),
+  department: z.string().optional(),
+  phone: z.string().optional(),
+  avatar: z.string().url().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-// Hash password before saving
-UserSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password') || !this.password) {
-    return next();
-  }
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error: any) {
-    next(error);
-  }
-});
+export const CreateUserSchema = UserSchema.omit({ id: true, createdAt: true, updatedAt: true });
+export const UpdateUserSchema = UserSchema.partial().omit({ id: true, createdAt: true, updatedAt: true });
 
-const User = mongoose.model<IUser>('User', UserSchema);
-
-export default User;
+export type User = z.infer<typeof UserSchema>;
+export type CreateUser = z.infer<typeof CreateUserSchema>;
+export type UpdateUser = z.infer<typeof UpdateUserSchema>;
+export type UserRole = z.infer<typeof UserRoleEnum>;

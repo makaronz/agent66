@@ -1,0 +1,656 @@
+---
+globs: **/routes/**,**/controllers/**,**/services/**
+---
+
+# API Design & Integration Patterns
+
+## RESTful API Standards
+Agent66 follows strict REST principles with financial trading domain modeling and ultra-low latency requirements.
+
+### API Structure
+```
+/api/v1/
+├── /trading           # Trade execution and order management
+├── /market-data       # Real-time market data and WebSocket streams
+├── /positions         # Position management and portfolio tracking
+├── /analytics         # Performance analytics and backtesting
+├── /risk              # Risk management and limits
+├── /strategies        # SMC strategy configuration and management
+├── /exchanges         # Exchange connectivity and account management
+├── /auth              # Authentication and API key management
+├── /notifications     # Real-time alerts and webhooks
+└── /health            # System health and trading engine status
+```
+
+## Trading System API Endpoints
+
+### Trade Execution:
+```typescript
+// POST /api/v1/trading/orders - Place new trading order
+interface CreateOrderRequest {
+  symbol: string;               // Trading pair (e.g., "BTCUSDT")
+  side: 'buy' | 'sell';
+  type: 'market' | 'limit' | 'stop' | 'stop_limit';
+  quantity: number;
+  price?: number;               // Required for limit orders
+  stopPrice?: number;           // Required for stop orders
+  timeInForce: 'GTC' | 'IOC' | 'FOK';
+  strategyId?: string;          // Optional SMC strategy ID
+}
+
+interface OrderResponse {
+  orderId: string;
+  clientOrderId: string;
+  symbol: string;
+  status: 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELED' | 'REJECTED';
+  executedQty: number;
+  executedPrice: number;
+  timestamp: number;
+  latency: number;              // Execution latency in microseconds
+  smcSignal?: SMCSignal;        // Associated SMC pattern
+}
+
+// GET /api/v1/trading/orders - Get active orders
+// GET /api/v1/trading/orders/:orderId - Get order status
+// DELETE /api/v1/trading/orders/:orderId - Cancel order
+```
+
+### Market Data:
+```typescript  
+// GET /api/v1/market-data/ticker/:symbol - Get ticker data
+interface TickerData {
+  symbol: string;
+  price: number;
+  change24h: number;
+  volume24h: number;
+  high24h: number;
+  low24h: number;
+  timestamp: number;
+}
+
+// WebSocket /ws/market-data - Real-time market data stream
+interface MarketDataStream {
+  channel: 'ticker' | 'orderbook' | 'trades' | 'klines';
+  symbol: string;
+  data: TickerData | OrderBookData | TradeData | KlineData;
+}
+
+// GET /api/v1/market-data/smc-signals/:symbol - Get SMC analysis
+interface SMCSignalResponse {
+  symbol: string;
+  signals: SMCSignal[];
+  confidence: number;           // Signal confidence 0-100
+  patterns: SMCPattern[];       // Detected patterns (CHoCH, BoS, Order Blocks)
+  liquidity: LiquidityLevel[];  // Liquidity sweeps and zones
+}
+```
+
+### Position Management:
+```typescript
+// GET /api/v1/positions - Get current positions
+interface Position {
+  symbol: string;
+  side: 'long' | 'short';
+  size: number;
+  entryPrice: number;
+  markPrice: number;
+  unrealizedPnl: number;
+  realizedPnl: number;
+  marginUsed: number;
+  riskMetrics: PositionRisk;
+}
+
+// POST /api/v1/positions/:symbol/close - Close position
+// PUT /api/v1/positions/:symbol/hedge - Add hedge position
+```
+
+## Authentication & Authorization
+
+### JWT Authentication (MANDATORY):
+```typescript
+// POST /api/v1/auth/login - User authentication
+interface LoginRequest {
+  email: string;
+  password: string;
+  twoFactorCode?: string;      // TOTP code if 2FA enabled
+}
+
+interface AuthResponse {
+  accessToken: string;         // JWT token
+  refreshToken: string;        // For token refresh
+  expiresIn: number;          
+  user: TradingUserProfile;
+  permissions: TradingPermission[];
+  riskLimits: RiskLimits;
+}
+
+// POST /api/v1/auth/exchange-keys - Add exchange API keys
+interface ExchangeKeysRequest {
+  exchange: 'binance' | 'bybit' | 'coinbase' | 'okx';
+  apiKey: string;              // Encrypted storage
+  apiSecret: string;           // Encrypted storage
+  passphrase?: string;         // For some exchanges
+  sandbox: boolean;            // Testnet/sandbox mode
+  permissions: ExchangePermission[];
+}
+```
+
+### Protected Route Pattern:
+```typescript
+// All trading routes require authentication + exchange API keys
+app.use('/api/v1', authenticateJWT);
+app.use('/api/v1', checkTradingPermissions);
+app.use('/api/v1/auth', authRoutes);        // Exclude auth routes
+app.use('/api/v1/health', healthRoutes);    // Exclude health checks
+app.use('/api/v1/market-data', publicDataRoutes);  // Public market data
+
+// Example protected trading controller
+class TradingController {
+  @Authenticated
+  @CheckExchangeConnection
+  @ValidateBody(CreateOrderSchema)
+  @RiskLimit('MAX_POSITION_SIZE')
+  async createOrder(req: AuthenticatedTradingRequest): Promise<OrderResponse> {
+    const userId = req.user.id;
+    const exchangeAccount = req.exchangeAccount;  // From API key validation
+    
+    // Apply risk management before order execution
+    await this.riskManager.validateOrder(req.body, userId, exchangeAccount);
+    
+    const order = await this.tradingService.executeOrder(req.body, exchangeAccount);
+    return this.mapToResponse(order);
+  }
+}
+```
+
+## Error Handling Standards
+
+### Error Response Format:
+```typescript
+interface TradingAPIErrorResponse {
+  success: false;
+  error: {
+    code: string;              // Machine-readable error code
+    message: string;           // Human-readable message
+    details?: unknown;         // Additional error context
+    timestamp: number;         // Unix timestamp for precision
+    requestId: string;         // For debugging/support
+    latency?: number;          // Request processing time (microseconds)
+    tradeId?: string;          // Associated trade ID if applicable
+    suggestions?: string[];    // How to fix the error
+  };
+}
+
+// Trading-specific error codes
+enum TradingAPIErrorCodes {
+  INSUFFICIENT_BALANCE = 'INSUFFICIENT_BALANCE',
+  INVALID_ORDER_PARAMS = 'INVALID_ORDER_PARAMS',
+  EXCHANGE_CONNECTION_FAILED = 'EXCHANGE_CONNECTION_FAILED',
+  RISK_LIMIT_EXCEEDED = 'RISK_LIMIT_EXCEEDED',
+  SYMBOL_NOT_SUPPORTED = 'SYMBOL_NOT_SUPPORTED',
+  ORDER_REJECTION = 'ORDER_REJECTION',
+  MARKET_DATA_UNAVAILABLE = 'MARKET_DATA_UNAVAILABLE',
+  SMC_ANALYSIS_FAILED = 'SMC_ANALYSIS_FAILED',
+  POSITION_SIZE_INVALID = 'POSITION_SIZE_INVALID',
+  TRADING_PERMISSIONS_INSUFFICIENT = 'TRADING_PERMISSIONS_INSUFFICIENT'
+}
+```
+
+### Hierarchical Error Mapping:
+```typescript
+// Map internal errors to API responses
+export class TradingAPIErrorHandler {
+  handleError(error: Error): TradingAPIErrorResponse {
+    const timestamp = Date.now();
+    const requestId = generateRequestId();
+    
+    if (error instanceof OrderValidationError) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_ORDER_PARAMS',
+          message: error.message,
+          details: error.validationErrors,
+          timestamp,
+          requestId,
+          suggestions: ['Check order parameters', 'Validate symbol format', 'Check position size limits']
+        }
+      };
+    }
+    
+    if (error instanceof ExchangeConnectionError) {
+      return {
+        success: false,
+        error: {
+          code: 'EXCHANGE_CONNECTION_FAILED',
+          message: 'Exchange API temporarily unavailable',
+          timestamp,
+          requestId,
+          suggestions: ['Retry with exponential backoff', 'Check API key permissions', 'Verify exchange status']
+        }
+      };
+    }
+    
+    if (error instanceof RiskLimitError) {
+      return {
+        success: false,
+        error: {
+          code: 'RISK_LIMIT_EXCEEDED',
+          message: error.message,
+          details: { 
+            limit: error.limit, 
+            attempted: error.attemptedValue,
+            riskLevel: error.riskLevel
+          },
+          timestamp,
+          requestId,
+          suggestions: ['Reduce position size', 'Check risk settings', 'Close existing positions']
+        }
+      };
+    }
+    
+    // Default to internal server error with trading context
+    return this.internalTradingError(error, timestamp, requestId);
+  }
+}
+```
+
+## Request Validation
+
+### Input Validation with Pydantic (FastAPI):
+```python
+from pydantic import BaseModel, validator, Field
+from decimal import Decimal
+from typing import Optional, Literal
+
+class CreateOrderRequest(BaseModel):
+    symbol: str = Field(..., regex=r'^[A-Z]{3,10}USDT?$')
+    side: Literal['buy', 'sell']
+    type: Literal['market', 'limit', 'stop', 'stop_limit']
+    quantity: Decimal = Field(..., gt=0, decimal_places=8)
+    price: Optional[Decimal] = Field(None, gt=0, decimal_places=8)
+    stopPrice: Optional[Decimal] = Field(None, gt=0, decimal_places=8)
+    timeInForce: Literal['GTC', 'IOC', 'FOK'] = 'GTC'
+    strategyId: Optional[str] = Field(None, max_length=50)
+    
+    @validator('price')
+    def validate_price_for_limit_orders(cls, v, values):
+        if values.get('type') in ['limit', 'stop_limit'] and v is None:
+            raise ValueError('Price required for limit orders')
+        return v
+    
+    @validator('stopPrice')
+    def validate_stop_price(cls, v, values):
+        if values.get('type') in ['stop', 'stop_limit'] and v is None:
+            raise ValueError('Stop price required for stop orders')
+        return v
+
+class RiskLimitsRequest(BaseModel):
+    maxPositionSize: Decimal = Field(..., gt=0)
+    maxDailyLoss: Decimal = Field(..., gt=0, le=1.0)  # Percentage
+    maxDrawdown: Decimal = Field(..., gt=0, le=0.5)   # Max 50% drawdown
+    leverageLimit: int = Field(..., ge=1, le=100)
+    
+    @validator('maxDailyLoss')
+    def validate_daily_loss_limit(cls, v):
+        if v > 0.1:  # Max 10% daily loss
+            raise ValueError('Daily loss limit cannot exceed 10%')
+        return v
+```
+
+## External Service Integration
+
+### Exchange APIs with Circuit Breaker:
+```python
+from circuitbreaker import circuit
+import asyncio
+from typing import Dict, Any
+import ccxt.async_support as ccxt
+
+class ExchangeIntegrationService:
+    def __init__(self):
+        self.binance_circuit = CircuitBreaker(
+            failure_threshold=5,
+            recovery_timeout=60,
+            expected_exception=ccxt.NetworkError
+        )
+        self.exchanges: Dict[str, ccxt.Exchange] = {}
+    
+    @circuit(failure_threshold=5, recovery_timeout=30)
+    @retry(max_attempts=3, backoff='exponential')
+    async def execute_order(
+        self, 
+        exchange: str, 
+        symbol: str, 
+        order_type: str, 
+        side: str, 
+        amount: float, 
+        price: float = None
+    ) -> Dict[str, Any]:
+        """Execute trading order with circuit breaker protection"""
+        exchange_client = self.exchanges[exchange]
+        
+        try:
+            # Ultra-low latency execution with microsecond precision
+            start_time = time.time_ns()
+            
+            order = await exchange_client.create_order(
+                symbol=symbol,
+                type=order_type,
+                side=side,
+                amount=amount,
+                price=price,
+                params={'timeInForce': 'IOC'}  # Immediate or Cancel
+            )
+            
+            execution_latency = (time.time_ns() - start_time) // 1000  # microseconds
+            
+            return {
+                'orderId': order['id'],
+                'status': order['status'],
+                'executedQty': order['filled'],
+                'executedPrice': order['average'],
+                'latency': execution_latency,
+                'timestamp': order['timestamp']
+            }
+            
+        except ccxt.InsufficientFunds as e:
+            raise InsufficientBalanceError(f"Insufficient balance: {e}")
+        except ccxt.InvalidOrder as e:
+            raise OrderValidationError(f"Invalid order parameters: {e}")
+        except ccxt.NetworkError as e:
+            raise ExchangeConnectionError(f"Exchange connection failed: {e}")
+    
+    @circuit(failure_threshold=3, recovery_timeout=15)
+    async def get_market_data(self, symbol: str) -> Dict[str, Any]:
+        """Get real-time market data with fallback to cached data"""
+        try:
+            ticker = await self.exchanges['binance'].fetch_ticker(symbol)
+            
+            return {
+                'symbol': symbol,
+                'price': ticker['last'],
+                'volume': ticker['baseVolume'],
+                'change24h': ticker['percentage'],
+                'timestamp': ticker['timestamp']
+            }
+            
+        except Exception as e:
+            # Fallback to cached data if available
+            cached_data = await self.redis_client.get(f"ticker:{symbol}")
+            if cached_data:
+                logger.warning(f"Using cached data for {symbol}: {e}")
+                return json.loads(cached_data)
+            raise MarketDataUnavailableError(f"Market data unavailable: {e}")
+```
+
+### Real-time Trading Notifications:
+```python
+import asyncio
+import websockets
+import json
+from typing import Dict, List, Any
+
+class TradingNotificationService:
+    def __init__(self):
+        self.connected_clients: Dict[str, websockets.WebSocketServerProtocol] = {}
+        self.notification_circuit = CircuitBreaker(
+            failure_threshold=3,
+            recovery_timeout=30
+        )
+    
+    @circuit(failure_threshold=3, recovery_timeout=10)
+    async def send_trade_alert(
+        self, 
+        user_id: str, 
+        alert_type: str, 
+        data: Dict[str, Any]
+    ) -> bool:
+        """Send real-time trading alert via WebSocket"""
+        try:
+            notification = {
+                'type': alert_type,
+                'timestamp': time.time_ns() // 1000000,  # milliseconds
+                'data': data,
+                'priority': self._get_alert_priority(alert_type)
+            }
+            
+            # Send via WebSocket for real-time alerts
+            if user_id in self.connected_clients:
+                await self.connected_clients[user_id].send(
+                    json.dumps(notification)
+                )
+                logger.info(f"Real-time alert sent to {user_id}: {alert_type}")
+                return True
+            
+            # Fallback to push notification if WebSocket not available
+            await self._send_push_notification(user_id, notification)
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send alert to {user_id}: {e}")
+            return False
+    
+    async def broadcast_market_update(self, symbol: str, price_data: Dict[str, Any]):
+        """Broadcast market data updates to all connected clients"""
+        update = {
+            'type': 'market_update',
+            'symbol': symbol,
+            'data': price_data,
+            'timestamp': time.time_ns() // 1000000
+        }
+        
+        # Broadcast to all connected clients with low latency
+        if self.connected_clients:
+            await asyncio.gather(*[
+                client.send(json.dumps(update))
+                for client in self.connected_clients.values()
+            ], return_exceptions=True)
+    
+    def _get_alert_priority(self, alert_type: str) -> str:
+        priority_map = {
+            'position_liquidation': 'CRITICAL',
+            'stop_loss_triggered': 'HIGH',
+            'take_profit_hit': 'HIGH',
+            'order_filled': 'MEDIUM',
+            'smc_signal': 'MEDIUM',
+            'market_volatility': 'LOW'
+        }
+        return priority_map.get(alert_type, 'LOW')
+```
+
+## Rate Limiting & Security
+
+### Rate Limiting Configuration (Trading-Specific):
+```python
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+
+# Ultra-strict rate limiting for trading endpoints (prevent HFT abuse)
+@limiter.limit("100/minute")  # 100 trades per minute max
+async def execute_trade(request: Request):
+    pass
+
+# Market data has higher limits (read-only)
+@limiter.limit("1000/minute")  
+async def get_market_data(request: Request):
+    pass
+
+# Authentication endpoints - prevent brute force
+@limiter.limit("5/minute")
+async def login(request: Request):
+    pass
+
+# Risk management - separate limits per user
+@limiter.limit("10/second", per_method=True, key_func=lambda r: r.user.id)  
+async def get_position_risk(request: Request):
+    pass
+
+# Exchange API rate limiting (respect exchange limits)
+class ExchangeRateLimiter:
+    def __init__(self):
+        self.binance_limiter = TokenBucket(1200, refresh_rate=1/60)  # 1200/min
+        self.bybit_limiter = TokenBucket(120, refresh_rate=1/60)     # 120/min
+    
+    async def check_exchange_limit(self, exchange: str) -> bool:
+        if exchange == 'binance':
+            return self.binance_limiter.consume(1)
+        elif exchange == 'bybit':
+            return self.bybit_limiter.consume(1)
+        return False
+```
+
+### CORS Configuration:
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+# Trading application CORS with security focus
+allowed_origins = [
+    "http://localhost:3000",                    # Local development
+    "https://agent66-trading.vercel.app",       # Production frontend
+    "https://app.agent66.io",                   # Custom domain
+    os.getenv("FRONTEND_URL", ""),              # Environment-specific
+]
+
+# Strict CORS for financial application
+cors_options = {
+    "allow_origins": allowed_origins,
+    "allow_credentials": True,
+    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": [
+        "Content-Type", 
+        "Authorization",
+        "X-API-Key",                # Exchange API keys
+        "X-Signature",              # Request signatures
+        "X-Timestamp",              # Request timestamps for replay protection
+        "X-Trading-Session"         # Trading session ID
+    ],
+    "expose_headers": [
+        "X-Rate-Limit-Remaining",
+        "X-Rate-Limit-Reset", 
+        "X-Execution-Latency"      # Trade execution latency
+    ]
+}
+
+app.add_middleware(CORSMiddleware, **cors_options)
+
+# Additional security headers for trading application
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Security headers for financial application
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    # Trading-specific headers
+    response.headers["X-Trading-Environment"] = os.getenv("TRADING_ENV", "production")
+    
+    return response
+```
+
+## API Documentation
+
+### FastAPI/OpenAPI Integration:
+```python
+from fastapi import FastAPI, Depends, HTTPException
+from pydantic import BaseModel, Field
+
+app = FastAPI(
+    title="Agent66 Trading API",
+    description="Advanced SMC Trading Platform API with ultra-low latency execution",
+    version="2.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
+
+@app.post(
+    "/api/v1/trading/orders",
+    response_model=OrderResponse,
+    status_code=201,
+    summary="Execute trading order",
+    description="Place a new trading order with SMC signal integration and risk management",
+    tags=["Trading"],
+    responses={
+        201: {
+            "description": "Order placed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "orderId": "12345",
+                        "status": "FILLED",
+                        "executedQty": 0.1,
+                        "executedPrice": 45000.0,
+                        "latency": 150,
+                        "smcSignal": {
+                            "pattern": "OrderBlock",
+                            "confidence": 85
+                        }
+                    }
+                }
+            }
+        },
+        400: {"description": "Invalid order parameters"},
+        403: {"description": "Risk limit exceeded"},
+        503: {"description": "Exchange connection failed"}
+    }
+)
+async def create_trading_order(
+    order: CreateOrderRequest,
+    user: User = Depends(get_current_user),
+    exchange_account: ExchangeAccount = Depends(get_exchange_account)
+):
+    """
+    Execute a trading order with the following features:
+    
+    - **Ultra-low latency**: <200μs execution time
+    - **Risk management**: Automatic position sizing and limits
+    - **SMC integration**: Smart Money Concepts pattern detection
+    - **Circuit breaker**: Automatic failover and retry logic
+    - **Real-time alerts**: WebSocket notifications for order status
+    
+    **Rate Limits:**
+    - 100 orders per minute per user
+    - 1200 API calls per minute (Binance limit)
+    
+    **Risk Controls:**
+    - Maximum position size validation
+    - Daily loss limit enforcement
+    - Leverage limit checks
+    """
+    pass
+
+# Enhanced schema definitions for trading
+class OrderResponse(BaseModel):
+    orderId: str = Field(..., description="Unique order identifier")
+    status: str = Field(..., description="Order status: NEW, FILLED, CANCELED, REJECTED")
+    executedQty: float = Field(..., ge=0, description="Executed quantity")
+    executedPrice: float = Field(..., ge=0, description="Average execution price")
+    latency: int = Field(..., description="Execution latency in microseconds")
+    timestamp: int = Field(..., description="Order timestamp (Unix)")
+    smcSignal: Optional[SMCSignal] = Field(None, description="Associated SMC pattern")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "orderId": "BINANCE_12345",
+                "status": "FILLED",
+                "executedQty": 0.5,
+                "executedPrice": 45000.0,
+                "latency": 156,
+                "timestamp": 1635724800000,
+                "smcSignal": {
+                    "pattern": "OrderBlock",
+                    "confidence": 87,
+                    "timeframe": "15m"
+                }
+            }
+        }
+```
+
+All API endpoints must follow these patterns to ensure ultra-low latency, robust risk management, and regulatory compliance across the Agent66 trading platform.

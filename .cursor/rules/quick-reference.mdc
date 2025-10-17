@@ -1,0 +1,267 @@
+---
+alwaysApply: true
+---
+
+# StillOnTime Quick Reference Guide
+
+## 🚀 Essential Commands
+
+### Development
+```bash
+# Start everything
+npm run dev                    # Backend + frontend + Docker services
+
+# Individual services  
+cd backend && npm run dev      # Backend only
+cd frontend && npm run dev     # Frontend only
+npm run docker:up             # Database services only
+
+# Testing
+npm run test                  # All tests
+npm run test:e2e             # E2E tests  
+npm run test:coverage        # Coverage report
+```
+
+### Database & Prisma
+```bash
+npm run prisma:migrate       # Apply migrations
+npm run prisma:studio        # Database browser
+npm run prisma:generate      # Update Prisma client
+npm run db:reset            # Fresh database
+```
+
+## 🏗️ Project Architecture
+
+### Core Structure
+- **Backend**: [backend/](mdc:backend/) - Node.js/TypeScript API with Prisma ORM
+- **Frontend**: [frontend/](mdc:frontend/) - React/TypeScript with Vite & Zustand  
+- **Database**: PostgreSQL with Redis caching
+- **Vector DB**: Qdrant for CodeNet RAG integration
+- **E2E Tests**: [e2e-tests/](mdc:e2e-tests/) - Playwright automation
+
+### Key Files
+- **API Entry**: [backend/src/index.ts](mdc:backend/src/index.ts)
+- **DB Schema**: [backend/prisma/schema.prisma](mdc:backend/prisma/schema.prisma)  
+- **Frontend Entry**: [frontend/src/main.tsx](mdc:frontend/src/main.tsx)
+- **Docker Config**: [docker-compose.yml](mdc:docker-compose.yml)
+
+## 🔒 Security & Compliance (MANDATORY)
+
+### Authentication
+- **OAuth 2.0 PKCE** for all external integrations
+- **JWT tokens** for API authentication
+- **No hardcoded secrets** - environment variables only
+
+### External APIs
+- **Google Calendar/Maps**: OAuth 2.0 with circuit breakers
+- **Twilio SMS**: API key authentication with retry logic
+- **All external calls**: Must use circuit breaker + exponential backoff
+
+## 🎬 Film Industry Domain
+
+### Terminology (Use in code/UI)
+- **Call Sheet** (not "schedule")
+- **Call Time** (not "appointment")  
+- **Shooting Location** (not "venue")
+- **Crew Position** (not "role")
+- **Production Title** (film/TV show name)
+
+### Required Time Buffers
+```typescript
+const BUFFERS = {
+  MORNING_ROUTINE: 30,    // minutes
+  CAR_CHANGE: 15,         // minutes  
+  PARKING: 10,            // minutes
+  TRAFFIC_BUFFER: 15,     // minutes
+  EQUIPMENT_LOADING: 20   // minutes
+};
+```
+
+## 🧪 TDD Requirements (MANDATORY)
+
+### Process
+1. **RED**: Write failing test first
+2. **GREEN**: Implement minimal code to pass
+3. **REFACTOR**: Improve while keeping tests green
+
+### Coverage Targets
+- **Critical paths** (email, routing, calendar): >80%
+- **Standard paths**: >60%
+- **All new code**: Must have tests
+
+## 🤖 CodeNet RAG (MANDATORY)
+
+### Before ANY TypeScript/JavaScript/Python implementation:
+```typescript
+// 1. Query CodeNet for patterns
+const examples = await codenetRAGService.findSimilarCode(
+  'task description',
+  'TypeScript',
+  5
+);
+
+// 2. Apply discovered patterns
+const patterns = examples.flatMap(ex => ex.patterns);
+
+// 3. Implement using patterns
+```
+
+### Required Patterns (Apply Always)
+- **async-await pattern** (82% of examples)
+- **error-handling pattern** (78% of examples)
+- **retry-logic pattern** (65% of examples)  
+- **circuit-breaker pattern** (58% of examples)
+
+## ⚡ Performance Requirements (HARD LIMITS)
+
+- Email processing: **≤ 2 minutes**
+- PDF parsing: **≤ 30 seconds**
+- Route calculation: **≤ 15 seconds**
+- Calendar event: **≤ 10 seconds**
+- API response p95: **< 500ms**
+
+## 🐛 Error Handling Pattern
+
+```typescript
+// ✅ CORRECT - Hierarchical errors with structured logging
+try {
+  const result = await riskyOperation();
+  return result;
+} catch (error) {
+  logger.error('Operation failed', { error, context: 'operationName' });
+  throw new BusinessLogicError('Specific error message', error);
+}
+
+// ❌ INCORRECT - Generic errors
+throw new Error('Something went wrong');
+```
+
+## 🔄 Resilience Patterns (MANDATORY)
+
+### Circuit Breaker
+```typescript
+import { circuitBreaker } from '../utils/circuit-breaker';
+
+const result = await circuitBreaker.execute(() => {
+  return externalService.call();
+});
+```
+
+### Retry Logic
+```typescript
+import { withRetry } from '../utils/retry';
+
+@withRetry({ maxAttempts: 3, backoff: 'exponential' })
+async function unstableOperation(): Promise<Result> {
+  return await externalService.call();
+}
+```
+
+## 🐛 Common Debugging
+
+### Backend Issues
+```bash
+# Check logs
+docker-compose logs -f backend
+
+# Database issues  
+npm run prisma:studio
+npm run db:reset
+
+# Test failures
+cd backend && npm run test:watch
+```
+
+### Frontend Issues
+```bash
+# Development server
+cd frontend && npm run dev
+
+# Test in UI mode
+cd frontend && npm run test:ui
+
+# Build issues
+cd frontend && npm run build
+```
+
+### Docker Issues
+```bash
+# Rebuild services
+npm run docker:down
+npm run docker:build  
+npm run docker:up
+
+# Check service health
+docker-compose ps
+curl http://localhost:3001/api/v1/health
+```
+
+## 📊 Monitoring & Health
+
+### Health Endpoints
+- `GET /api/v1/health` - Overall system health
+- `GET /api/v1/health/ready` - Readiness probe
+- `GET /api/v1/health/live` - Liveness probe
+
+### Key Metrics
+- Database connections
+- Redis cache hit rate
+- External API response times
+- Queue processing rate
+
+## 🎯 Swarm Coordination
+
+### Quick Commands
+```bash
+# Check swarm status
+npx claude-flow@alpha swarm status --session-id swarm-stillontime-20251012-031650
+
+# Spawn agents
+npx claude-flow@alpha agent spawn --type backend-dev
+npx claude-flow@alpha agent spawn --type coder  
+
+# Execute strategy
+npx claude-flow@alpha strategy execute --strategy feature-development
+```
+
+### Available Strategies
+- **Feature Development** (8-12 agents, 3-5 days)
+- **Bug Fixing** (4-6 agents, 2-6 hours)
+- **Performance Optimization** (6-8 agents, 2-3 days)
+- **Security Hardening** (5-7 agents, 1-2 days)
+
+## 🔧 Quick Fixes
+
+### 377 Backend Test Failures
+```bash
+cd backend
+npm run test:watch -- --verbose
+# Focus on failing tests one by one
+```
+
+### CSRF Protection Missing
+Add to [backend/src/index.ts](mdc:backend/src/index.ts):
+```typescript
+import csrf from 'csurf';
+app.use(csrf({ cookie: true }));
+```
+
+### Hardcoded Salt Issue
+Fix in [backend/src/services/oauth2.service.ts](mdc:backend/src/services/oauth2.service.ts):
+```typescript
+// Use environment variable instead of hardcoded value
+const salt = process.env.ENCRYPTION_SALT;
+```
+
+## 📚 Documentation Hierarchy
+
+1. **Project Structure**: [.cursor/rules/project-structure.mdc](mdc:.cursor/rules/project-structure.mdc)
+2. **Code Standards**: [.cursor/rules/code-standards.mdc](mdc:.cursor/rules/code-standards.mdc)  
+3. **CodeNet RAG**: [.cursor/rules/codenet-rag.mdc](mdc:.cursor/rules/codenet-rag.mdc)
+4. **Film Domain**: [.cursor/rules/film-industry-domain.mdc](mdc:.cursor/rules/film-industry-domain.mdc)
+5. **Testing**: [.cursor/rules/testing-requirements.mdc](mdc:.cursor/rules/testing-requirements.mdc)
+6. **API Design**: [.cursor/rules/api-design.mdc](mdc:.cursor/rules/api-design.mdc)
+7. **Deployment**: [.cursor/rules/deployment-devops.mdc](mdc:.cursor/rules/deployment-devops.mdc)
+8. **Swarm System**: [.cursor/rules/swarm-coordination.mdc](mdc:.cursor/rules/swarm-coordination.mdc)
+
+This quick reference should be your go-to for navigating the StillOnTime codebase efficiently!

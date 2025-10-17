@@ -1,0 +1,32 @@
+---
+globs: backend/src/**/*.{ts}
+description: Data layer patterns for Kysely query builder and Redis caching.
+---
+# Data Layer: Kysely & Redis
+
+## Repository Pattern (Kysely)
+- All DB access goes through `backend/src/repositories/*` using Kysely query builder.
+- Import `db` instance from [backend/src/config/database.ts](mdc:backend/src/config/database.ts).
+- Use type-safe queries with types from [backend/src/config/database-types.ts](mdc:backend/src/config/database-types.ts).
+- Keep repositories pure (no HTTP, no business logic). Return domain types.
+- Query builder pattern: `db.selectFrom('table').selectAll().where('col', '=', value).executeTakeFirst()`.
+- For complex queries, use `sql` tag from kysely for raw SQL with type safety.
+- Prefer transactional boundaries in services via `db.transaction(async (trx) => {...})`.
+- Migrations must be reversible SQL scripts; index critical queries.
+
+## Kysely Best Practices
+- Use `.selectAll()` or specific columns: `.select(['id', 'email', 'name'])` for type safety.
+- For optional results: `.executeTakeFirst()` returns `T | undefined`.
+- For required results: `.executeTakeFirstOrThrow()` throws if not found.
+- For multiple results: `.execute()` returns `T[]`.
+- Connection pooling configured via `pg.Pool` in database.ts (max: 20, timeout: 10s).
+- Type inference works automatically - no need for manual type assertions.
+
+## Caching (Redis)
+- Use [backend/src/config/redis.ts](mdc:backend/src/config/redis.ts) and shared CacheService if present.
+- Cache expensive reads (routes, weather) with TTL; invalidate on writes.
+- Namespaces: `route:`, `weather:`, `user:`; include version keys for schema changes.
+
+## Resilience
+- Wrap external calls with circuit breaker and retry; cache fallbacks where possible.
+- Never cache PII without encryption; follow GDPR deletion on related keys.

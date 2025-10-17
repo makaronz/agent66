@@ -1,0 +1,223 @@
+---
+description: Swarm coordination system for parallel development with specialized agents
+---
+
+# Swarm Coordination System
+
+## Overview
+StillOnTime uses **Adaptive Mesh Swarm Coordination** with 15+ specialized agents for parallel development, testing, and deployment.
+
+## Swarm Documentation Location
+- **Primary Docs**: [coordination/orchestration/](mdc:coordination/orchestration/)
+- **Swarm Init**: [coordination/orchestration/swarm-init.md](mdc:coordination/orchestration/swarm-init.md)
+- **Strategies**: [coordination/orchestration/swarm-strategies.md](mdc:coordination/orchestration/swarm-strategies.md)
+- **Agent Profiles**: [coordination/orchestration/agent-profiles.md](mdc:coordination/orchestration/agent-profiles.md)
+- **Status**: [coordination/orchestration/SWARM_STATUS.md](mdc:coordination/orchestration/SWARM_STATUS.md)
+
+## Current Swarm Session
+- **Session ID**: `swarm-stillontime-20251012-031650`
+- **Status**: 🟢 OPERATIONAL (82% system health)
+- **Max Agents**: 12 concurrent
+- **Topology**: Adaptive Mesh
+
+## Agent Hierarchy
+
+### Level 1: Primary Coordinator
+- `adaptive-coordinator` - Orchestrates all development streams
+
+### Level 2: Domain Coordinators  
+- `backend-dev` - Backend services, APIs, database
+- `coder` (React specialist) - Frontend UI, state management
+- `tdd-london-swarm` - Testing, security, QA
+
+### Level 3: Specialized Agents
+- **Backend**: `oauth-specialist`, `api-integrator`, `data-architect`, `resilience-engineer`
+- **Frontend**: `ui-developer`, `state-manager`
+- **QA**: `test-engineer`, `e2e-specialist`, `security-auditor`
+
+### Level 4: Support Agents
+- `system-architect`, `performance-benchmarker`, `api-docs`
+
+## Available Strategies
+
+| Strategy | Agents | Duration | Use Case |
+|----|-----|----|----|
+| **Feature Development** | 8-12 | 3-5 days | New capabilities (Google Drive integration) |
+| **Bug Fixing** | 4-6 | 2-6 hours | Critical issues (OAuth token expiration) |
+| **Performance Optimization** | 6-8 | 2-3 days | Speed improvements (email processing <2min) |
+| **Security Hardening** | 5-7 | 1-2 days | Security fixes (CSRF, encryption) |
+| **E2E Testing** | 6-8 | 1 day | Comprehensive validation before release |
+| **Production Deployment** | 7-10 | 4-8 hours | Zero-downtime deployment |
+
+## Swarm Commands
+
+### Check Status
+```bash
+npx claude-flow@alpha swarm status --session-id swarm-stillontime-20251012-031650
+npx claude-flow@alpha agent list --session-id swarm-stillontime-20251012-031650
+```
+
+### Spawn Agents  
+```bash
+# Domain coordinators
+npx claude-flow@alpha agent spawn --type backend-dev --session-id swarm-stillontime-20251012-031650
+npx claude-flow@alpha agent spawn --type coder --session-id swarm-stillontime-20251012-031650
+npx claude-flow@alpha agent spawn --type tdd-london-swarm --session-id swarm-stillontime-20251012-031650
+```
+
+### Execute Strategy
+```bash
+npx claude-flow@alpha strategy execute --strategy feature-development --session-id swarm-stillontime-20251012-031650
+```
+
+## Agent Coordination Protocol (CRITICAL)
+
+**Every agent MUST execute hooks for proper coordination:**
+
+### Pre-Task Hook
+```bash
+npx claude-flow@alpha hooks pre-task \
+  --description "Task description" \
+  --agent-id "agent-name" \
+  --session-id "swarm-stillontime-20251012-031650"
+```
+
+### During Task Hooks
+```bash
+# After file edits
+npx claude-flow@alpha hooks post-edit \
+  --file "path/to/file" \
+  --memory-key "swarm/agent-name/changes"
+
+# Status updates  
+npx claude-flow@alpha hooks notify \
+  --message "Completed implementation" \
+  --level "info"
+```
+
+### Post-Task Hook
+```bash
+npx claude-flow@alpha hooks post-task \
+  --task-id "task-id" \
+  --status "completed" \
+  --metrics-export true
+```
+
+## Memory Organization
+
+Swarm memory is hierarchical:
+
+```
+coordination/
+├── memory_bank/
+│   ├── sessions/
+│   │   └── swarm-stillontime-20251012-031650.json
+│   └── swarm-session-template.json
+├── orchestration/
+│   └── [Documentation files]
+└── subtasks/
+    └── [Agent-generated task breakdowns]
+```
+
+**Memory Namespaces**:
+- `swarm/coordination/` - Task distribution, progress tracking
+- `swarm/agents/[agent-name]/` - Agent-specific memory
+- `swarm/shared/` - Shared context (API contracts, DB schema, test scenarios)
+
+## Constitution Compliance (MANDATORY)
+
+All swarm operations MUST enforce StillOnTime constitution gates:
+
+### Security & Compliance
+- ✅ OAuth 2.0 with PKCE for external integrations
+- ✅ Secrets encrypted, no plaintext keys
+- ✅ GDPR: deletion capabilities, temp PDF cleanup <1 hour
+- ✅ Circuit breakers + exponential backoff + fallbacks
+
+### Performance Requirements  
+- Email processing ≤ 2 min
+- PDF parsing ≤ 30 s
+- Route calculation ≤ 15 s
+- Calendar event ≤ 10 s
+- Uptime 99% during 06:00-22:00 CET
+
+### TDD & Code Quality
+- Tests first, then implementation (Red-Green-Refactor)
+- Coverage >80% for critical paths
+- TypeScript strict mode
+- No console.log in production
+
+## Current System Health
+
+**Last Updated**: 2025-10-12 03:35:00 CET
+**Overall Health**: 82%
+
+| Component | Status | Health |
+|-----|-----|-----|
+| Infrastructure | 🟢 | 100% (Postgres + Redis operational) |
+| Documentation | 🟢 | 100% (Complete swarm system) |
+| Backend | 🟡 | 70% (Services healthy, 377 test failures) |
+| Frontend | 🟢 | 90% (Operational, ESLint resolved) |
+| QA | 🟡 | 50% (Infrastructure ready, coverage low) |
+
+## Priority Actions
+
+### 🔴 Critical (Immediate)
+1. Fix hardcoded encryption salt in [backend/src/services/oauth2.service.ts](mdc:backend/src/services/oauth2.service.ts)
+2. Implement CSRF protection in [backend/src/index.ts](mdc:backend/src/index.ts)
+
+### 🟡 High Priority
+3. Debug 377 backend test failures (use Bug Fixing strategy)
+4. Increase test coverage to >80%
+
+### 🟢 Medium Priority  
+5. Spawn domain coordinators (backend, frontend, QA)
+6. Execute frontend and E2E test suites
+7. Implement performance monitoring dashboard
+
+## Best Practices
+
+### When Starting Complex Work
+1. **Check swarm status** first
+2. **Review appropriate strategy** from swarm-strategies.md
+3. **Spawn required agents** for the task  
+4. **Execute hooks** throughout work
+5. **Update session state** on completion
+
+### For Feature Development
+- Use **Feature Development strategy** (8-12 agents, parallel execution)
+- Follow TDD approach (tests first)
+- Coordinate via swarm memory
+- Ensure constitution compliance
+
+### For Critical Bugs
+- Use **Bug Fixing strategy** (4-6 agents, rapid response)
+- Implement with tests to prevent regression
+- Document root cause and solution
+- Update swarm memory with learnings
+
+## Performance Characteristics
+
+**Expected with Full Swarm**:
+- 2.8-4.4x speed improvement
+- 32.3% token reduction  
+- 84.8% SWE-Bench solve rate
+
+**Current Metrics**:
+- Task success rate: 100%
+- Average execution time: 1.5s
+- Agents spawned: 0 (system underutilized)
+- Potential speedup: 4x with parallel execution
+
+## Integration with Development
+
+### Git Workflow
+- All swarm orchestration docs are version controlled
+- Session states in `coordination/memory_bank/sessions/*` are gitignored
+- Commits should reference swarm activities when applicable
+
+### CI/CD Integration
+- E2E Testing strategy for pre-deployment validation
+- Production Deployment strategy for zero-downtime releases
+
+When working on this project, always consider whether the task would benefit from swarm coordination and parallel agent execution.

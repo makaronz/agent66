@@ -1,0 +1,393 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management for film crew and production staff
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  role      UserRole @default(CREW)
+  department String?
+  phone     String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  timeEntries    TimeEntry[]
+  projectMembers ProjectMember[]
+  createdProjects Project[] @relation("ProjectCreator")
+  approvals      TimeEntryApproval[]
+  notifications  Notification[]
+  deviceTokens   DeviceToken[]
+
+  @@map("users")
+}
+
+// Film industry specific roles
+enum UserRole {
+  ADMIN          // Production manager, line producer
+  SUPERVISOR     // Department heads
+  SUPERVISOR_USER // Crew members with supervisor permissions
+  CREW           // Regular crew members
+  CLIENT         // Studio execs, producers
+  GUEST          // External collaborators
+}
+
+// Production projects (films, TV shows, commercials)
+model Project {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  status      ProjectStatus   @default(PLANNING)
+  type        ProjectType     @default(FEATURE)
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Float?
+  currency    String          @default("USD")
+  location    String?
+  createdBy   String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  creator User  @relation("ProjectCreator", fields: [createdBy], references: [id])
+  members ProjectMember[]
+  timeEntries TimeEntry[]
+  phases ProductionPhase[]
+  equipment Equipment[]
+  documents Document[]
+
+  @@map("projects")
+}
+
+// Project types in film industry
+enum ProjectType {
+  FEATURE        // Feature films
+  SHORT          // Short films
+  DOCUMENTARY    // Documentaries
+  COMMERCIAL     // Commercials
+  MUSIC_VIDEO    // Music videos
+  TV_EPISODE     // TV episodes
+  TV_SERIES      // TV series
+  WEB_SERIES     // Web series
+  CORPORATE      // Corporate videos
+}
+
+// Project status workflow
+enum ProjectStatus {
+  PLANNING       // Pre-production planning
+  PRE_PRODUCTION // Active pre-production
+  PRODUCTION     // Principal photography
+  POST_PRODUCTION // Post-production
+  DELIVERY       // Final delivery
+  COMPLETED      // Project completed
+  ON_HOLD        // Temporarily paused
+  CANCELLED      // Project cancelled
+}
+
+// Project team members
+model ProjectMember {
+  id        String              @id @default(cuid())
+  projectId String
+  userId    String
+  role      String              // e.g., "Director", "DP", "Gaffer"
+  department String?
+  rate      Float?              // Daily/hourly rate
+  overtimeRate Float?
+  joinedAt  DateTime            @default(now())
+  leftAt    DateTime?
+  isActive  Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  timeEntries TimeEntry[]
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+// Production phases (pre-production, shooting, etc.)
+model ProductionPhase {
+  id          String            @id @default(cuid())
+  projectId   String
+  name        String            // e.g., "Pre-Production", "Principal Photography"
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      PhaseStatus       @default(PLANNED)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+
+  @@map("production_phases")
+}
+
+// Production phase status
+enum PhaseStatus {
+  PLANNED       // Phase is planned
+  ACTIVE        // Currently in progress
+  COMPLETED     // Phase completed
+  DELAYED       // Phase delayed
+  CANCELLED     // Phase cancelled
+}
+
+// Time entries for crew hours
+model TimeEntry {
+  id               String       @id @default(cuid())
+  userId           String
+  projectId        String
+  projectMemberId  String?
+  phaseId          String?
+  date             DateTime
+  clockIn          DateTime
+  clockOut         DateTime?
+  breakDuration    Int?         // Break duration in minutes
+  totalHours       Float?       // Calculated total hours
+  overtimeHours    Float?       // Calculated overtime hours
+  rate             Float?       // Rate used for this entry
+  totalPay         Float?       // Calculated total pay
+  status           EntryStatus  @default(DRAFT)
+  notes            String?
+  location         String?      // GPS location or set location
+  weather          String?      // Weather conditions for outdoor shoots
+  isOffline        Boolean      @default(false)
+  syncStatus       SyncStatus   @default(SYNCED)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  user          User           @relation(fields: [userId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id])
+  projectMember ProjectMember? @relation(fields: [projectMemberId], references: [id])
+  phase         ProductionPhase? @relation(fields: [phaseId], references: [id])
+  approvals     TimeEntryApproval[]
+  attachments   Attachment[]
+
+  @@map("time_entries")
+}
+
+// Time entry status workflow
+enum EntryStatus {
+  DRAFT       // Entry is a draft
+  SUBMITTED   // Submitted for approval
+  APPROVED    // Approved by supervisor
+  REJECTED    // Rejected, needs correction
+  LOCKED      // Locked, cannot be modified
+  PROCESSED   // Processed for payroll
+}
+
+// Sync status for offline functionality
+enum SyncStatus {
+  SYNCED       // Fully synced with server
+  PENDING      // Pending sync
+  CONFLICT     // Sync conflict
+  FAILED       // Sync failed
+}
+
+// Time entry approvals workflow
+model TimeEntryApproval {
+  id          String          @id @default(cuid())
+  timeEntryId String
+  approvedBy  String
+  status      ApprovalStatus
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+  approver  User      @relation(fields: [approvedBy], references: [id])
+
+  @@map("time_entry_approvals")
+}
+
+// Approval status
+enum ApprovalStatus {
+  PENDING     // Waiting for approval
+  APPROVED    // Approved
+  REJECTED    // Rejected
+  CHANGES     // Changes requested
+}
+
+// Attachments for time entries (call sheets, etc.)
+model Attachment {
+  id           String   @id @default(cuid())
+  timeEntryId  String
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  uploadedBy   String
+  createdAt    DateTime @default(now())
+
+  // Relations
+  timeEntry TimeEntry @relation(fields: [timeEntryId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// Equipment tracking
+model Equipment {
+  id          String        @id @default(cuid())
+  projectId   String
+  name        String        // e.g., "Camera A", "Lighting Kit 1"
+  type        EquipmentType
+  status      EquipmentStatus @default(AVAILABLE)
+  serialNumber String?
+  purchaseDate DateTime?
+  cost        Float?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("equipment")
+}
+
+// Equipment types
+enum EquipmentType {
+  CAMERA        // Cameras
+  LENS          // Lenses
+  LIGHTING      // Lighting equipment
+  SOUND         // Sound equipment
+  GRIP          // Grip equipment
+  ELECTRICAL    // Electrical equipment
+  VEHICLE       // Production vehicles
+  GENERATOR     // Generators
+  CRANE         // Cranes and dollies
+  OTHER         // Other equipment
+}
+
+// Equipment status
+enum EquipmentStatus {
+  AVAILABLE     // Available for use
+  IN_USE        // Currently in use
+  MAINTENANCE   // Under maintenance
+  REPAIR        // Needs repair
+  RETIRED       // Retired from service
+}
+
+// Production documents
+model Document {
+  id          String       @id @default(cuid())
+  projectId   String
+  name        String
+  type        DocumentType
+  description String?
+  url         String
+  version     String       @default("1.0")
+  size        Int?
+  uploadedBy  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+// Document types
+enum DocumentType {
+  CALL_SHEET     // Daily call sheets
+  SCRIPT         // Scripts
+  STORYBOARD     // Storyboards
+  BUDGET         // Budget documents
+  CONTRACT       // Contracts
+  PERMIT         // Permits
+  LOCATION_AGREEMENT // Location agreements
+  INSURANCE      // Insurance documents
+  OTHER          // Other documents
+}
+
+// User notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  data      Json?            // Additional data
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Notification types
+enum NotificationType {
+  TIME_ENTRY_APPROVED
+  TIME_ENTRY_REJECTED
+  PROJECT_ASSIGNED
+  DEADLINE_REMINDER
+  EQUIPMENT_DUE
+  SYSTEM_UPDATE
+  PAYROLL_PROCESSED
+}
+
+// Device tokens for push notifications
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String
+  platform  String   // iOS, Android, Web
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, token])
+  @@map("device_tokens")
+}
+
+// Reports and analytics
+model Report {
+  id          String       @id @default(cuid())
+  projectId   String?
+  userId      String?
+  type        ReportType
+  title       String
+  description String?
+  data        Json         // Report data
+  filters     Json?        // Applied filters
+  generatedBy String
+  createdAt   DateTime     @default(now())
+
+  @@map("reports")
+}
+
+// Report types
+enum ReportType {
+  TIME_SUMMARY       // Time summary by user/project
+  COST_ANALYSIS      // Cost analysis
+  EQUIPMENT_USAGE    // Equipment usage report
+  PAYROLL_REPORT     // Payroll report
+  PROJECT_PROGRESS   // Project progress report
+  BUDGET_VS_ACTUAL   // Budget vs actual spending
+  DEPARTMENT_SUMMARY // Department summary
+  CUSTOM             // Custom reports
+}

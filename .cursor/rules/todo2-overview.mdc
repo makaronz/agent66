@@ -1,8 +1,6 @@
 ---
-description: Todo2 task overview for Cursor AI awareness - provides real-time context of current project tasks, priorities, and progress
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Todo2 Project Context
 
 *Last updated: 10/03/2025, 02:00 PM*

@@ -1,0 +1,365 @@
+---
+description: Financial trading domain requirements, SMC methodology, and regulatory compliance for Agent66
+---
+
+# Financial Trading Domain Requirements
+
+## Core Purpose
+Agent66 is an **advanced SMC (Smart Money Concepts) trading platform** that automates cryptocurrency and forex trading through institutional-grade pattern recognition, real-time market analysis, and ultra-low latency execution.
+
+## Smart Money Concepts Terminology (MANDATORY)
+Always use correct SMC and trading terms in code, UI, and documentation:
+
+### SMC Core Concepts:
+- **Order Block (OB)**: Areas where large institutional orders were placed, causing price reactions
+- **Fair Value Gap (FVG)**: Imbalances in price action indicating institutional activity
+- **Break of Structure (BoS)**: Confirmed trend continuation after market structure break
+- **Change of Character (CHoCH)**: Market structure break indicating potential trend reversal
+- **Liquidity Sweep**: Price movement to collect stop losses before major moves
+- **Market Structure**: Higher highs/lower lows and their breaks indicating trend direction
+- **Inducement**: False breakouts designed to trap retail traders
+- **Mitigation**: Price returning to test a previously identified zone
+
+### Trading Execution Terms:
+- **Position Sizing**: Risk-adjusted trade size based on account balance and volatility
+- **Risk-Reward Ratio (RR)**: Minimum 1:2 ratio for profitable trading systems
+- **Maximum Drawdown**: Maximum allowable portfolio decline (typically <15%)
+- **Sharpe Ratio**: Risk-adjusted returns metric (target >1.5)
+- **Win Rate**: Percentage of profitable trades (target >65% for SMC strategies)
+
+### Code Examples:
+```typescript
+// ✅ CORRECT - SMC trading terms
+interface SMCSignal {
+  pattern: 'OrderBlock' | 'FVG' | 'CHoCH' | 'BoS' | 'LiquiditySweep';
+  confidence: number;          // 0-100 confidence score
+  timeframe: string;           // 1m, 5m, 15m, 1h, 4h, 1d
+  direction: 'bullish' | 'bearish';
+  entryZone: PriceZone;
+  stopLoss: number;
+  takeProfit: number[];        // Multiple TP levels
+  riskReward: number;          // Risk-reward ratio
+}
+
+interface TradingPosition {
+  symbol: string;
+  side: 'long' | 'short';
+  entryPrice: number;
+  currentPrice: number;
+  positionSize: number;        // In base currency
+  unrealizedPnL: number;
+  riskAmount: number;          // Maximum risk (1-2% of account)
+  stopLoss: number;
+  takeProfits: TakeProfit[];
+}
+
+// ❌ INCORRECT - Generic terms
+interface Trade {
+  direction: 'up' | 'down';
+  prediction: boolean;
+  amount: number;
+}
+```
+
+## Required Risk Management (HARDCODED REQUIREMENTS)
+These risk parameters MUST be implemented in all trading operations:
+
+```typescript
+const RISK_MANAGEMENT_RULES = {
+  MAX_RISK_PER_TRADE: 0.02,        // 2% of account per trade
+  MAX_DAILY_RISK: 0.06,            // 6% of account per day
+  MAX_DRAWDOWN: 0.15,              // 15% maximum drawdown
+  MIN_RISK_REWARD: 2.0,            // Minimum 1:2 RR ratio
+  MAX_CORRELATION: 0.7,            // Maximum correlation between positions
+  MAX_LEVERAGE: 10,                // Maximum leverage allowed
+  POSITION_SIZE_PRECISION: 8,      // Decimal precision for position sizing
+  STOP_LOSS_BUFFER: 0.001,        // 0.1% buffer for stop loss slippage
+} as const;
+
+const SMC_PATTERN_REQUIREMENTS = {
+  ORDER_BLOCK_MIN_TOUCHES: 2,      // Minimum touches for valid OB
+  FVG_MIN_SIZE: 0.001,             // Minimum FVG size (0.1%)
+  CHOCH_CONFIRMATION_CANDLES: 3,    // Candles needed for CHoCH confirmation
+  LIQUIDITY_SWEEP_TOLERANCE: 0.0005, // 0.05% tolerance for sweep detection
+  PATTERN_EXPIRY_HOURS: 168,       // 7 days max age for patterns
+} as const;
+```
+
+## Market Data Integration Requirements
+Real-time and historical data processing for multiple timeframes:
+
+```typescript
+interface MarketDataFeed {
+  symbol: string;
+  price: number;
+  volume: number;
+  timestamp: number;              // Unix timestamp in milliseconds
+  bid: number;
+  ask: number;
+  spread: number;
+  liquidity: LiquidityLevel[];
+}
+
+interface CandleData {
+  symbol: string;
+  timeframe: Timeframe;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  timestamp: number;
+  patterns?: SMCPattern[];        // Detected SMC patterns
+}
+
+enum Timeframe {
+  M1 = '1m',
+  M5 = '5m',
+  M15 = '15m',
+  M30 = '30m',
+  H1 = '1h',
+  H4 = '4h',
+  D1 = '1d',
+  W1 = '1w',
+}
+
+// Multi-timeframe analysis (MANDATORY for SMC)
+interface MultiTimeframeAnalysis {
+  htf: TimeframeAnalysis;         // Higher timeframe (H4/D1)
+  mtf: TimeframeAnalysis;         // Medium timeframe (15m/1h)
+  ltf: TimeframeAnalysis;         // Lower timeframe (1m/5m)
+  confluence: ConfluenceScore;    // Cross-timeframe confluence
+}
+```
+
+## Exchange Integration Requirements
+Support for multiple exchanges with unified API:
+
+```typescript
+interface ExchangeConnection {
+  exchange: 'binance' | 'bybit' | 'coinbase' | 'okx' | 'ftx';
+  apiKey: string;                 // Encrypted storage
+  apiSecret: string;              // Encrypted storage
+  passphrase?: string;            // For some exchanges
+  sandbox: boolean;               // Testnet mode
+  rateLimits: ExchangeRateLimits;
+  latency: LatencyMetrics;
+}
+
+interface OrderExecution {
+  orderId: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  type: 'market' | 'limit' | 'stop' | 'stop_limit';
+  quantity: number;
+  price?: number;
+  executionTime: number;          // Microseconds
+  slippage: number;               // Actual vs expected price
+  fees: TradingFees;
+}
+
+// Execution speed requirements (CRITICAL)
+const EXECUTION_REQUIREMENTS = {
+  MAX_LATENCY_MICROSECONDS: 200,   // <200μs execution time
+  MAX_SLIPPAGE_BPS: 2,            // <0.02% slippage
+  MIN_FILL_RATE: 0.98,            // >98% fill rate
+  MAX_REJECTION_RATE: 0.02,       // <2% rejection rate
+} as const;
+```
+
+## Performance Metrics (MANDATORY)
+Critical performance KPIs that must be monitored and maintained:
+
+```typescript
+interface TradingPerformanceMetrics {
+  // Profitability metrics
+  totalReturn: number;            // Total return %
+  sharpeRatio: number;            // Risk-adjusted returns (target >1.5)
+  maxDrawdown: number;            // Maximum drawdown % (limit <15%)
+  winRate: number;                // Win rate % (target >65%)
+  profitFactor: number;           // Gross profit / Gross loss (target >1.5)
+  averageRR: number;              // Average risk-reward ratio
+  
+  // Execution metrics
+  averageLatency: number;         // Average execution latency (μs)
+  fillRate: number;               // Order fill rate %
+  slippageRate: number;           // Average slippage %
+  
+  // SMC-specific metrics
+  patternAccuracy: number;        // SMC pattern prediction accuracy %
+  chochSuccessRate: number;       // CHoCH signal success rate %
+  orderBlockHitRate: number;      // Order block reaction rate %
+  
+  // Risk metrics
+  currentDrawdown: number;        // Current drawdown %
+  varDaily: number;               // Daily Value at Risk
+  beta: number;                   // Market correlation
+  
+  // System metrics
+  uptime: number;                 // System uptime %
+  apiErrors: number;              // API error rate
+  reconnections: number;          // Exchange reconnection count
+}
+
+// Performance requirements (HARD LIMITS)
+const PERFORMANCE_TARGETS = {
+  MIN_SHARPE_RATIO: 1.5,
+  MAX_DRAWDOWN: 0.15,             // 15%
+  MIN_WIN_RATE: 0.65,             // 65%
+  MIN_PROFIT_FACTOR: 1.5,
+  MAX_EXECUTION_LATENCY: 200,     // microseconds
+  MIN_FILL_RATE: 0.98,            // 98%
+  MAX_SLIPPAGE: 0.0002,           // 0.02%
+  MIN_UPTIME: 0.999,              // 99.9%
+} as const;
+```
+
+## Regulatory Compliance Requirements
+Financial trading applications must comply with regulations:
+
+```typescript
+interface ComplianceRequirements {
+  // KYC/AML requirements
+  kycVerification: boolean;
+  amlChecks: boolean;
+  sanctionsScreening: boolean;
+  
+  // Trade reporting
+  tradeReporting: boolean;        // MiFID II compliance
+  bestExecution: boolean;         // Execution quality reporting
+  transactionReporting: boolean;  // Regulatory trade reporting
+  
+  // Risk management
+  riskLimits: RiskLimitConfig;
+  positionLimits: PositionLimitConfig;
+  leverageLimits: LeverageLimitConfig;
+  
+  // Data protection
+  gdprCompliance: boolean;        // EU data protection
+  dataEncryption: boolean;        // Data at rest encryption
+  auditTrail: boolean;           // Complete audit logging
+}
+
+// Audit trail requirements (MANDATORY)
+interface TradingAuditLog {
+  timestamp: number;
+  userId: string;
+  action: AuditAction;
+  details: AuditDetails;
+  ipAddress: string;
+  userAgent: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  complianceFlags: string[];
+}
+
+enum AuditAction {
+  ORDER_PLACED = 'order_placed',
+  ORDER_MODIFIED = 'order_modified',
+  ORDER_CANCELLED = 'order_cancelled',
+  POSITION_OPENED = 'position_opened',
+  POSITION_CLOSED = 'position_closed',
+  RISK_LIMIT_CHANGED = 'risk_limit_changed',
+  API_KEY_ADDED = 'api_key_added',
+  WITHDRAWAL_REQUESTED = 'withdrawal_requested',
+}
+```
+
+## Real-time Alerting Requirements
+Critical notifications for trading events and system status:
+
+```typescript
+interface TradingAlert {
+  id: string;
+  type: AlertType;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  message: string;
+  timestamp: number;
+  userId: string;
+  symbol?: string;
+  positionId?: string;
+  smcPattern?: SMCPattern;
+  riskLevel?: number;
+  autoResolved?: boolean;
+}
+
+enum AlertType {
+  // Position alerts
+  POSITION_OPENED = 'position_opened',
+  POSITION_CLOSED = 'position_closed',
+  STOP_LOSS_HIT = 'stop_loss_hit',
+  TAKE_PROFIT_HIT = 'take_profit_hit',
+  POSITION_LIQUIDATED = 'position_liquidated',
+  
+  // Risk alerts
+  RISK_LIMIT_EXCEEDED = 'risk_limit_exceeded',
+  DRAWDOWN_WARNING = 'drawdown_warning',
+  MARGIN_CALL = 'margin_call',
+  
+  // SMC alerts
+  SMC_SIGNAL_DETECTED = 'smc_signal_detected',
+  ORDER_BLOCK_REACTION = 'order_block_reaction',
+  CHOCH_CONFIRMED = 'choch_confirmed',
+  LIQUIDITY_SWEEP_DETECTED = 'liquidity_sweep_detected',
+  
+  // System alerts
+  EXCHANGE_DISCONNECTED = 'exchange_disconnected',
+  HIGH_LATENCY_WARNING = 'high_latency_warning',
+  API_RATE_LIMIT_EXCEEDED = 'api_rate_limit_exceeded',
+  SYSTEM_ERROR = 'system_error',
+}
+
+// Alert delivery requirements
+const ALERT_DELIVERY_REQUIREMENTS = {
+  CRITICAL_DELIVERY_TIME_MS: 100,    // <100ms for critical alerts
+  HIGH_DELIVERY_TIME_MS: 500,        // <500ms for high priority
+  MEDIUM_DELIVERY_TIME_MS: 2000,     // <2s for medium priority
+  MAX_RETRY_ATTEMPTS: 3,             // Retry failed deliveries
+  DELIVERY_CHANNELS: [
+    'websocket',                     // Real-time WebSocket
+    'push_notification',             // Mobile push
+    'email',                         // Email backup
+    'sms'                           // SMS for critical alerts
+  ]
+} as const;
+```
+
+## UI/UX Requirements for Trading Applications
+The interface must be optimized for professional traders:
+
+```typescript
+// Trading dashboard priorities
+interface TradingDashboard {
+  positions: ActivePosition[];           // Current open positions
+  pnl: ProfitLossMetrics;               // Real-time P&L
+  marketData: MarketDataWidget[];        // Live price feeds
+  smcSignals: SMCAlert[];               // SMC pattern alerts
+  riskMetrics: RiskMetrics;             // Current risk exposure
+  orderBook: OrderBookData;             // Market depth
+  executionQuality: ExecutionMetrics;    // Latency and slippage stats
+  alerts: TradingAlert[];               // System and trade alerts
+}
+
+// Color coding requirements (MANDATORY)
+const TRADING_UI_COLORS = {
+  PROFIT: '#00C853',                    // Green for profits
+  LOSS: '#FF1744',                      // Red for losses
+  NEUTRAL: '#90A4AE',                   // Gray for neutral
+  BUY: '#4CAF50',                       // Green for buy orders
+  SELL: '#F44336',                      // Red for sell orders
+  WARNING: '#FF9800',                   // Orange for warnings
+  CRITICAL: '#D32F2F',                  // Dark red for critical alerts
+  SMC_BULLISH: '#2196F3',              // Blue for bullish SMC
+  SMC_BEARISH: '#9C27B0',              // Purple for bearish SMC
+} as const;
+```
+
+## Example Trading Workflow:
+1. **Market Analysis**: System scans multiple timeframes for SMC patterns
+2. **Signal Generation**: ML models validate patterns and generate trading signals
+3. **Risk Assessment**: Risk manager calculates position size and validates trade
+4. **Order Execution**: Ultra-low latency execution through exchange APIs
+5. **Position Monitoring**: Real-time P&L tracking and risk monitoring
+6. **Alert Management**: WebSocket notifications for position changes and signals
+7. **Performance Tracking**: Continuous measurement against KPIs and risk limits
+
+This domain knowledge must be reflected in ALL code, UI components, API design, and documentation. The application serves professional traders who require institutional-grade tools with microsecond precision, robust risk management, and comprehensive regulatory compliance.

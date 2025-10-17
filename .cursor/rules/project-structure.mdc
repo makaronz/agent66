@@ -1,0 +1,119 @@
+---
+alwaysApply: true
+---
+
+# Agent66 Project Structure Guide
+
+## Overview
+Agent66 is an advanced SMC (Smart Money Concepts) trading platform with automated cryptocurrency and forex trading capabilities, real-time market analysis, and ML-driven decision making.
+
+## Core Architecture
+- **Monorepo Structure**: Multi-language architecture with Python/FastAPI backend, React frontend, and Rust execution engine
+- **Backend**: [backend/](mdc:backend/) - FastAPI/Python with ML models, Supabase integration
+- **Frontend**: [frontend/](mdc:frontend/) - React/TypeScript with TradingView charts, Zustand state management
+- **Trading Engine**: [smc_detector/](mdc:smc_detector/) - Smart Money Concepts detection algorithms
+- **Data Pipeline**: [data_pipeline/](mdc:data_pipeline/) - Real-time market data processing with Kafka
+- **Execution Engine**: Rust-based ultra-low latency trade execution
+- **Risk Management**: [risk_manager/](mdc:risk_manager/) - Position sizing and risk controls
+
+## Key Configuration Files
+- **Root Package**: [package.json](mdc:package.json) - Monorepo scripts and dependencies
+- **Backend Config**: [backend/package.json](mdc:backend/package.json) - API server dependencies
+- **Frontend Config**: [frontend/package.json](mdc:frontend/package.json) - Trading UI dependencies
+- **Python Requirements**: [requirements.txt](mdc:requirements.txt) - ML and data processing dependencies
+- **Docker Setup**: [docker-compose.yml](mdc:docker-compose.yml) - Development stack with exchanges, databases, monitoring
+
+## Backend Structure
+```
+backend/src/
+├── controllers/     # FastAPI route handlers
+├── services/        # Trading business logic
+├── middleware/      # FastAPI middleware (auth, CORS, logging)  
+├── models/          # Pydantic models and database schemas
+├── utils/           # Utilities (circuit-breaker, retry, logging)
+├── repositories/    # Database access layer
+├── routes/          # API route definitions
+└── types/          # Python type definitions
+```
+
+## Frontend Structure  
+```
+frontend/src/
+├── components/      # React components
+│   ├── trading/     # Trading interface components
+│   ├── charts/      # TradingView chart components
+│   ├── analytics/   # Performance analytics components
+│   └── dashboard/   # Dashboard widgets
+├── pages/          # Route-level page components
+├── stores/         # Zustand state management
+├── services/       # API calls and WebSocket connections
+├── hooks/          # Custom React hooks for trading data
+├── utils/          # Trading utilities and helpers
+└── types/          # TypeScript interfaces for trading data
+```
+
+## Trading System Structure
+```  
+smc_detector/
+├── patterns/       # SMC pattern detection algorithms
+├── indicators/     # Technical indicators
+├── models/         # ML models for pattern recognition
+└── validation/     # Pattern validation logic
+
+data_pipeline/
+├── ingestion/      # Market data ingestion
+├── processing/     # Real-time data processing
+├── kafka/          # Kafka producers and consumers
+└── storage/        # Time-series data storage
+
+execution_engine/   # Rust components
+├── src/
+│   ├── orders/     # Order management
+│   ├── execution/  # Trade execution logic
+│   ├── latency/    # Ultra-low latency optimizations
+│   └── exchanges/  # Exchange connectors
+
+risk_manager/
+├── position_sizing/ # Position sizing algorithms
+├── risk_metrics/   # Risk calculation engines
+├── limits/         # Risk limit enforcement
+└── reporting/      # Risk reporting
+```
+
+## Important Documentation
+- **Constitution**: Agent66 follows strict quality gates for financial applications
+- **Development Guide**: [AGENTS.md](mdc:AGENTS.md)
+- **Deployment**: [COMPLETE-DEPLOYMENT-GUIDE.md](mdc:COMPLETE-DEPLOYMENT-GUIDE.md)
+- **Trading Docs**: [binance_docs/](mdc:binance_docs/) - Exchange API documentation
+- **SMC Guide**: [smc_detector/README.md](mdc:smc_detector/README.md) - Smart Money Concepts implementation
+
+## External Integrations
+- **Exchange APIs**: Binance, Bybit, Coinbase Pro with WebSocket streams
+- **Market Data**: Real-time price feeds, orderbook data, trade streams  
+- **ML/AI**: TensorFlow, PyTorch for pattern recognition and prediction
+- **Monitoring**: Prometheus metrics, Grafana dashboards
+- **Database**: Supabase (PostgreSQL) with TimescaleDB for time-series data
+- **Cache**: Redis for real-time data caching and session management
+- **Message Queue**: Kafka for high-throughput data pipeline
+
+## Development Commands
+```bash
+# Root level
+npm run dev          # Start frontend + backend + data pipeline
+npm run build        # Build all services (React, FastAPI, Rust)
+npm run test         # Run all test suites
+npm run docker:up    # Start Docker stack (DB, Redis, Kafka, exchanges)
+
+# Backend specific (FastAPI)
+cd backend && python -m uvicorn main:app --reload  # Start API server
+cd backend && python -m pytest                     # Run Python tests
+
+# Frontend specific  
+cd frontend && npm run dev       # Start React development server
+cd frontend && npm run test:ui   # Playwright E2E tests for trading UI
+
+# Trading system
+python data_pipeline/main.py    # Start data ingestion pipeline
+cargo run --bin execution_engine # Start Rust execution engine
+python smc_detector/main.py     # Start SMC pattern detection
+```
