@@ -1,0 +1,12 @@
+# PgBouncer user authentication file
+# Format: "username" "password_hash"
+# Use md5 hash format: md5 + md5(password + username)
+
+# Example entries (replace with actual hashed passwords)
+"postgres" "md5d41d8cd98f00b204e9800998ecf8427e"
+"smc_app_user" "md5d41d8cd98f00b204e9800998ecf8427e"
+"smc_read_user" "md5d41d8cd98f00b204e9800998ecf8427e"
+
+# Note: Generate actual password hashes using:
+# echo -n "passwordusername" | md5sum
+# Then prepend "md5" to the result

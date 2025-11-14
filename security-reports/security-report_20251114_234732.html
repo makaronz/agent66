@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Security Scan Report - 20251114_234732</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #f4f4f4; padding: 20px; border-radius: 5px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .finding { margin: 10px 0; padding: 10px; background-color: #f8f9fa; border-radius: 3px; }
+        pre { background-color: #f1f1f1; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 Security Scan Report</h1>
+        <p><strong>Generated:</strong> Fri Nov 14 23:48:07 CET 2025</p>
+        <p><strong>Project:</strong> Agent66</p>
+        <p><strong>Environment:</strong> development</p>
+    </div>
+
+    <div class="section">
+        <h2>📊 Executive Summary</h2>
+        <p><strong>Total Scans:</strong> 6</p>
+        <p><strong>Failed Scans:</strong> 6</p>
+        <p><strong>Success Rate:</strong> 0%</p>
+    </div>
+
+    <div class="section error">
+        <h2>🎯 Overall Status</h2>
+        <p>❌ Security issues detected</p>
+    </div>
+
+<div class='section'><h3>📋 scan-summary</h3><pre>
+Security Scan Summary - 20251114_234732
+=================================
+Critical Vulnerability Scan: FAIL
+Dependency Vulnerability Scan: FAIL
+Static Application Security Testing: FAIL
+Secret Detection: FAIL
+Security Headers Validation: FAIL
+Docker Security Scan: FAIL
+</pre></div>
+    <div class="section">
+        <h2>🔧 Security Recommendations</h2>
+        <div class="finding">
+            <h3>Immediate Actions Required:</h3>
+            <ul>
+                <li>Update @babel/traverse to version 7.25.7 or higher</li>
+                <li>Fix all high and critical dependency vulnerabilities</li>
+                <li>Remove any exposed secrets or API keys from code</li>
+                <li>Implement comprehensive security headers</li>
+            </ul>
+        </div>
+        <div class="finding">
+            <h3>Best Practices:</h3>
+            <ul>
+                <li>Enable security scanning in CI/CD pipeline</li>
+                <li>Implement secret management solution</li>
+                <li>Use container scanning for Docker images</li>
+                <li>Regular security audits and penetration testing</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

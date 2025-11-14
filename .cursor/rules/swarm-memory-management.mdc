@@ -1,0 +1,339 @@
+---
+description: Swarm memory organization and cross-agent communication patterns
+globs: coordination/**
+---
+
+# Swarm Memory Management
+
+## Memory Structure
+
+All swarm coordination state is stored in hierarchical memory:
+
+```
+coordination/
+├── memory_bank/
+│   ├── sessions/
+│   │   └── swarm-stillontime-YYYYMMDD-HHMMSS.json  # Session states
+│   └── swarm-session-template.json  # Template
+├── orchestration/
+│   └── [Documentation - version controlled]
+└── subtasks/
+    └── [Agent work breakdown - gitignored]
+```
+
+## Memory Namespaces
+
+### Coordination Memory
+**Path**: `swarm/coordination/`
+
+Used by adaptive coordinator for:
+- `task-distribution.json` - Agent workload allocation
+- `progress-tracking.json` - Real-time task status
+- `bottlenecks.json` - Performance issue detection
+
+**Access**: Read by all agents, write by coordinator only
+
+### Agent Memory
+**Path**: `swarm/agents/[agent-name]/`
+
+Each agent has private memory:
+- `current-task.json` - Active work details
+- `file-changes.json` - Modified files log
+- `decisions.json` - Technical decisions made
+- `issues.json` - Problems encountered
+
+**Access**: Read/write by agent, read-only for coordinators
+
+### Shared Memory
+**Path**: `swarm/shared/`
+
+Cross-agent communication:
+- `api-contracts.json` - API endpoint specifications
+- `database-schema.json` - Current DB schema
+- `component-library.json` - Reusable React components
+- `test-scenarios.json` - Common test patterns
+
+**Access**: Read/write by all agents
+
+### Session Memory
+**Path**: `swarm/session/`
+
+Current session state:
+- `current-sprint.json` - Active work period
+- `active-tasks.json` - In-progress tasks
+- `metrics.json` - Performance metrics
+
+**Access**: Read by all, write by coordinator
+
+## Communication Patterns
+
+### Direct Mesh Communication
+
+Any agent can communicate directly with any other agent via shared memory:
+
+```javascript
+// oauth-specialist notifies api-integrator
+await memory.write('swarm/agents/api-integrator/notifications/oauth-updated', {
+  from: 'oauth-specialist',
+  message: 'New OAuth scope added for Drive API',
+  scope: 'https://www.googleapis.com/auth/drive.file',
+  timestamp: new Date().toISOString(),
+  actionRequired: true
+});
+```
+
+### Coordinator Escalation
+
+Complex decisions escalate to domain coordinators:
+
+```javascript
+// data-architect escalates to backend-coordinator
+await memory.write('swarm/coordination/backend-coordinator/escalations', {
+  from: 'data-architect',
+  type: 'migration-risk',
+  severity: 'high',
+  details: 'Migration will cause 2-minute downtime',
+  recommendation: 'Schedule during low-traffic window',
+  needsApproval: true
+});
+```
+
+### Broadcast Updates
+
+Critical changes broadcast to all relevant agents:
+
+```javascript
+// API contract change affects multiple agents
+await memory.broadcast('swarm/shared/api-contracts/calendar-endpoint-updated', {
+  endpoint: 'POST /api/calendar/events',
+  breaking: true,
+  oldSignature: '{ date, location }',
+  newSignature: '{ date, location, timezone }',
+  migrationGuide: 'Add timezone field, defaults to "UTC"',
+  affectedAgents: ['api-integrator', 'ui-developer', 'test-engineer']
+});
+```
+
+## Memory Operations
+
+### Writing to Memory
+
+```bash
+# Via hooks (recommended)
+npx claude-flow@alpha hooks post-edit \
+  --file "backend/src/services/oauth2.service.ts" \
+  --memory-key "swarm/agents/oauth-specialist/file-changes"
+
+# Direct memory write
+npx claude-flow@alpha memory write \
+  --namespace "swarm/shared/api-contracts" \
+  --key "drive-api" \
+  --value '{"endpoint": "/api/drive/upload", "method": "POST"}'
+```
+
+### Reading from Memory
+
+```bash
+# Read specific key
+npx claude-flow@alpha memory read \
+  --namespace "swarm/shared" \
+  --key "api-contracts"
+
+# Search memory
+npx claude-flow@alpha memory search \
+  --query "OAuth scope" \
+  --namespace "swarm/agents"
+```
+
+### Memory Persistence
+
+```bash
+# Save session state
+npx claude-flow@alpha memory persist \
+  --session-id swarm-stillontime-20251012-031650
+
+# Backup memory
+npx claude-flow@alpha memory backup \
+  --session-id swarm-stillontime-20251012-031650 \
+  --timestamp $(date +%Y%m%d-%H%M%S)
+
+# Restore from backup
+npx claude-flow@alpha memory restore \
+  --session-id swarm-stillontime-20251012-031650 \
+  --backup-timestamp 20251012-031650
+```
+
+## Session State Management
+
+### Session Lifecycle
+
+1. **Initialize**: Create session from template
+2. **Activate**: Load into memory
+3. **Work**: Agents read/write throughout session
+4. **Persist**: Save state periodically
+5. **End**: Export metrics and patterns
+
+### Session Template
+
+Reference: [swarm-session-template.json](mdc:coordination/memory_bank/swarm-session-template.json)
+
+Key fields:
+- `sessionId` - Unique identifier
+- `topology` - Coordination topology config
+- `agents` - Active/spawned/terminated agents
+- `tasks` - Pending/in-progress/completed
+- `metrics` - Performance data
+- `memory` - Namespace organization
+
+### Cross-Session Memory
+
+Neural patterns persist across sessions:
+- `neural-patterns/` - Learned optimization patterns
+- `successful-collaborations/` - Effective agent combinations
+- `common-resolutions/` - Proven problem solutions
+
+## Memory Best Practices
+
+### Do's ✅
+
+1. **Use Hooks for File Changes**
+   ```bash
+   npx claude-flow@alpha hooks post-edit --file "path" --memory-key "swarm/agent/changes"
+   ```
+
+2. **Broadcast Breaking Changes**
+   ```javascript
+   await memory.broadcast('swarm/shared/api-contracts/breaking-change', {...});
+   ```
+
+3. **Document Decisions**
+   ```javascript
+   await memory.write('swarm/agents/architect/decisions', {
+     decision: 'Use Prisma instead of Kysely',
+     rationale: 'Better TypeScript support',
+     date: '2025-10-12'
+   });
+   ```
+
+4. **Update Shared State**
+   ```javascript
+   await memory.write('swarm/shared/database-schema', updatedSchema);
+   ```
+
+5. **Persist Metrics**
+   ```bash
+   npx claude-flow@alpha hooks post-task --metrics-export true
+   ```
+
+### Don'ts ❌
+
+1. **Don't Store Large Files in Memory**
+   - Store references/paths instead
+   - Use file system for actual files
+
+2. **Don't Skip Notifications**
+   - Always notify affected agents of changes
+   - Use broadcast for critical updates
+
+3. **Don't Ignore Memory Conflicts**
+   - Resolve conflicts immediately
+   - Escalate to coordinator if needed
+
+4. **Don't Forget to Clean Up**
+   - Remove obsolete memory entries
+   - Archive completed session states
+
+5. **Don't Mix Session States**
+   - Keep session memories isolated
+   - Use correct session-id in all operations
+
+## Memory Analytics
+
+### Usage Tracking
+```bash
+# Check memory usage
+npx claude-flow@alpha memory usage --session-id swarm-stillontime-20251012-031650
+
+# Memory analytics
+npx claude-flow@alpha memory analytics --timeframe 24h
+```
+
+### Namespace Statistics
+```bash
+# Most active namespaces
+npx claude-flow@alpha memory stats --group-by namespace
+
+# Agent communication frequency
+npx claude-flow@alpha memory stats --group-by agent
+```
+
+## Troubleshooting
+
+### Memory Corruption
+```bash
+# Validate memory integrity
+npx claude-flow@alpha memory validate --session-id swarm-stillontime-20251012-031650
+
+# Repair if corrupted
+npx claude-flow@alpha memory repair --session-id swarm-stillontime-20251012-031650
+
+# Restore from backup
+npx claude-flow@alpha memory restore --backup-timestamp [timestamp]
+```
+
+### Namespace Conflicts
+```bash
+# Detect conflicts
+npx claude-flow@alpha memory conflicts --session-id swarm-stillontime-20251012-031650
+
+# Resolve conflicts
+npx claude-flow@alpha memory resolve-conflicts --strategy coordinator-wins
+```
+
+### Memory Leaks
+```bash
+# Find large memory entries
+npx claude-flow@alpha memory analyze --sort-by size --limit 10
+
+# Clean up old entries
+npx claude-flow@alpha memory cleanup --older-than 7d
+```
+
+## Integration with Code
+
+### Reading Memory in Code
+
+```typescript
+// backend/src/utils/swarm-memory.ts
+import { readMemory } from '@claude-flow/memory';
+
+const apiContracts = await readMemory('swarm/shared/api-contracts');
+const agentDecisions = await readMemory('swarm/agents/architect/decisions');
+```
+
+### Writing Memory in Code
+
+```typescript
+import { writeMemory } from '@claude-flow/memory';
+
+await writeMemory('swarm/agents/oauth-specialist/token-changes', {
+  change: 'Added refresh token rotation',
+  timestamp: new Date().toISOString(),
+  affectedServices: ['OAuth2Service', 'AuthController']
+});
+```
+
+### Subscribing to Memory Changes
+
+```typescript
+import { subscribeMemory } from '@claude-flow/memory';
+
+subscribeMemory('swarm/shared/api-contracts', (change) => {
+  console.log('API contract updated:', change);
+  // Notify affected agents
+});
+```
+
+---
+
+**Reference**: [swarm-coordination.mdc](mdc:.cursor/rules/swarm-coordination.mdc) for complete system overview

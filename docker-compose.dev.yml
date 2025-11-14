@@ -1,0 +1,101 @@
+# Film Industry Time Tracking System - Development Docker Compose
+version: '3.8'
+
+services:
+  # Frontend Development
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.dev
+    container_name: film-tracker-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - FAST_REFRESH=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend-dev
+    networks:
+      - film-tracker-dev-network
+    command: pnpm run dev
+
+  # Backend Development
+  backend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend.dev
+    container_name: film-tracker-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - LOG_LEVEL=debug
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres-dev
+      - redis-dev
+    networks:
+      - film-tracker-dev-network
+    command: pnpm run dev
+
+  # PostgreSQL Development
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: film-tracker-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-film_tracker_dev}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dev_password}
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./prisma/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - film-tracker-dev-network
+
+  # Redis Development
+  redis-dev:
+    image: redis:7-alpine
+    container_name: film-tracker-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - film-tracker-dev-network
+
+  # Database Admin
+  adminer:
+    image: adminer:latest
+    container_name: film-tracker-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-dev
+    networks:
+      - film-tracker-dev-network
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  film-tracker-dev-network:
+    driver: bridge

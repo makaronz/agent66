@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-maintenance
+  namespace: smc-trading
+  labels:
+    app: db-maintenance
+spec:
+  schedule: "0 3 * * *" # daily 03:00 UTC
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: db-maintenance
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: smc-trading-agent
+          containers:
+            - name: maintainer
+              image: postgres:16-alpine
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: smc-secrets
+                      key: database-password
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  psql "host=postgresql-primary.smc-trading.svc.cluster.local port=5432 dbname=smc_trading_agent user=smc_app_user" -c "VACUUM (ANALYZE, VERBOSE);"
+                  psql "host=postgresql-primary.smc-trading.svc.cluster.local port=5432 dbname=smc_trading_agent user=smc_app_user" -c "SELECT now();"
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "256Mi"
+

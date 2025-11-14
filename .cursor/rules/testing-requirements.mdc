@@ -1,0 +1,340 @@
+---
+globs: *.test.ts,*.spec.ts,tests/**/*
+---
+
+# Testing Requirements & TDD Approach
+
+## Test-Driven Development (TDD) - MANDATORY
+Agent66 follows **ultra-strict TDD methodology** with Red-Green-Refactor cycle for all financial trading code.
+
+### TDD Process (Required Order):
+1. **RED**: Write a failing test first
+2. **GREEN**: Write minimal code to make test pass  
+3. **REFACTOR**: Improve code while keeping tests green
+
+```python
+# ✅ CORRECT TDD Flow for Trading
+import pytest
+from decimal import Decimal
+
+def test_execute_trade_order_with_risk_management():
+    # RED - This test will fail initially
+    executor = TradeExecutor()
+    risk_manager = RiskManager(max_risk_per_trade=Decimal('0.02'))
+    
+    order = OrderRequest(
+        symbol='BTCUSDT',
+        side='buy',
+        quantity=Decimal('0.001'),
+        order_type='market'
+    )
+    
+    # Act
+    result = await executor.execute_with_risk_management(order, risk_manager)
+    
+    # Assert
+    assert result.status == 'FILLED'
+    assert result.execution_latency_us < 200  # <200μs requirement
+    assert result.risk_percentage <= 0.02  # 2% max risk
+    assert isinstance(result.executed_price, Decimal)  # Financial precision
+
+# GREEN - Now implement minimal TradeExecutor to pass test
+# REFACTOR - Improve implementation while keeping test green and latency low
+```
+
+## Test Structure & Organization
+
+### Backend Tests: [backend/tests/](mdc:backend/tests/)
+```
+tests/
+├── trading/        # Trading execution tests (CRITICAL)
+│   ├── test_order_execution.py
+│   ├── test_risk_management.py
+│   └── test_position_management.py
+├── smc/            # SMC pattern detection tests
+│   ├── test_order_block_detection.py
+│   ├── test_choch_detection.py
+│   └── test_fvg_detection.py
+├── exchange/       # Exchange integration tests
+│   ├── test_binance_integration.py
+│   └── test_exchange_connectivity.py
+├── performance/    # Latency and load tests
+│   ├── test_execution_latency.py
+│   └── test_market_data_processing.py
+├── unit/           # Unit tests for utilities
+├── integration/    # API endpoint tests
+└── fixtures/       # Mock market data, test orders
+```
+
+### Frontend Tests: [frontend/src/](mdc:frontend/src/) (co-located)
+```
+src/
+├── components/
+│   ├── Dashboard.tsx
+│   └── Dashboard.test.tsx
+├── services/
+│   ├── api.ts  
+│   └── api.test.tsx
+└── stores/
+    ├── scheduleStore.ts
+    └── scheduleStore.test.ts
+```
+
+### E2E Tests: [e2e-tests/](mdc:e2e-tests/)
+- **Playwright**: Cross-browser automation testing
+- **Test Scenarios**: Full user workflows from email to calendar
+- **Configuration**: [playwright.config.ts](mdc:playwright.config.ts)
+
+## Coverage Requirements (HARD TARGETS)
+
+### Critical Paths (>95% Coverage MANDATORY):
+- **Trade Execution** - Order placement, fills, cancellations
+- **Risk Management** - Position sizing, stop loss, take profit calculations
+- **SMC Pattern Detection** - Order blocks, CHoCH, BoS, FVG detection
+- **Exchange Integration** - Binance, Bybit APIs, WebSocket connections
+- **Financial Calculations** - PnL, fees, slippage, risk metrics (MUST use Decimal)
+
+### High Priority Paths (>90% Coverage):
+- **Position Management** - Opening, closing, hedging positions
+- **Market Data Processing** - Real-time price feeds, orderbook updates
+- **Authentication** - JWT token management, API key encryption
+- **Performance Monitoring** - Latency tracking, execution metrics
+
+### Standard Paths (>80% Coverage):
+- Utilities and helpers
+- Configuration management
+- Logging and monitoring
+- Error handling middleware
+- WebSocket message handlers
+
+## Test Categories & Examples
+
+### 1. Unit Tests
+Test individual functions and classes in isolation:
+
+```typescript
+// backend/tests/unit/services/route-calculator.test.ts
+describe('RouteCalculator', () => {
+  let calculator: RouteCalculator;
+  let mockMapsService: jest.Mocked<GoogleMapsService>;
+  
+  beforeEach(() => {
+    mockMapsService = createMockMapsService();
+    calculator = new RouteCalculator(mockMapsService);
+  });
+
+  it('should calculate call time with film industry buffers', async () => {
+    const shootTime = new Date('2024-01-15T09:00:00Z');
+    const location = { address: 'Studio A, Los Angeles', coordinates: [34.0522, -118.2437] };
+    
+    mockMapsService.calculateRoute.mockResolvedValue({
+      duration: 45 * 60, // 45 minutes
+      distance: 25000    // 25km
+    });
+    
+    const callTime = await calculator.calculateCallTime(shootTime, location);
+    
+    // Should include: travel time (45min) + buffers (parking 10min, morning routine 30min)
+    expect(callTime.getTime()).toBe(
+      shootTime.getTime() - (45 + 10 + 30) * 60 * 1000
+    );
+  });
+});
+```
+
+### 2. Integration Tests  
+Test API endpoints with real database:
+
+```typescript
+// backend/tests/integration/api/schedules.test.ts
+describe('POST /api/schedules', () => {
+  let app: Express;
+  let testDb: TestDatabase;
+  
+  beforeEach(async () => {
+    testDb = await setupTestDatabase();
+    app = createTestApp(testDb);
+  });
+
+  it('should create schedule from uploaded call sheet PDF', async () => {
+    const pdfBuffer = await readTestFile('sample-call-sheet.pdf');
+    
+    const response = await request(app)
+      .post('/api/schedules')
+      .attach('callsheet', pdfBuffer, 'call-sheet.pdf')
+      .expect(201);
+    
+    expect(response.body).toMatchObject({
+      id: expect.any(String),
+      shootingDate: '2024-01-15',
+      locations: expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Studio A',
+          callTimes: expect.any(Array)
+        })
+      ])
+    });
+  });
+});
+```
+
+### 3. E2E Tests
+Test complete user workflows:
+
+```typescript  
+// e2e-tests/email-to-calendar-workflow.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('complete email to calendar workflow', async ({ page }) => {
+  // 1. Upload call sheet PDF
+  await page.goto('/dashboard');
+  await page.setInputFiles('[data-testid=file-upload]', 'tests/fixtures/call-sheet.pdf');
+  
+  // 2. Verify schedule extraction
+  await expect(page.locator('[data-testid=extracted-schedule]')).toBeVisible();
+  await expect(page.locator('[data-testid=call-time]')).toContainText('07:00 AM');
+  
+  // 3. Calculate route
+  await page.click('[data-testid=calculate-route]');
+  await expect(page.locator('[data-testid=route-duration]')).toBeVisible();
+  
+  // 4. Create calendar event  
+  await page.click('[data-testid=add-to-calendar]');
+  await expect(page.locator('[data-testid=calendar-success]')).toBeVisible();
+  
+  // 5. Verify SMS notification
+  await expect(page.locator('[data-testid=sms-sent]')).toContainText('Notification sent');
+});
+```
+
+## Test Data & Fixtures
+
+### Test Database Setup:
+```typescript
+// backend/tests/setup/test-database.ts
+export async function setupTestDatabase(): Promise<TestDatabase> {
+  const testDb = new PrismaClient({
+    datasources: { db: { url: process.env.TEST_DATABASE_URL } }
+  });
+  
+  // Clear all tables
+  await testDb.$executeRaw`TRUNCATE TABLE schedules, locations, call_times CASCADE`;
+  
+  // Seed with test data
+  await seedTestData(testDb);
+  
+  return testDb;
+}
+```
+
+### Mock External Services:
+```typescript
+// backend/tests/mocks/google-services.mock.ts
+export function createMockGoogleServices() {
+  return {
+    calendar: {
+      createEvent: jest.fn().mockResolvedValue({ id: 'event-123' }),
+      listEvents: jest.fn().mockResolvedValue([])
+    },
+    maps: {
+      calculateRoute: jest.fn().mockResolvedValue({
+        duration: 30 * 60, // 30 minutes
+        distance: 15000     // 15km  
+      })
+    }
+  };
+}
+```
+
+## Test Commands
+
+### Backend Testing:
+```bash
+cd backend
+npm run test              # All tests
+npm run test:watch        # Watch mode
+npm run test:coverage     # Coverage report  
+npm run test:unit         # Unit tests only
+npm run test:integration  # Integration tests only
+```
+
+### Frontend Testing:  
+```bash
+cd frontend
+npm run test              # Vitest unit tests
+npm run test:watch        # Watch mode
+npm run test:ui           # Vitest UI
+npm run test:coverage     # Coverage report
+```
+
+### E2E Testing:
+```bash
+npm run test:e2e          # Headless E2E tests
+npm run test:e2e:headed   # With browser UI
+npm run test:e2e:smoke    # Quick smoke tests
+```
+
+## Test Quality Standards
+
+### Test Naming Convention:
+```typescript
+// ✅ GOOD - Descriptive test names
+it('should calculate call time with morning routine buffer for 9 AM shoot', () => {});
+it('should throw ValidationError when PDF has no readable text', () => {});
+it('should retry Google Calendar API call 3 times before failing', () => {});
+
+// ❌ BAD - Vague test names  
+it('should work', () => {});
+it('should handle error', () => {});
+it('should calculate time', () => {});
+```
+
+### Test Structure (AAA Pattern):
+```typescript
+it('should extract call times from valid PDF call sheet', async () => {
+  // ARRANGE - Set up test data
+  const mockPdf = createValidCallSheetPdf();
+  const processor = new EmailProcessor();
+  
+  // ACT - Execute the operation
+  const result = await processor.extractCallTimes(mockPdf);
+  
+  // ASSERT - Verify the outcome
+  expect(result).toHaveLength(3);
+  expect(result[0]).toMatchObject({
+    position: 'Director',
+    callTime: '07:00',
+    location: 'Studio A'
+  });
+});
+```
+
+## Continuous Integration
+
+### Test Pipeline (GitHub Actions):
+1. **Unit Tests**: Fast feedback on individual components
+2. **Integration Tests**: Database and API validation
+3. **E2E Tests**: Full user workflow validation  
+4. **Coverage Check**: Fail if coverage drops below thresholds
+
+### Coverage Thresholds:
+```json
+{
+  "coverageThreshold": {
+    "global": {
+      "branches": 60,
+      "functions": 60,
+      "lines": 60,
+      "statements": 60
+    },
+    "./src/services/": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  }
+}
+```
+
+Remember: **Write tests first, then implement**. This ensures every piece of code has a clear purpose and validation.

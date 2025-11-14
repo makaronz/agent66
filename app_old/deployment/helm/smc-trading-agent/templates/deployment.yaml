@@ -1,0 +1,171 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "smc-trading-agent.fullname" . }}
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "smc-trading-agent.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "smc-trading-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "smc-trading-agent.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "smc-trading-agent.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+      - name: vault-init
+        image: vault:1.15.2
+        command:
+        - sh
+        - -c
+        - |
+          export VAULT_ADDR="{{ .Values.vault.address }}"
+          vault auth -method=kubernetes role={{ .Values.vault.role }}
+          
+          # Database secrets
+          vault kv get -format=json {{ .Values.vault.secrets.database.path }} | jq -r '.data.data | to_entries[] | "export " + .key + "=\"" + .value + "\""' > /vault/secrets/database.env
+          
+          # Exchange secrets
+          vault kv get -format=json {{ .Values.vault.secrets.exchanges.path }} | jq -r '.data.data | to_entries[] | "export " + .key + "=\"" + .value + "\""' > /vault/secrets/exchanges.env
+          
+          echo "Secrets loaded successfully"
+        volumeMounts:
+        - name: vault-secrets
+          mountPath: /vault/secrets
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        {{- if .Values.healthChecks.liveness.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.healthChecks.liveness.path }}
+            port: {{ .Values.healthChecks.liveness.port }}
+          initialDelaySeconds: {{ .Values.healthChecks.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthChecks.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthChecks.liveness.timeoutSeconds }}
+          failureThreshold: {{ .Values.healthChecks.liveness.failureThreshold }}
+        {{- end }}
+        {{- if .Values.healthChecks.readiness.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.healthChecks.readiness.path }}
+            port: {{ .Values.healthChecks.readiness.port }}
+          initialDelaySeconds: {{ .Values.healthChecks.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthChecks.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthChecks.readiness.timeoutSeconds }}
+          failureThreshold: {{ .Values.healthChecks.readiness.failureThreshold }}
+        {{- end }}
+        {{- if .Values.healthChecks.startup.enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.healthChecks.startup.path }}
+            port: {{ .Values.healthChecks.startup.port }}
+          initialDelaySeconds: {{ .Values.healthChecks.startup.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthChecks.startup.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthChecks.startup.timeoutSeconds }}
+          failureThreshold: {{ .Values.healthChecks.startup.failureThreshold }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        command:
+        - sh
+        - -c
+        - |
+          # Source secrets from Vault
+          if [ -f /vault/secrets/database.env ]; then
+            source /vault/secrets/database.env
+          fi
+          if [ -f /vault/secrets/exchanges.env ]; then
+            source /vault/secrets/exchanges.env
+          fi
+          
+          # Start the application
+          exec /app/smc-trading-agent
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        {{- if .Values.persistence.data.enabled }}
+        - name: data
+          mountPath: {{ .Values.persistence.data.mountPath }}
+        {{- end }}
+        {{- if .Values.persistence.logs.enabled }}
+        - name: logs
+          mountPath: {{ .Values.persistence.logs.mountPath }}
+        {{- end }}
+        - name: vault-secrets
+          mountPath: /vault/secrets
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "smc-trading-agent.fullname" . }}-config
+      {{- if .Values.persistence.data.enabled }}
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ include "smc-trading-agent.fullname" . }}-data
+      {{- end }}
+      {{- if .Values.persistence.logs.enabled }}
+      - name: logs
+        persistentVolumeClaim:
+          claimName: {{ include "smc-trading-agent.fullname" . }}-logs
+      {{- end }}
+      - name: vault-secrets
+        emptyDir:
+          medium: Memory
+      - name: tmp
+        emptyDir:
+          medium: Memory

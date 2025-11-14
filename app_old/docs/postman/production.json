@@ -1,0 +1,42 @@
+{
+  "id": "production-env",
+  "name": "Production Environment",
+  "values": [
+    {
+      "key": "environment",
+      "value": "production",
+      "enabled": true
+    },
+    {
+      "key": "base_url",
+      "value": "https://api.smctradingagent.com",
+      "enabled": true
+    },
+    {
+      "key": "fastapi_url",
+      "value": "https://api.smctradingagent.com",
+      "enabled": true
+    },
+    {
+      "key": "test_email",
+      "value": "your-email@example.com",
+      "enabled": true
+    },
+    {
+      "key": "test_password",
+      "value": "your-secure-password",
+      "enabled": true
+    },
+    {
+      "key": "binance_testnet_key",
+      "value": "your-binance-testnet-api-key",
+      "enabled": true
+    },
+    {
+      "key": "binance_testnet_secret",
+      "value": "your-binance-testnet-secret",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

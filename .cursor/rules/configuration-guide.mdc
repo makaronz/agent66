@@ -1,0 +1,182 @@
+# Trading App v2 - Configuration Guide
+
+## 🔧 **Environment Configuration**
+
+### **Backend Configuration**
+
+**File**: `backend/.env`
+
+```bash
+# Server
+PORT=5001
+NODE_ENV=development
+
+# Database
+MONGO_URI=mongodb://localhost:27017/trading-app
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=1d
+
+# External APIs (Optional)
+OPENWEATHERMAP_API_KEY=your-api-key-here
+```
+
+### **Frontend Configuration**
+
+**File**: `frontend/.env`
+
+```bash
+# Backend API URL
+REACT_APP_API_URL=http://localhost:5001/api
+```
+
+---
+
+## 🚀 **Setup Instructions**
+
+### **Backend Setup**
+```bash
+cd backend
+cp .env.example .env
+# Edit .env with your values
+npm install
+npm run dev
+```
+
+### **Frontend Setup**
+```bash
+cd frontend
+cp .env.example .env
+# Edit .env with backend URL
+npm install
+npm start
+```
+
+---
+
+## 🚨 **Common Configuration Issues**
+
+### **1. Missing Environment Variables**
+**Problem**: Application won't start without required env vars
+**Solution**: Copy .env.example and fill in values
+```bash
+# Backend
+cd backend
+cp .env.example .env
+# Edit .env - set JWT_SECRET, MONGO_URI
+
+# Frontend  
+cd frontend
+cp .env.example .env
+# Edit .env - set REACT_APP_API_URL
+```
+
+### **2. MongoDB Not Running**
+**Problem**: Backend fails with "MongoDB connection error"
+**Solution**: Start MongoDB service
+```bash
+# macOS with Homebrew
+brew services start mongodb-community
+
+# Verify it's running
+ps aux | grep mongod
+```
+
+### **3. Port Already in Use**
+**Problem**: "Port 5001 already in use"
+**Solution**: Kill process or change port
+```bash
+# Find process using port
+lsof -i :5001
+
+# Kill process
+kill -9 <PID>
+
+# Or change PORT in backend/.env
+```
+
+### **4. CORS Errors in Browser**
+**Problem**: "CORS policy blocked"
+**Solution**: Ensure backend CORS allows frontend origin
+```typescript
+// backend/src/server.ts - verify this is present
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000' 
+}));
+```
+
+---
+
+## 📋 **Environment Variable Checklist**
+
+### **Backend Required Variables**
+- ✅ `PORT` - Server port (default: 5001)
+- ✅ `MONGO_URI` - MongoDB connection string
+- ✅ `JWT_SECRET` - Secret key for JWT signing (must be strong)
+- ✅ `JWT_EXPIRES_IN` - Token expiration (e.g., "1d", "7d")
+- ⚠️ `OPENWEATHERMAP_API_KEY` - Optional, for weather feature
+
+### **Frontend Required Variables**
+- ✅ `REACT_APP_API_URL` - Backend API URL (e.g., http://localhost:5001/api)
+
+### **Security Best Practices**
+1. **Never commit .env files** - Use .env.example as template
+2. **Strong JWT_SECRET** - Use 32+ character random string
+3. **Production values** - Different secrets for production
+4. **HTTPS in production** - Always use HTTPS for API_URL in production
+
+## 📁 **Configuration Files**
+
+### **Backend Configuration**
+- [backend/.env.example](mdc:backend/.env.example) - Environment template
+- [backend/src/server.ts](mdc:backend/src/server.ts) - Server startup and middleware  
+- [backend/tsconfig.json](mdc:backend/tsconfig.json) - TypeScript compiler config
+- [backend/package.json](mdc:backend/package.json) - Dependencies and scripts
+
+### **Frontend Configuration**
+- [frontend/.env.example](mdc:frontend/.env.example) - Environment template
+- [frontend/src/index.tsx](mdc:frontend/src/index.tsx) - React entry point
+- [frontend/tailwind.config.js](mdc:frontend/tailwind.config.js) - Tailwind CSS config
+- [frontend/tsconfig.json](mdc:frontend/tsconfig.json) - TypeScript compiler config
+- [frontend/package.json](mdc:frontend/package.json) - Dependencies and scripts
+
+---
+
+## 🔍 **Debugging Configuration**
+
+### **Verify Environment Variables**
+```bash
+# Backend
+cd backend
+cat .env | grep -v "^#"  # Show non-comment lines
+
+# Frontend
+cd frontend
+cat .env | grep -v "^#"
+```
+
+### **Test MongoDB Connection**
+```bash
+# Test connection string
+mongosh "mongodb://localhost:27017/trading-app"
+
+# Or use MongoDB Compass GUI
+```
+
+### **Verify TypeScript Config**
+```bash
+# Backend
+cd backend && npx tsc --noEmit
+
+# Frontend  
+cd frontend && npx tsc --noEmit
+```
+
+---
+
+**Note**: Legacy Python/YAML configuration is in `app_old/config.yaml` for reference.
+description:
+globs:
+alwaysApply: true
+---

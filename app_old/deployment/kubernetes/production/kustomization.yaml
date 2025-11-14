@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: smc-trading-production
+
+resources:
+  - ../vault-namespace.yaml
+  - ../vault-pvc.yaml
+  - ../vault-configmap.yaml
+  - ../vault-deployment.yaml
+  - ../consul-deployment.yaml
+  - ../smc-trading-namespace.yaml
+  - ../smc-agent-deployment.yaml
+
+patchesStrategicMerge:
+  - production-patches.yaml
+
+images:
+  - name: smc-agent
+    newTag: production-latest
+
+configMapGenerator:
+  - name: production-config
+    literals:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - VAULT_ADDR=http://vault.vault.svc.cluster.local:8200
+
+secretGenerator:
+  - name: production-secrets
+    literals:
+      - VAULT_TOKEN=production-vault-token-placeholder

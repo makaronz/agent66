@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-17T09:16:57Z",
+    "scan_mode": "quick",
+    "environment": "development",
+    "project": "SMC Trading Agent"
+  },
+  "sbom_files": [],
+  "scan_results": [],
+  "policy_results": {},
+  "summary": {
+    "total_vulnerabilities": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "policy_violations": false
+  }
+}

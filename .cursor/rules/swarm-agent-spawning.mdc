@@ -1,0 +1,279 @@
+---
+description: How to spawn and coordinate swarm agents for parallel development tasks
+---
+
+# Swarm Agent Spawning Guide
+
+## When to Spawn Agents
+
+Spawn agents when working on tasks that benefit from parallel execution or specialized expertise.
+
+### Task Complexity Decision Matrix
+
+| Task Type | Solo Work | Small Swarm (2-4) | Large Swarm (5-12) |
+|-----------|-----------|-------------------|-------------------|
+| Simple bug fix | ✅ | ❌ | ❌ |
+| Code refactoring | ✅ | For large changes | ❌ |
+| New feature | ❌ | Small features | Complex features ✅ |
+| Security audit | ❌ | ✅ | For comprehensive audit |
+| Performance optimization | ❌ | ✅ | System-wide optimization |
+| Production deployment | ❌ | ❌ | ✅ Always use deployment strategy |
+
+## Available Agent Types
+
+Reference: [agent-profiles.md](mdc:coordination/orchestration/agent-profiles.md)
+
+### Domain Coordinators (Spawn First)
+```bash
+# Backend domain lead
+npx claude-flow@alpha agent spawn \
+  --type backend-dev \
+  --session-id swarm-stillontime-20251012-031650 \
+  --description "Backend domain coordinator"
+
+# Frontend domain lead  
+npx claude-flow@alpha agent spawn \
+  --type coder \
+  --session-id swarm-stillontime-20251012-031650 \
+  --description "Frontend domain coordinator (React specialist)"
+
+# QA domain lead
+npx claude-flow@alpha agent spawn \
+  --type tdd-london-swarm \
+  --session-id swarm-stillontime-20251012-031650 \
+  --description "QA domain coordinator with TDD focus"
+```
+
+### Specialized Backend Agents
+```bash
+# OAuth and authentication
+npx claude-flow@alpha agent spawn --type oauth-specialist
+
+# External API integration  
+npx claude-flow@alpha agent spawn --type api-integrator
+
+# Database and caching
+npx claude-flow@alpha agent spawn --type data-architect
+
+# Error handling and resilience
+npx claude-flow@alpha agent spawn --type resilience-engineer
+```
+
+### Specialized Frontend Agents
+```bash
+# React components and UI
+npx claude-flow@alpha agent spawn --type ui-developer
+
+# State management (Zustand)
+npx claude-flow@alpha agent spawn --type state-manager
+```
+
+### QA and Testing Agents
+```bash
+# Unit and integration tests
+npx claude-flow@alpha agent spawn --type test-engineer
+
+# E2E tests (Playwright)
+npx claude-flow@alpha agent spawn --type e2e-specialist
+
+# Security auditing
+npx claude-flow@alpha agent spawn --type security-auditor
+```
+
+### Support Agents
+```bash
+# Architecture decisions
+npx claude-flow@alpha agent spawn --type system-architect
+
+# Performance monitoring
+npx claude-flow@alpha agent spawn --type performance-benchmarker
+
+# API documentation
+npx claude-flow@alpha agent spawn --type api-docs
+```
+
+## Spawning Patterns by Strategy
+
+### Feature Development (Example: Google Drive Integration)
+
+**Phase 1: Research & Planning (2 agents, parallel)**
+```bash
+npx claude-flow@alpha agent spawn --type researcher --description "Analyze Google Drive API requirements"
+npx claude-flow@alpha agent spawn --type security-auditor --description "Review security implications"
+```
+
+**Phase 2: Implementation (4 agents, parallel)**
+```bash
+npx claude-flow@alpha agent spawn --type oauth-specialist --description "Extend OAuth for Drive scope"
+npx claude-flow@alpha agent spawn --type api-integrator --description "Create DriveStorageService"
+npx claude-flow@alpha agent spawn --type data-architect --description "Add drive_file_id to schema"
+npx claude-flow@alpha agent spawn --type test-engineer --description "Create test suite"
+```
+
+**Phase 3: Integration (3 agents, parallel)**
+```bash
+npx claude-flow@alpha agent spawn --type backend-dev --description "Integrate into email workflow"
+npx claude-flow@alpha agent spawn --type ui-developer --description "Add Drive UI components"
+npx claude-flow@alpha agent spawn --type e2e-specialist --description "Create E2E tests"
+```
+
+### Bug Fixing (Example: OAuth Token Expiration)
+
+**Rapid Response Team (5 agents, parallel)**
+```bash
+npx claude-flow@alpha agent spawn --type code-analyzer --description "Investigate bug root cause"
+npx claude-flow@alpha agent spawn --type backend-dev --description "Fix token refresh mechanism"
+npx claude-flow@alpha agent spawn --type resilience-engineer --description "Add fallback mechanisms"
+npx claude-flow@alpha agent spawn --type test-engineer --description "Create regression tests"
+npx claude-flow@alpha agent spawn --type e2e-specialist --description "Validate fix end-to-end"
+```
+
+### Security Hardening (Example: Fix Critical Vulnerabilities)
+
+**Security Team (5 agents, parallel)**
+```bash
+npx claude-flow@alpha agent spawn --type security-auditor --description "Comprehensive security audit"
+npx claude-flow@alpha agent spawn --type security-manager --description "GDPR compliance validation"
+npx claude-flow@alpha agent spawn --type backend-dev --description "Implement security fixes"
+npx claude-flow@alpha agent spawn --type resilience-engineer --description "Add rate limiting"
+npx claude-flow@alpha agent spawn --type test-engineer --description "Security test suite"
+```
+
+## Agent Coordination Best Practices
+
+### 1. Establish Communication Channels
+Agents communicate via swarm memory:
+```bash
+# Agent writes to shared memory
+swarm/shared/api-contracts/drive-api.json
+
+# Agent reads from other agent's memory
+swarm/agents/oauth-specialist/token-changes.json
+```
+
+### 2. Define Clear Responsibilities
+Each agent should have:
+- Specific code ownership ([agent-profiles.md](mdc:coordination/orchestration/agent-profiles.md))
+- Clear deliverables
+- Success criteria
+- Memory namespace
+
+### 3. Execute Coordination Hooks
+**MANDATORY** for all agents:
+```bash
+# Before starting
+npx claude-flow@alpha hooks pre-task --description "Task" --agent-id "agent-name"
+
+# During work
+npx claude-flow@alpha hooks post-edit --file "path" --memory-key "swarm/agent/changes"
+npx claude-flow@alpha hooks notify --message "Status update"
+
+# After completion
+npx claude-flow@alpha hooks post-task --task-id "id" --status "completed"
+```
+
+### 4. Parallel Execution Rules
+- Spawn all independent agents in single message
+- Use coordination hooks for synchronization
+- Avoid circular dependencies
+- Escalate conflicts to domain coordinator
+
+### 5. Monitor Progress
+```bash
+# Check agent status
+npx claude-flow@alpha agent status --agent-id "agent-name"
+
+# View agent metrics
+npx claude-flow@alpha agent metrics --agent-id "agent-name"
+
+# Monitor overall swarm
+npx claude-flow@alpha swarm monitor
+```
+
+## Agent Lifecycle
+
+### Spawn → Work → Complete → Terminate
+
+1. **Spawn**: Agent created with specific task
+2. **Pre-Task Hook**: Agent registers and loads context
+3. **Work**: Agent executes task with coordination
+4. **Post-Task Hook**: Agent reports completion and metrics
+5. **Terminate**: Agent cleaned up, memory persisted
+
+### Handling Agent Failures
+
+If agent fails:
+1. Coordinator detects timeout (30s heartbeat)
+2. Failed agent isolated from pool
+3. New agent spawned with previous context
+4. Work redistributed if needed
+
+## Example: Complete Feature Development Flow
+
+```bash
+# 1. Initialize swarm (if not already active)
+npx claude-flow@alpha swarm init --topology adaptive-mesh --max-agents 12
+
+# 2. Spawn domain coordinators
+npx claude-flow@alpha agent spawn --type adaptive-coordinator
+npx claude-flow@alpha agent spawn --type backend-dev
+npx claude-flow@alpha agent spawn --type coder
+npx claude-flow@alpha agent spawn --type tdd-london-swarm
+
+# 3. Research phase (parallel)
+npx claude-flow@alpha agent spawn --type researcher --description "Research Drive API"
+npx claude-flow@alpha agent spawn --type system-architect --description "Design integration"
+
+# 4. Implementation phase (parallel)
+npx claude-flow@alpha agent spawn --type oauth-specialist
+npx claude-flow@alpha agent spawn --type api-integrator
+npx claude-flow@alpha agent spawn --type data-architect
+npx claude-flow@alpha agent spawn --type ui-developer
+
+# 5. Testing phase (parallel)
+npx claude-flow@alpha agent spawn --type test-engineer
+npx claude-flow@alpha agent spawn --type e2e-specialist
+
+# 6. Monitor progress
+npx claude-flow@alpha swarm monitor
+
+# 7. Session end
+npx claude-flow@alpha hooks session-end --export-metrics true
+```
+
+## Tips for Effective Agent Usage
+
+### Do's ✅
+- Spawn agents for complex, multi-step tasks
+- Use appropriate strategy from [swarm-strategies.md](mdc:coordination/orchestration/swarm-strategies.md)
+- Execute all coordination hooks
+- Monitor agent progress regularly
+- Collect and analyze metrics after completion
+
+### Don'ts ❌
+- Don't spawn agents for trivial tasks
+- Don't skip coordination hooks
+- Don't exceed max agent limit (12)
+- Don't spawn agents without clear task definition
+- Don't forget to terminate completed agents
+
+## Troubleshooting
+
+### Agent Not Spawning
+- Check max agent limit not exceeded
+- Verify session is active
+- Ensure agent type is valid
+
+### Agent Not Responding
+- Check heartbeat status
+- Review agent logs
+- Restart agent if necessary
+
+### Coordination Issues
+- Validate hooks are executing
+- Check memory namespace conflicts
+- Review agent communication logs
+
+---
+
+**Reference**: [swarm-coordination.mdc](mdc:.cursor/rules/swarm-coordination.mdc) for complete system overview

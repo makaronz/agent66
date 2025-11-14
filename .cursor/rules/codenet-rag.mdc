@@ -1,0 +1,152 @@
+---
+alwaysApply: true
+---
+
+# CodeNet RAG Integration - MANDATORY Usage
+
+## 🚨 CRITICAL RULE: Always Use CodeNet RAG Before Implementation
+
+**BEFORE implementing ANY TypeScript, JavaScript, or Python code, you MUST query CodeNet RAG for patterns and examples.**
+
+## CodeNet RAG Service Location
+- **Service**: [backend/src/services/codenet-rag.service.ts](mdc:backend/src/services/codenet-rag.service.ts)
+- **Controller**: [backend/src/controllers/codenet.controller.ts](mdc:backend/src/controllers/codenet.controller.ts)
+- **Documentation**: [docs/PROJECT_CODENET_INTEGRATION.md](mdc:docs/PROJECT_CODENET_INTEGRATION.md)
+
+## Mandatory Workflow
+
+### 1. Before Any Code Implementation:
+```typescript
+// STEP 1: Query CodeNet for similar examples
+const examples = await codenetRAGService.findSimilarCode(
+  'async error handling with retry',
+  'TypeScript',
+  5
+);
+
+// STEP 2: Analyze patterns from examples
+const patterns = examples.flatMap(ex => ex.patterns);
+console.log('Patterns to apply:', patterns);
+
+// STEP 3: Implement using discovered patterns
+// ... your implementation following the patterns
+```
+
+### 2. API Endpoints for CodeNet RAG:
+```bash
+# Search for similar code patterns
+GET /api/codenet/search?query={description}&language={TypeScript|JavaScript|Python}&limit=5
+
+# Generate code with context
+POST /api/codenet/generate
+{
+  "task": "Implement circuit breaker pattern",
+  "language": "TypeScript", 
+  "existingCode": "class ApiClient { ... }" // optional
+}
+
+# Extract patterns from existing code
+GET /api/codenet/patterns?codeContext={existing_code}
+```
+
+### 3. Required Patterns (Found in 65%+ of Examples):
+- **async-await pattern** (82% of examples)
+- **error-handling pattern** (78% of examples)  
+- **retry-logic pattern** (65% of examples)
+- **circuit-breaker pattern** (58% of examples)
+
+### 4. Implementation Examples:
+
+```typescript
+// ✅ CORRECT - Using CodeNet patterns
+@withRetry({
+  maxAttempts: 3,
+  backoff: 'exponential',
+  initialDelay: 1000
+})
+async function emailOperation(): Promise<EmailResult> {
+  return this.circuitBreaker.execute(async () => {
+    try {
+      const result = await this.emailProvider.send(emailData);
+      logger.info('Email sent successfully', { result });
+      return result;
+    } catch (error) {
+      logger.error('Email sending failed', { error });
+      throw new EmailServiceError('Failed to send email', error);
+    }
+  });
+}
+
+// ❌ INCORRECT - Not using CodeNet patterns
+async function emailOperation() {
+  return this.emailProvider.send(emailData); // No retry, no circuit breaker, no proper error handling
+}
+```
+
+## Exemption Protocol
+CodeNet RAG can ONLY be skipped when:
+1. **CodeNet not enabled** (`CODENET_ENABLE_RAG=false`)
+2. **Qdrant connection failed** (circuit breaker open)
+3. **No examples found** for very specific edge cases
+
+**When exempted, MUST document:**
+```typescript
+// CODENET_EXEMPTION: RAG unavailable, using standard patterns
+// Reason: Qdrant connection timeout, using fallback implementation
+async function fallbackImplementation() {
+  // ... implementation with comment explaining why CodeNet was skipped
+}
+```
+
+## Configuration Check
+Verify CodeNet RAG is properly configured:
+
+```bash
+# Environment variables required
+QDRANT_URL=http://localhost:6333
+OPENAI_API_KEY=sk-your-api-key  
+CODENET_ENABLE_RAG=true
+
+# Health check
+GET /api/codenet/health
+```
+
+Expected response:
+```json
+{
+  "success": true,
+  "qdrant": true, 
+  "ragEnabled": true,
+  "status": "healthy"
+}
+```
+
+## Integration with Development Workflow
+1. **Research Phase**: Query CodeNet for similar implementations
+2. **Design Phase**: Extract and analyze patterns from top examples  
+3. **Implementation Phase**: Apply discovered patterns to your code
+4. **Review Phase**: Validate implementation follows CodeNet patterns
+5. **Testing Phase**: Ensure pattern compliance in tests
+
+## Pattern Compliance Validation
+```typescript
+// Check if implementation follows CodeNet patterns
+async function validateCodeCompliance(code: string): Promise<boolean> {
+  const patterns = await codenetRAGService.extractPatterns(code);
+  
+  const requiredPatterns = ['error-handling', 'async-await'];
+  const hasRequired = requiredPatterns.every(p => 
+    patterns.some(found => found.name === p)
+  );
+  
+  if (!hasRequired) {
+    logger.warn('Code missing required CodeNet patterns');
+    return false;
+  }
+  
+  return true;
+}
+```
+
+## Remember: CodeNet RAG is NOT Optional
+It's a **mandatory tool** for ensuring high-quality code that follows proven patterns from 14M+ examples. Always check CodeNet before writing new code!

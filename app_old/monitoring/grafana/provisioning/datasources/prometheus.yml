@@ -1,0 +1,100 @@
+# Grafana Datasource Provisioning for SMC Trading Agent
+# Automatyczna konfiguracja źródeł danych
+
+datasources:
+  # Prometheus datasource
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.40.0
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+      queryTimeout: 60s
+      timeInterval: 15s
+    secureJsonData: {}
+    
+  # Jaeger datasource for tracing
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    jsonData:
+      tracesToLogs:
+        datasourceUid: 'loki'
+        tags: ['job', 'instance', 'pod', 'namespace']
+        mappedTags: [{ key: 'service.name', value: 'service' }]
+        mapTagNamesEnabled: false
+        spanStartTimeShift: '1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: false
+        filterBySpanID: false
+      tracesToMetrics:
+        datasourceUid: 'prometheus'
+        tags: [{ key: 'service.name', value: 'service' }, { key: 'job' }]
+        queries:
+          - name: 'Sample query'
+            query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m]))'
+      serviceMap:
+        datasourceUid: 'prometheus'
+      nodeGraph:
+        enabled: true
+    
+  # Loki datasource for logs (optional)
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      derivedFields:
+        - datasourceUid: jaeger
+          matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View Trace'
+    
+  # TestData datasource for testing
+  - name: TestData
+    type: testdata
+    access: proxy
+    editable: true
+    
+  # InfluxDB datasource (optional, for time series data)
+  # - name: InfluxDB
+  #   type: influxdb
+  #   access: proxy
+  #   url: http://influxdb:8086
+  #   database: smc_trading
+  #   user: admin
+  #   editable: true
+  #   jsonData:
+  #     timeInterval: "15s"
+  #     httpMode: GET
+  #   secureJsonData:
+  #     password: admin_password
+    
+# Notification channels (optional)
+# notifiers:
+#   - name: slack-notifications
+#     type: slack
+#     uid: slack001
+#     org_id: 1
+#     is_default: false
+#     send_reminder: true
+#     disable_resolve_message: false
+#     frequency: "10s"
+#     settings:
+#       url: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+#       channel: "#smc-alerts"
+#       title: "Grafana Alert"
+#       text: "{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}"
+#       username: "Grafana"

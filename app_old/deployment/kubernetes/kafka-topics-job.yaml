@@ -1,0 +1,146 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topics-setup
+  namespace: kafka
+  labels:
+    app: kafka-topics-setup
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kafka-topics-setup
+          image: confluentinc/cp-kafka:7.4.0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              # Wait for Kafka to be ready
+              echo "Waiting for Kafka cluster to be ready..."
+              until kafka-topics --bootstrap-server kafka-0.kafka-service.kafka.svc.cluster.local:9092 --list > /dev/null 2>&1; do
+                echo "Kafka not ready, waiting..."
+                sleep 10
+              done
+
+              echo "Kafka cluster is ready. Creating topics..."
+
+              # Market data topics for each exchange
+              EXCHANGES=("binance" "bybit" "oanda")
+              SYMBOLS=("btcusdt" "ethusdt" "adausdt" "solusdt" "eurusd" "gbpusd" "usdjpy" "audusd")
+              DATA_TYPES=("trades" "orderbook" "klines")
+
+              # Create market data topics
+              for exchange in "${EXCHANGES[@]}"; do
+                for symbol in "${SYMBOLS[@]}"; do
+                  for data_type in "${DATA_TYPES[@]}"; do
+                    TOPIC_NAME="market_data.${exchange}.${symbol}.${data_type}"
+                    
+                    # Set retention based on data type
+                    case $data_type in
+                      "trades")
+                        RETENTION_MS=86400000  # 24 hours
+                        PARTITIONS=6
+                        ;;
+                      "orderbook")
+                        RETENTION_MS=3600000   # 1 hour
+                        PARTITIONS=6
+                        ;;
+                      "klines")
+                        RETENTION_MS=604800000 # 7 days
+                        PARTITIONS=6
+                        ;;
+                    esac
+                    
+                    echo "Creating topic: $TOPIC_NAME"
+                    kafka-topics --bootstrap-server kafka-0.kafka-service.kafka.svc.cluster.local:9092 \
+                      --create \
+                      --topic "$TOPIC_NAME" \
+                      --partitions $PARTITIONS \
+                      --replication-factor 3 \
+                      --config retention.ms=$RETENTION_MS \
+                      --config cleanup.policy=delete \
+                      --config compression.type=gzip \
+                      --config min.insync.replicas=2 \
+                      --if-not-exists
+                  done
+                done
+                
+                # Create health topic for each exchange
+                HEALTH_TOPIC="market_data.${exchange}.health"
+                echo "Creating health topic: $HEALTH_TOPIC"
+                kafka-topics --bootstrap-server kafka-0.kafka-service.kafka.svc.cluster.local:9092 \
+                  --create \
+                  --topic "$HEALTH_TOPIC" \
+                  --partitions 3 \
+                  --replication-factor 3 \
+                  --config retention.ms=3600000 \
+                  --config cleanup.policy=delete \
+                  --config compression.type=gzip \
+                  --config min.insync.replicas=2 \
+                  --if-not-exists
+              done
+
+              # Create system topics
+              SYSTEM_TOPICS=(
+                "smc_signals:6:86400000"      # SMC signals - 24h retention
+                "trading_decisions:6:86400000" # Trading decisions - 24h retention
+                "risk_events:3:604800000"      # Risk events - 7 days retention
+                "system_metrics:3:3600000"     # System metrics - 1h retention
+                "audit_logs:6:2592000000"      # Audit logs - 30 days retention
+              )
+
+              for topic_config in "${SYSTEM_TOPICS[@]}"; do
+                IFS=':' read -r topic_name partitions retention_ms <<< "$topic_config"
+                
+                echo "Creating system topic: $topic_name"
+                kafka-topics --bootstrap-server kafka-0.kafka-service.kafka.svc.cluster.local:9092 \
+                  --create \
+                  --topic "$topic_name" \
+                  --partitions $partitions \
+                  --replication-factor 3 \
+                  --config retention.ms=$retention_ms \
+                  --config cleanup.policy=delete \
+                  --config compression.type=gzip \
+                  --config min.insync.replicas=2 \
+                  --if-not-exists
+              done
+
+              # Create Kafka Connect internal topics
+              CONNECT_TOPICS=(
+                "connect-configs:1:604800000"
+                "connect-offsets:25:604800000"
+                "connect-status:5:604800000"
+              )
+
+              for topic_config in "${CONNECT_TOPICS[@]}"; do
+                IFS=':' read -r topic_name partitions retention_ms <<< "$topic_config"
+                
+                echo "Creating Kafka Connect topic: $topic_name"
+                kafka-topics --bootstrap-server kafka-0.kafka-service.kafka.svc.cluster.local:9092 \
+                  --create \
+                  --topic "$topic_name" \
+                  --partitions $partitions \
+                  --replication-factor 3 \
+                  --config retention.ms=$retention_ms \
+                  --config cleanup.policy=compact \
+                  --config min.insync.replicas=2 \
+                  --if-not-exists
+              done
+
+              echo "All topics created successfully!"
+
+              # List all topics for verification
+              echo "Current topics:"
+              kafka-topics --bootstrap-server kafka-0.kafka-service.kafka.svc.cluster.local:9092 --list
+
+              echo "Topic setup completed successfully!"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"

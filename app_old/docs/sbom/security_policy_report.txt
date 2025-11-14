@@ -1,0 +1,15 @@
+SMC Trading Agent - Security Policy Report
+==================================================
+
+Environment: development
+Policy Violations: YES
+
+Vulnerability Summary:
+  CRITICAL: 2
+  HIGH: 11
+  MEDIUM: 17
+  LOW: 4
+  UNKNOWN: 0
+
+Total Vulnerabilities: 34
+Filtered (Allowed): 0

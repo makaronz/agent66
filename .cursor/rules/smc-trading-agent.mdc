@@ -1,0 +1,227 @@
+# Trading App v2 - Development Rules & Guidelines
+
+## 🏗️ **Project Architecture Overview**
+
+This is a modern full-stack trading application built with:
+- **Frontend**: React 18.2 + TypeScript + Redux Toolkit (port 3000)
+- **Backend**: Node.js + Express 4.18 + TypeScript + MongoDB (port 5001)
+- **Database**: MongoDB 8.x (Mongoose ODM)
+- **Authentication**: JWT with bcrypt password hashing
+- **Deployment**: Vercel (Frontend), Heroku/AWS (Backend)
+
+**Note**: Legacy Python/Rust trading system is archived in `app_old/` - October 3, 2025
+
+## 🚨 **Critical Import Rules**
+
+### **Backend (Express + TypeScript)**
+Use standard **ES module imports** with relative paths:
+
+```typescript
+// ✅ CORRECT backend imports
+import express from 'express';
+import { Router } from 'express';
+import { authGuard } from './middleware/auth';
+import { User } from './models/User';
+import { Post } from './models/Post';
+import { validateRequest } from './middleware/validation';
+import swaggerUi from 'swagger-ui-express';
+```
+
+### **Frontend (React + TypeScript)**
+Use **relative imports** for local modules:
+
+```typescript
+// ✅ CORRECT frontend imports
+import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { store } from './store/store';
+import { loginUser, registerUser } from './store/slices/authSlice';
+import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
+import Dashboard from './components/Dashboard';
+```
+
+**Key patterns:**
+- External packages: Named imports (`{ }`) or default imports
+- Local components: Default imports with relative paths (`./` or `../`)
+- Redux: Named exports from slices
+- React Router: Named exports for routing components
+
+## 🔧 **Common Issues & Fixes**
+
+### **1. Port 5000 Conflict (macOS)**
+**Problem**: Port 5000 occupied by macOS ControlCenter
+**Solution**: Backend uses port 5001 instead
+```bash
+# Check .env files
+PORT=5001  # backend/.env
+REACT_APP_API_URL=http://localhost:5001/api  # frontend/.env
+```
+
+### **2. Module Resolution (TypeScript)**
+**Problem**: Cannot find module '../components/LoginForm'
+**Solution**: Check relative path and file extension
+```typescript
+// ✅ Correct - no .tsx extension needed
+import LoginForm from './components/LoginForm';
+import { loginUser } from '../store/slices/authSlice';
+```
+
+### **3. MongoDB Connection**
+**Problem**: MongoDB connection failed
+**Solution**: Ensure MongoDB is running
+```bash
+# Check MongoDB status
+ps aux | grep mongod
+
+# Start MongoDB if needed (macOS)
+brew services start mongodb-community
+
+# Verify connection
+mongo --eval "db.version()"
+```
+
+### **4. CORS Issues**
+**Problem**: Frontend can't connect to backend
+**Solution**: Backend has CORS middleware configured for localhost:3000
+```typescript
+// backend/src/server.ts
+app.use(cors({ origin: 'http://localhost:3000' }));
+```
+
+## 📁 **Key File Locations**
+
+### **Current Application (Root Level)**
+- [README.md](mdc:README.md) - Main project documentation
+- [backend/package.json](mdc:backend/package.json) - Backend dependencies
+- [frontend/package.json](mdc:frontend/package.json) - Frontend dependencies
+
+### **Backend Structure**
+- [backend/src/server.ts](mdc:backend/src/server.ts) - Express server entry point
+- [backend/src/routes/](mdc:backend/src/routes/) - API route handlers
+- [backend/src/models/](mdc:backend/src/models/) - Mongoose models (User, Post)
+- [backend/src/middleware/](mdc:backend/src/middleware/) - Auth & validation middleware
+- [backend/.env](mdc:backend/.env) - Environment configuration
+
+### **Frontend Structure**
+- [frontend/src/App.tsx](mdc:frontend/src/App.tsx) - React app entry
+- [frontend/src/components/](mdc:frontend/src/components/) - React components
+- [frontend/src/store/](mdc:frontend/src/store/) - Redux store & slices
+- [frontend/.env](mdc:frontend/.env) - Frontend environment config
+
+### **Legacy System (Archived)**
+- [app_old/main.py](mdc:app_old/main.py) - Legacy Python entry point
+- [app_old/config.yaml](mdc:app_old/config.yaml) - Legacy configuration
+- [app_old/src/](mdc:app_old/src/) - Legacy React/Rust code
+- See app_old/ for complete legacy documentation
+
+## 🚀 **Development Workflow**
+
+### **Starting Current Application**
+```bash
+# Backend (port 5001)
+cd backend
+npm install
+npm run dev
+
+# Frontend (port 3000)  
+cd frontend
+npm install
+npm start
+
+# Run tests
+cd backend && npm test
+cd frontend && npm test
+```
+
+### **Testing Application**
+```bash
+# Verify backend API
+curl http://localhost:5001/api
+
+# Verify Swagger docs
+open http://localhost:5001/api-docs
+
+# Verify frontend
+open http://localhost:3000
+```
+
+### **Legacy System (app_old/)**
+```bash
+# For working with legacy Python/Rust code
+cd app_old
+python main.py
+
+# Test Python imports (legacy)
+cd app_old && python -c "import main; print('✅ All imports working')"
+```
+
+## ⚠️ **Known Issues & Considerations**
+
+### **Current Application**
+- **Port 5000 Conflict**: macOS ControlCenter uses port 5000, backend uses 5001
+- **Frontend Vulnerabilities**: 10 npm vulnerabilities detected (3 moderate, 7 high)
+  - Run `cd frontend && npm audit fix` to address
+- **OpenWeatherMap API**: Weather route requires API key in backend/.env
+
+### **Legacy System (app_old/ only)**
+**Note**: These issues apply only to archived code in app_old/
+
+- **Configuration Validation**: Disabled in app_old/config_loader.py
+- **Vault Integration**: Falls back to environment variables  
+- **Logging Configuration**: Uses basic logging setup
+
+## 🎯 **Development Priorities**
+
+### **High Priority**
+1. ✅ App v2 migration to root - **COMPLETED (Oct 3, 2025)**
+2. ✅ Backend startup (tsx + port 5001) - **WORKING**
+3. ✅ Frontend startup (React + Redux) - **WORKING**
+4. ✅ Registration functionality - **ADDED**
+5. ⚠️ Frontend vulnerabilities (10 found) - **NEEDS FIXING**
+
+### **Medium Priority**
+1. Fix frontend npm audit vulnerabilities
+2. Add OpenWeatherMap API key for weather feature
+3. Improve error handling and logging
+4. Add more comprehensive tests
+
+### **Low Priority**
+1. Migrate from Redux to Zustand (optional)
+2. Add React Query for data fetching
+3. Implement caching with Redis
+4. Add Docker compose for development
+
+## 🔍 **Debugging Checklist**
+
+When encountering issues:
+
+1. **Check MongoDB connection** - Ensure MongoDB is running
+2. **Verify ports** - Backend 5001, Frontend 3000
+3. **Check environment variables** - backend/.env and frontend/.env
+4. **Test TypeScript compilation** - `npm run build`
+5. **Review console errors** - Browser dev tools for frontend, terminal for backend
+6. **Check CORS configuration** - Backend allows localhost:3000
+7. **Verify JWT configuration** - JWT_SECRET must be set in backend/.env
+
+## 📚 **Reference Links**
+
+### **Current Application**
+- [README.md](mdc:README.md) - Main project documentation
+- [backend/README.md](mdc:backend/README.md) - Backend documentation
+- [frontend/README.md](mdc:frontend/README.md) - Frontend documentation
+- [MIGRATION_PLAN_APP_V2.md](mdc:MIGRATION_PLAN_APP_V2.md) - Migration details
+
+### **Legacy System (Archived)**
+- [app_old/TASK_log.md](mdc:app_old/TASK_log.md) - Legacy task history
+- [app_old/DEPLOYMENT.md](mdc:app_old/DEPLOYMENT.md) - Legacy deployment docs
+- [app_old/README.md](mdc:app_old/README.md) - Legacy system documentation
+
+---
+
+**Remember**: As of October 3, 2025, the main application is backend/ + frontend/. Legacy Python/Rust code is archived in app_old/.
+description:
+globs:
+alwaysApply: true
+---

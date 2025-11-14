@@ -1,0 +1,159 @@
+# Enhanced Prometheus Configuration for Film Industry Time Tracking System
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'film-tracker-production'
+    replica: 'prometheus-1'
+
+rule_files:
+  - "alert-rules.yml"
+  - "recording-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      timeout: 10s
+      api_version: v2
+
+remote_write:
+  - url: "http://prometheus-remote-storage:9201/write"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+
+scrape_configs:
+  # Prometheus itself with detailed metrics
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Film Tracking Backend Services with detailed metrics
+  - job_name: 'film-tracker-backend-1'
+    static_configs:
+      - targets: ['backend-1:3002']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'backend-1'
+
+  - job_name: 'film-tracker-backend-2'
+    static_configs:
+      - targets: ['backend-2:3002']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'backend-2'
+
+  # Film Tracking Frontend with real-time metrics
+  - job_name: 'film-tracker-frontend-1'
+    static_configs:
+      - targets: ['frontend-1:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'frontend-1'
+
+  - job_name: 'film-tracker-frontend-2'
+    static_configs:
+      - targets: ['frontend-2:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'frontend-2'
+
+  # PostgreSQL Exporter with detailed database metrics
+  - job_name: 'postgres-primary'
+    static_configs:
+      - targets: ['postgres-exporter-primary:9187']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-primary'
+
+  - job_name: 'postgres-replica'
+    static_configs:
+      - targets: ['postgres-exporter-replica:9187']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-replica'
+
+  # Redis Exporter with cache metrics
+  - job_name: 'redis-master'
+    static_configs:
+      - targets: ['redis-exporter-master:9121']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis-master'
+
+  - job_name: 'redis-slave'
+    static_configs:
+      - targets: ['redis-exporter-slave:9121']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis-slave'
+
+  # Nginx Load Balancer metrics
+  - job_name: 'nginx-lb'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'nginx-lb'
+
+  # Node Exporter (System metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # cAdvisor for container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Docker daemon metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['docker-exporter:9323']
+    scrape_interval: 30s
+
+  # Custom application business metrics
+  - job_name: 'business-metrics'
+    static_configs:
+      - targets: ['backend-1:3002', 'backend-2:3002']
+    metrics_path: '/api/business-metrics'
+    scrape_interval: 60s
+
+  # WebSocket connections monitoring
+  - job_name: 'websocket-metrics'
+    static_configs:
+      - targets: ['backend-1:3002', 'backend-2:3002']
+    metrics_path: '/api/websocket-metrics'
+    scrape_interval: 15s

@@ -1,0 +1,240 @@
+# Trading App v2 - Import Structure & Module Organization
+
+## 🏗️ **Application Stack**
+
+- **Backend**: Express + TypeScript + MongoDB (port 5001)
+- **Frontend**: React 18.2 + Redux Toolkit + TypeScript (port 3000)
+- **Full TypeScript codebase** with ES modules
+
+**Note**: Legacy Python/Rust system archived in `app_old/`
+
+---
+
+## 🚨 **Critical Import Rules**
+
+### **Backend (Express + TypeScript)**
+
+Use **standard ES module imports** with relative paths:
+
+```typescript
+// ✅ CORRECT backend imports
+
+// External packages
+import express, { Express, Request, Response } from 'express';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+
+// Local modules (relative imports)
+import { authGuard } from './middleware/auth';
+import { validateRequest } from './middleware/validation';
+import { User } from './models/User';
+import { Post } from './models/Post';
+import authRoutes from './routes/auth';
+import postRoutes from './routes/posts';
+```
+
+**Key Rules:**
+- No `@/` alias in backend
+- Use relative paths: `./`, `../`
+- No file extensions in imports
+- Named exports use `{ }` syntax
+
+### **Frontend (React + TypeScript)**
+
+Use **relative imports** for all local files:
+
+```typescript
+// ✅ CORRECT frontend imports
+
+// External packages
+import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import toast from 'react-hot-toast';
+
+// Local modules (relative imports)
+import { store } from './store/store';
+import { loginUser, registerUser } from './store/slices/authSlice';
+import type { AppDispatch, RootState } from './store/store';
+import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
+import Dashboard from './components/Dashboard';
+import PrivateRoute from './components/PrivateRoute';
+```
+
+**Key Rules:**
+- No `@/` alias configured (could be added later)
+- Use relative paths: `./components/`, `../store/`
+- No file extensions (.tsx) in imports
+- Type imports use `type` keyword when possible
+
+## 📁 **Module Organization**
+
+### **Backend Structure**
+```
+backend/
+├── src/
+│   ├── server.ts             # Express server + MongoDB setup
+│   ├── routes/
+│   │   ├── auth.ts           # POST /auth/register, /auth/login
+│   │   ├── posts.ts          # CRUD operations for posts
+│   │   └── weather.ts        # GET /weather?city=X (requires API key)
+│   ├── models/
+│   │   ├── User.ts           # Mongoose User schema (email, password hash)
+│   │   └── Post.ts           # Mongoose Post schema (title, content, author)
+│   ├── middleware/
+│   │   ├── auth.ts           # JWT authentication guard
+│   │   └── validation.ts     # Zod request validation
+│   ├── config/
+│   │   └── swagger.ts        # OpenAPI/Swagger configuration
+│   └── tests/
+│       └── user.test.ts      # Jest tests
+├── .env.example              # Environment template
+├── package.json              # Dependencies + scripts (tsx, nodemon)
+├── tsconfig.json             # TypeScript config (ES2022)
+└── jest.config.js            # Jest configuration
+```
+
+### **Frontend Structure**
+```
+frontend/
+├── src/
+│   ├── index.tsx             # React DOM entry point
+│   ├── App.tsx               # Router + Provider setup
+│   ├── components/
+│   │   ├── LoginForm.tsx     # Login with Zod validation
+│   │   ├── RegisterForm.tsx  # Registration with password confirm
+│   │   ├── Dashboard.tsx     # Main dashboard view
+│   │   ├── AddDataForm.tsx   # Data entry form
+│   │   └── PrivateRoute.tsx  # Protected route wrapper
+│   ├── store/
+│   │   ├── store.ts          # Redux store configuration
+│   │   └── slices/
+│   │       ├── authSlice.ts  # Auth state (token, user, loading)
+│   │       └── postSlice.ts  # Posts state management
+│   ├── index.css             # Tailwind CSS imports
+│   └── setupTests.ts         # Jest + React Testing Library
+├── public/
+│   └── index.html            # HTML template
+├── .env.example              # Environment template
+├── package.json              # Dependencies (React 18, Redux Toolkit)
+├── tailwind.config.js        # Tailwind configuration
+└── tsconfig.json             # TypeScript config (JSX support)
+```
+
+## 🔧 **Common Import Issues & Fixes**
+
+### **Issue 1: Module Not Found (TypeScript)**
+**Error**: `Cannot find module './components/LoginForm'`
+**Cause**: Incorrect relative path or missing file
+**Solution**: 
+```typescript
+// ✅ Check relative path is correct
+import LoginForm from './components/LoginForm';  // same directory
+import { store } from '../store/store';          // parent directory
+```
+
+### **Issue 2: Named vs Default Exports**
+**Error**: `'LoginForm' is not exported from './components/LoginForm'`
+**Cause**: Mixing named and default exports
+**Solution**:
+```typescript
+// ✅ Default export (most components)
+export default LoginForm;
+import LoginForm from './components/LoginForm';
+
+// ✅ Named export (actions, types)
+export const loginUser = createAsyncThunk(...);
+import { loginUser } from './store/slices/authSlice';
+```
+
+### **Issue 3: Type Import Optimization**
+**Error**: TypeScript performance issues with large imports
+**Solution**: Use `type` keyword for type-only imports
+```typescript
+// ✅ Optimized type imports
+import type { AppDispatch, RootState } from './store/store';
+import type { LoginFormInputs } from './types';
+```
+
+## 🧪 **Testing Import Resolution**
+
+### **Test Current Application**
+```bash
+# Backend TypeScript compilation
+cd backend
+npm run build
+
+# Frontend TypeScript compilation  
+cd frontend
+npm test -- --passWithNoTests
+
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+cd frontend && npm test
+```
+
+### **Verify Import Changes Work**
+```bash
+# After adding imports, verify compilation
+cd backend && npm run build
+cd frontend && npm test -- --passWithNoTests
+
+# Check for import errors in console
+npm start  # Watch for import errors in output
+```
+
+## 📋 **Import Checklist**
+
+When adding new TypeScript imports:
+
+1. **External or local?** - External uses package name, local uses relative path
+2. **Named or default export?** - Check how the module exports
+3. **Type-only import?** - Use `import type { }` for types
+4. **Correct relative path?** - `./` same dir, `../` parent dir
+5. **Test compilation** - Run `npm run build` to verify
+
+## ⚠️ **Import Best Practices**
+
+### **Backend**
+1. ✅ Use ES module `import` syntax (not `require`)
+2. ✅ Relative paths for local modules
+3. ✅ Named imports for middleware, types
+4. ✅ Default imports for routes, models
+5. ✅ No file extensions in import paths
+
+### **Frontend**
+1. ✅ Relative imports for all local files
+2. ✅ Default imports for components
+3. ✅ Named imports for hooks, actions, types
+4. ✅ Group imports: external, then local
+5. ✅ Use `type` keyword for type-only imports
+
+### **Common Patterns**
+```typescript
+// ✅ Import grouping example
+// 1. External packages
+import React from 'react';
+import { useDispatch } from 'react-redux';
+import { z } from 'zod';
+
+// 2. Local modules  
+import { loginUser } from '../store/slices/authSlice';
+import type { AppDispatch } from '../store/store';
+import LoginForm from './components/LoginForm';
+```
+
+---
+
+**Remember**: This is a full TypeScript application. No Python imports in active codebase (see `app_old/` for legacy Python reference).
+description:
+globs:
+alwaysApply: true
+---

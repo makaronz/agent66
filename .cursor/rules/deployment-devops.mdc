@@ -1,0 +1,486 @@
+---
+description: Deployment, Docker, and DevOps practices for Agent66 trading platform
+---
+
+# Deployment & DevOps Practices
+
+## Docker Configuration
+
+### Development Docker Setup
+- **Main Config**: [docker-compose.yml](mdc:docker-compose.yml) - Local trading development stack
+- **Production Config**: [docker-compose.production.yml](mdc:docker-compose.production.yml) - Production optimized for high-frequency trading
+- **Backend Dockerfile**: [backend/Dockerfile](mdc:backend/Dockerfile) - Python FastAPI image
+- **Frontend Dockerfile**: [frontend/Dockerfile](mdc:frontend/Dockerfile) - React TypeScript image
+- **Execution Engine**: [execution_engine/Dockerfile](mdc:execution_engine/Dockerfile) - Rust ultra-low latency image
+
+### Services Architecture:
+```yaml
+# docker-compose.yml structure for trading platform
+services:
+  # Core trading services
+  backend:          # FastAPI trading API server
+  frontend:         # React trading dashboard
+  execution_engine: # Rust execution engine for ultra-low latency
+  
+  # Data services
+  postgres:         # PostgreSQL with TimescaleDB for time-series data
+  redis:           # Redis for real-time data caching
+  kafka:           # Kafka for high-throughput data pipeline
+  
+  # Exchange simulators (development)
+  binance_testnet: # Binance testnet simulation
+  exchange_mock:   # Mock exchange for testing
+  
+  # Monitoring and observability
+  prometheus:      # Metrics collection
+  grafana:        # Trading dashboards and alerts
+  jaeger:         # Distributed tracing
+```
+
+### Docker Commands:
+```bash
+# Development trading stack
+npm run docker:up      # Start all trading services
+npm run docker:down    # Stop all services  
+npm run docker:logs    # View service logs
+npm run docker:build   # Rebuild all images
+
+# Individual service management
+docker-compose up postgres redis kafka     # Start only data services
+docker-compose up binance_testnet          # Start exchange simulation
+docker-compose logs -f execution_engine    # Follow execution engine logs
+docker-compose logs -f backend             # Follow trading API logs
+
+# Performance monitoring
+docker-compose up prometheus grafana       # Start monitoring stack
+docker-compose exec prometheus curl localhost:9090/metrics  # Check metrics
+
+# Trading-specific commands
+docker-compose exec backend python -m pytest tests/trading/  # Run trading tests
+docker-compose exec execution_engine ./target/release/latency_test  # Latency test
+```
+
+## Environment Configuration
+
+### Environment Files Structure:
+```
+├── .env                    # Local development (gitignored)
+├── .env.example           # Template with required variables
+├── backend/.env           # Backend-specific variables (gitignored)
+└── frontend/.env.local    # Frontend-specific variables (gitignored)
+```
+
+### Required Environment Variables:
+
+#### Backend Core (Python/FastAPI):
+```bash
+# Database with TimescaleDB
+DATABASE_URL=postgresql://trader:secure_pass@localhost:5432/agent66_trading
+TEST_DATABASE_URL=postgresql://trader:secure_pass@localhost:5432/agent66_test
+TIMESCALEDB_ENABLED=true
+
+# Redis for real-time caching
+REDIS_URL=redis://localhost:6379
+REDIS_PASSWORD=your-redis-password
+
+# Kafka for data pipeline
+KAFKA_BROKERS=localhost:9092
+KAFKA_TOPIC_MARKET_DATA=market_data
+KAFKA_TOPIC_TRADES=trade_executions
+KAFKA_TOPIC_RISK=risk_alerts
+
+# JWT Authentication  
+JWT_SECRET=your-ultra-secure-random-string-256-bits
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Exchange API Keys (Encrypted in production)
+BINANCE_API_KEY=your-binance-api-key
+BINANCE_API_SECRET=your-binance-api-secret
+BINANCE_TESTNET=true  # Use testnet for development
+BYBIT_API_KEY=your-bybit-api-key
+BYBIT_API_SECRET=your-bybit-api-secret
+
+# Trading Configuration
+TRADING_MODE=paper  # paper, sandbox, live
+MAX_POSITION_SIZE=10000  # USD
+MAX_DAILY_RISK=0.06  # 6% of account
+MAX_LEVERAGE=10
+RISK_PER_TRADE=0.02  # 2% per trade
+
+# SMC Configuration
+SMC_ENABLE_PATTERN_DETECTION=true
+SMC_MIN_CONFIDENCE=0.75
+SMC_TIMEFRAMES=1m,5m,15m,1h,4h,1d
+
+# Performance Monitoring
+PROMETHEUS_PORT=9090
+GRAFANA_ADMIN_PASSWORD=your-grafana-password
+JAEGER_AGENT_HOST=localhost
+JAEGER_AGENT_PORT=6831
+
+# ML/AI Models
+ML_MODEL_PATH=./models/
+TENSORFLOW_ENABLE_GPU=false  # true for production with GPU
+```
+
+#### Frontend (React/TypeScript):
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000/ws
+VITE_APP_NAME=Agent66
+VITE_TRADING_MODE=paper
+VITE_ENABLE_ADVANCED_CHARTS=true
+```
+
+#### Execution Engine (Rust):
+```bash
+EXECUTION_ENGINE_PORT=9000
+MAX_LATENCY_MICROSECONDS=200
+EXCHANGE_WEBSOCKET_BINANCE=wss://testnet.binance.vision/ws
+RUST_LOG=info
+```
+
+## Deployment Strategies
+
+### Production Deployment (Zero-Downtime Trading):
+```bash
+# 1. Pre-deployment validation
+python scripts/validate_trading_config.py
+cargo test --release  # Rust execution engine tests
+python -m pytest tests/trading/  # Critical trading tests
+
+# 2. Build optimized images with multi-stage builds
+docker-compose -f docker-compose.production.yml build --no-cache
+
+# 3. Run database migrations (TimescaleDB)
+python scripts/run_migrations.py
+python scripts/create_timescale_hypertables.py
+
+# 4. Deploy with rolling updates (trading-aware)
+# Note: Must maintain at least one active instance for continuous trading
+docker-compose -f docker-compose.production.yml up -d --scale backend=3 --scale execution_engine=2
+
+# 5. Critical health checks for trading system
+curl http://localhost:8000/api/v1/health  # API health
+curl http://localhost:8000/api/v1/health/trading  # Trading engine health
+curl http://localhost:8000/api/v1/health/exchanges  # Exchange connectivity
+
+# 6. Validate execution latency (<200μs)
+./scripts/latency_benchmark.sh
+
+# 7. Monitor for 5 minutes before considering deployment complete
+./scripts/monitor_deployment.sh --duration 300
+```
+
+### Staging Deployment (Paper Trading):
+```bash
+# Deploy to staging with paper trading mode
+export TRADING_MODE=paper
+docker-compose -f docker-compose.staging.yml up -d
+
+# Run comprehensive trading tests
+python -m pytest tests/trading/ --staging
+python -m pytest tests/smc/ --staging  # SMC pattern tests
+npm run test:e2e -- --baseURL=https://staging.agent66.io
+
+# Validate trading performance metrics
+./scripts/validate_trading_metrics.sh --environment=staging
+```
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflow:
+```yaml
+# .github/workflows/ci-cd.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Backend tests
+      - name: Backend Tests
+        run: |
+          cd backend
+          npm ci
+          npm run test:coverage
+          
+      # Frontend tests  
+      - name: Frontend Tests
+        run: |
+          cd frontend
+          npm ci
+          npm run test
+          
+      # E2E tests
+      - name: E2E Tests
+        run: |
+          npm run docker:up -d
+          npm run test:e2e:smoke
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Production
+        run: |
+          # Deployment script
+          ./scripts/deploy-production.sh
+```
+
+## Health Monitoring
+
+### Health Check Endpoints:
+```typescript
+// GET /api/v1/health - System health
+interface HealthCheckResponse {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: string;
+  services: {
+    database: ServiceHealth;
+    redis: ServiceHealth;
+    qdrant: ServiceHealth;
+    googleApis: ServiceHealth;
+    twilio: ServiceHealth;
+  };
+  performance: {
+    uptime: number;
+    memoryUsage: NodeJS.MemoryUsage;
+    responseTime: number;
+  };
+}
+
+// GET /api/v1/health/ready - Readiness probe
+// GET /api/v1/health/live - Liveness probe
+```
+
+### Logging & Monitoring:
+```typescript
+// Structured logging with correlation IDs
+export class RequestLogger {
+  logRequest(req: Request, res: Response, next: NextFunction): void {
+    const correlationId = uuidv4();
+    req.correlationId = correlationId;
+    
+    logger.info('Request started', {
+      correlationId,
+      method: req.method,
+      url: req.url,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    });
+    
+    const startTime = Date.now();
+    
+    res.on('finish', () => {
+      const duration = Date.now() - startTime;
+      
+      logger.info('Request completed', {
+        correlationId,
+        statusCode: res.statusCode,
+        duration,
+        success: res.statusCode < 400
+      });
+    });
+    
+    next();
+  }
+}
+```
+
+## Database Management
+
+### Prisma Migrations:
+```bash
+# Development
+npm run prisma:migrate      # Apply pending migrations
+npm run prisma:reset        # Reset database and re-run migrations
+npm run prisma:studio       # Open Prisma Studio
+
+# Production
+npm run prisma:deploy       # Apply migrations without prompts
+npm run prisma:generate     # Generate Prisma client
+```
+
+### Backup Strategy:
+```bash
+# Automated database backup
+#!/bin/bash
+# scripts/backup-database.sh
+
+BACKUP_DIR="/backups/$(date +%Y-%m-%d)"
+mkdir -p "$BACKUP_DIR"
+
+# PostgreSQL backup
+pg_dump $DATABASE_URL > "$BACKUP_DIR/postgres-$(date +%H-%M-%S).sql"
+
+# Redis backup
+redis-cli --rdb "$BACKUP_DIR/redis-$(date +%H-%M-%S).rdb"
+
+# Upload to cloud storage
+aws s3 sync "$BACKUP_DIR" s3://stillontime-backups/$(date +%Y-%m-%d)/
+```
+
+## Security & Secrets Management
+
+### Secrets Rotation:
+```bash
+# Rotate JWT secret
+NEW_SECRET=$(openssl rand -base64 32)
+kubectl create secret generic jwt-secret --from-literal=secret="$NEW_SECRET"
+
+# Rotate API keys  
+./scripts/rotate-google-credentials.sh
+./scripts/rotate-twilio-credentials.sh
+```
+
+### Container Security:
+```dockerfile
+# backend/Dockerfile.production
+FROM node:18-alpine
+
+# Security: Don't run as root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Copy and install dependencies
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy application code
+COPY --chown=nodejs:nodejs . .
+
+# Switch to non-root user
+USER nodejs
+
+EXPOSE 3001
+CMD ["npm", "start"]
+```
+
+## Performance Optimization
+
+### Production Optimizations:
+```yaml
+# docker-compose.production.yml
+services:
+  backend:
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+      args:
+        NODE_ENV: production
+        
+  postgres:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+```
+
+### Caching Strategy:
+```typescript
+// Redis caching with TTL
+export class CacheService {
+  async cacheRouteCalculation(key: string, route: RouteResult): Promise<void> {
+    await this.redis.setex(
+      `route:${key}`,
+      24 * 60 * 60, // 24 hours TTL
+      JSON.stringify(route)
+    );
+  }
+  
+  async cacheWeatherData(location: string, weather: WeatherData): Promise<void> {
+    await this.redis.setex(
+      `weather:${location}`,
+      4 * 60 * 60, // 4 hours TTL  
+      JSON.stringify(weather)
+    );
+  }
+}
+```
+
+## Kubernetes Deployment (Optional)
+
+### Kubernetes Manifests: [kubernetes/](mdc:kubernetes/)
+```yaml
+# kubernetes/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stillontime-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: stillontime-backend
+  template:
+    metadata:
+      labels:
+        app: stillontime-backend
+    spec:
+      containers:
+      - name: backend
+        image: stillontime/backend:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: 3001
+          initialDelaySeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
+            port: 3001
+          initialDelaySeconds: 5
+```
+
+All deployments must follow these patterns to ensure reliability, security, and maintainability in production environments.

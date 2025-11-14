@@ -1,0 +1,265 @@
+---
+alwaysApply: true
+---
+
+# Agent66 Code Standards & Quality Gates
+
+## TypeScript/Python Strict Standards
+- **Backend (Python)**: MUST use type hints for all functions and return types
+- **Frontend (TypeScript)**: Strict TypeScript with explicit types
+- **API Gateway (TypeScript)**: Explicit return types for all exported functions
+- **No `any` types**: Use proper typing or `unknown` with type guards
+- **Financial Precision**: Use `Decimal` for all monetary calculations (never `float`)
+
+## Code Quality Requirements
+```python
+# ✅ CORRECT - Explicit type hints (Python backend)
+async def execute_trade_order(
+    symbol: str, 
+    quantity: Decimal, 
+    price: Optional[Decimal] = None
+) -> OrderExecutionResult:
+    """Execute trading order with risk management and SMC validation."""
+    # implementation
+
+# ✅ CORRECT - Proper error handling for trading
+try:
+    order_result = await exchange_client.create_order(order_params)
+    await risk_manager.validate_execution(order_result)
+    return order_result
+except InsufficientBalanceError as e:
+    logger.error('Insufficient balance for trade', {
+        'error': str(e), 
+        'symbol': symbol,
+        'requested_quantity': float(quantity),
+        'context': 'trade_execution'
+    })
+    raise TradingExecutionError('Insufficient funds for order', e)
+except ExchangeConnectionError as e:
+    logger.critical('Exchange connection failed during order', {
+        'error': str(e),
+        'exchange': exchange_name,
+        'retry_count': retry_count
+    })
+    raise
+
+# ❌ INCORRECT - Missing type hints, generic error, float for money
+async def execute_trade(symbol, amount):
+    raise Exception('Trade failed')
+```
+
+## Error Handling Pattern (MANDATORY)
+All errors must use hierarchical error classes with trading-specific context:
+
+```python
+# Trading-specific error hierarchy (Python backend)
+class TradingBaseError(Exception):
+    """Base class for all trading-related errors"""
+    def __init__(self, message: str, original_error: Optional[Exception] = None, context: Optional[Dict[str, Any]] = None):
+        self.message = message
+        self.original_error = original_error
+        self.context = context or {}
+        super().__init__(message)
+
+class OrderExecutionError(TradingBaseError):
+    """Error during order execution"""
+    pass
+
+class RiskLimitExceededError(TradingBaseError):
+    """Risk management limit exceeded"""
+    pass
+
+class InsufficientBalanceError(TradingBaseError):
+    """Insufficient account balance for operation"""
+    pass
+
+class ExchangeConnectionError(TradingBaseError):
+    """Exchange API connection or communication error"""
+    pass
+
+class SMCAnalysisError(TradingBaseError):
+    """Smart Money Concepts analysis error"""
+    pass
+
+# Usage examples
+raise OrderExecutionError(
+    'Order execution failed due to insufficient balance',
+    original_error=exchange_error,
+    context={
+        'symbol': 'BTCUSDT',
+        'order_type': 'market',
+        'quantity': '0.001',
+        'account_balance': '100.50'
+    }
+)
+
+raise RiskLimitExceededError(
+    'Position size exceeds maximum risk limit',
+    context={
+        'requested_position_size': '10000',
+        'max_position_size': '5000',
+        'current_risk_percentage': '0.025'
+    }
+)
+```
+
+## Logging Standards
+- **Production**: Use structured logging with trade correlation IDs
+- **Never print() or console.log**: Use proper logger with levels
+- **Trading Context**: Include symbol, orderID, userID, latency metrics
+- **Sensitive Data**: Never log API keys, account balances, or personal data
+
+```python
+# ✅ CORRECT - Structured logging for trading
+import structlog
+
+logger = structlog.get_logger()
+
+# Trade execution logging
+logger.info(
+    'Order execution started',
+    order_id=order_id,
+    user_id=user_id,
+    symbol='BTCUSDT',
+    side='buy',
+    quantity='0.001',
+    order_type='market',
+    timestamp=time.time_ns(),
+    correlation_id=correlation_id
+)
+
+# Performance-critical logging with latency
+logger.info(
+    'Order execution completed',
+    order_id=order_id,
+    execution_latency_us=execution_time_microseconds,
+    fill_price='45000.0',
+    slippage_bps=1.2,
+    exchange='binance'
+)
+
+# Risk management logging
+logger.warning(
+    'Risk limit approached',
+    user_id=user_id,
+    current_risk_pct=0.018,
+    max_risk_pct=0.02,
+    symbol='BTCUSDT',
+    position_size='5000.0'
+)
+
+# ❌ INCORRECT - No context, sensitive data exposed
+print(f'Processing trade: {api_key}')
+logger.info('Trade done')
+```
+
+## Circuit Breaker & Resilience (MANDATORY)
+All exchange API calls MUST use resilience patterns optimized for trading:
+
+```python
+from circuitbreaker import circuit
+from tenacity import retry, stop_after_attempt, wait_exponential
+import asyncio
+from typing import Dict, Any
+
+# Exchange-specific circuit breakers with trading optimizations
+@circuit(failure_threshold=5, recovery_timeout=30, expected_exception=ExchangeConnectionError)
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=0.1, min=0.1, max=1.0),  # Fast retries for trading
+    reraise=True
+)
+async def execute_exchange_order(
+    exchange_client: ExchangeClient,
+    order_params: Dict[str, Any]
+) -> OrderResult:
+    """Execute order with circuit breaker and optimized retry strategy for trading"""
+    start_time = time.time_ns()
+    
+    try:
+        result = await exchange_client.create_order(**order_params)
+        
+        # Log successful execution with latency
+        execution_time = (time.time_ns() - start_time) // 1000  # microseconds
+        logger.info(
+            'Order executed successfully',
+            order_id=result.id,
+            execution_latency_us=execution_time,
+            exchange=exchange_client.name
+        )
+        
+        return result
+        
+    except ExchangeRateLimitError as e:
+        # Special handling for rate limits - wait and retry
+        await asyncio.sleep(e.retry_after_seconds)
+        raise
+    except InsufficientBalanceError:
+        # Don't retry balance errors
+        raise
+    except ExchangeConnectionError as e:
+        # Log connection issues for monitoring
+        logger.error(
+            'Exchange connection failed',
+            exchange=exchange_client.name,
+            error=str(e),
+            retry_count=e.retry_count
+        )
+        raise
+
+# Market data with different resilience strategy (higher tolerance, caching)
+@circuit(failure_threshold=10, recovery_timeout=15)  # More tolerant for market data
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=0.05))
+async def fetch_market_data(symbol: str) -> MarketData:
+    """Fetch market data with fallback to cached data"""
+    try:
+        data = await exchange_client.fetch_ticker(symbol)
+        # Cache successful data
+        await redis_client.setex(f'market_data:{symbol}', 30, json.dumps(data))
+        return data
+    except Exception as e:
+        # Fallback to cached data
+        cached_data = await redis_client.get(f'market_data:{symbol}')
+        if cached_data:
+            logger.warning(f'Using cached market data for {symbol}', error=str(e))
+            return json.loads(cached_data)
+        raise MarketDataUnavailableError(f'Market data unavailable for {symbol}')
+```
+
+## Testing Requirements
+- **TDD**: Write failing tests BEFORE implementation (critical for financial applications)
+- **Coverage**: >95% for trading execution, >90% for risk management, >80% for SMC analysis
+- **Test Structure**: Unit tests in [backend/tests/](mdc:backend/tests/), Integration tests for exchanges, E2E for trading workflows
+- **Performance Testing**: Latency tests (<200μs), load tests (1000 orders/sec), stress tests
+- **Financial Accuracy**: Test all monetary calculations with known edge cases
+
+## File Organization Rules
+- **Never save to root**: Use appropriate subdirectories
+- **Backend files**: Follow [backend/src/](mdc:backend/src/) structure
+- **Frontend files**: Follow [frontend/src/](mdc:frontend/src/) structure
+- **Tests**: Co-locate with source files or in dedicated test directories
+- **Documentation**: Use [docs/](mdc:docs/) for project docs
+
+## Performance Requirements
+These are HARD requirements for financial trading applications:
+- Order execution: ≤ 200 microseconds end-to-end
+- Market data processing: ≤ 10 milliseconds per update
+- SMC pattern detection: ≤ 50 milliseconds per timeframe
+- Risk calculation: ≤ 5 milliseconds per position
+- API response time: p95 < 50ms, p99 < 100ms
+- WebSocket latency: ≤ 1 millisecond for price updates
+- Database query time: p95 < 10ms for trading data
+- Exchange connection recovery: ≤ 3 seconds
+
+## Security Standards (MANDATORY)
+- **Exchange API Keys**: Encrypted storage with HSM integration for production
+- **Secrets Management**: Environment variables with rotation, never hardcoded
+- **Input validation**: Strict validation for all trading parameters (Pydantic models)
+- **Rate limiting**: Exchange-specific limits + user limits + API endpoint limits
+- **HTTPS only**: TLS 1.3+ for all connections, certificate pinning for exchanges
+- **Authentication**: JWT tokens with short expiration (15 min), refresh token rotation
+- **2FA Required**: TOTP for all trading operations above threshold amounts
+- **IP Whitelisting**: Optional IP restrictions for API access
+- **Audit Logging**: Complete audit trail for all trading operations (regulatory requirement)
+- **Data Encryption**: AES-256 encryption for all financial data at rest
+- **Network Security**: VPN/private networks for exchange connections in production

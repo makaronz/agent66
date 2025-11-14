@@ -1,0 +1,314 @@
+# Development values for smc-trading-agent
+# This file contains development-specific overrides
+
+# Development image configuration
+image:
+  registry: localhost:5000
+  repository: smc-trading/smc-agent
+  tag: "dev-latest"
+  pullPolicy: Always  # Always pull for development
+  pullSecrets: []  # No secrets needed for local registry
+
+# Development scaling - minimal resources
+replicaCount: 1
+
+# Development resources - minimal for local development
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+    ephemeralStorage: "1Gi"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+    ephemeralStorage: "2Gi"
+
+# Disabled autoscaling for development
+autoscaling:
+  enabled: false
+
+# Development service configuration
+service:
+  type: NodePort
+  nodePort: 30080  # Fixed port for development
+  annotations: {}
+
+# Development ingress - simple configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: smc-trading.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []  # No TLS for development
+
+# Development health checks - faster for quick iteration
+healthChecks:
+  liveness:
+    enabled: true
+    path: /health
+    port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    path: /ready
+    port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+  startup:
+    enabled: true
+    path: /health
+    port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 10
+
+# No node selection for development
+nodeSelector: {}
+
+# No tolerations for development
+tolerations: []
+
+# No affinity for development
+affinity: {}
+
+# Development environment variables
+env:
+  ENVIRONMENT: "development"
+  LOG_LEVEL: "DEBUG"
+  RUST_LOG: "debug"
+  PYTHONUNBUFFERED: "1"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger.monitoring.svc.cluster.local:14268"
+  OTEL_SERVICE_NAME: "smc-trading-agent-dev"
+  OTEL_SERVICE_VERSION: "dev-latest"
+
+# Development configuration
+configMap:
+  enabled: true
+  data:
+    config.yaml: |
+      environment: development
+      log_level: DEBUG
+      metrics:
+        enabled: true
+        port: 9090
+        path: /metrics
+        interval: 5s
+      health:
+        port: 8080
+        liveness_path: /health
+        readiness_path: /ready
+      trading:
+        max_positions: 5
+        risk_limit: 0.1  # Higher risk for testing
+        stop_loss: 0.02
+        position_size_limit: 0.01  # Small positions for testing
+        max_daily_trades: 10
+      performance:
+        worker_threads: 2
+        max_connections: 100
+        connection_timeout: 10s
+        request_timeout: 5s
+      monitoring:
+        enable_tracing: true
+        trace_sample_rate: 1.0  # Trace everything in dev
+        enable_profiling: false
+
+# Development storage - smaller and faster iteration
+persistence:
+  data:
+    enabled: true
+    storageClass: "standard"  # Default storage class
+    accessMode: ReadWriteOnce
+    size: 10Gi  # Small data volume
+    mountPath: /app/data
+  logs:
+    enabled: true
+    storageClass: "standard"
+    accessMode: ReadWriteOnce
+    size: 5Gi  # Small log volume
+    mountPath: /app/logs
+
+# Development Vault configuration - can be disabled
+vault:
+  enabled: false  # Disabled by default for development
+  address: "http://vault.vault.svc.cluster.local:8200"
+  role: "smc-trading-dev-role"
+  secrets:
+    database:
+      path: "secret/data/smc-trading/dev/database"
+      template: |
+        {{- with secret "secret/data/smc-trading/dev/database" -}}
+        export DATABASE_URL="{{ .Data.data.url }}"
+        export DATABASE_PASSWORD="{{ .Data.data.password }}"
+        export DATABASE_MAX_CONNECTIONS="{{ .Data.data.max_connections | default "10" }}"
+        {{- end }}
+    exchanges:
+      path: "secret/data/smc-trading/dev/exchanges"
+      template: |
+        {{- with secret "secret/data/smc-trading/dev/exchanges/binance" -}}
+        export BINANCE_API_KEY="{{ .Data.data.api_key }}"
+        export BINANCE_API_SECRET="{{ .Data.data.api_secret }}"
+        export BINANCE_TESTNET="true"
+        {{- end }}
+        {{- with secret "secret/data/smc-trading/dev/exchanges/bybit" -}}
+        export BYBIT_API_KEY="{{ .Data.data.api_key }}"
+        export BYBIT_API_SECRET="{{ .Data.data.api_secret }}"
+        export BYBIT_TESTNET="true"
+        {{- end }}
+        {{- with secret "secret/data/smc-trading/dev/exchanges/oanda" -}}
+        export OANDA_API_KEY="{{ .Data.data.api_key }}"
+        export OANDA_ACCOUNT_ID="{{ .Data.data.account_id }}"
+        export OANDA_ENVIRONMENT="practice"
+        {{- end }}
+
+# Relaxed network policy for development
+networkPolicy:
+  enabled: false  # Disabled by default for easier development
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - {}  # Allow all ingress
+  egress:
+    - {}  # Allow all egress
+
+# Development monitoring
+monitoring:
+  prometheus:
+    enabled: true
+    scrape: true
+    port: 9090
+    path: /metrics
+    interval: 5s
+    scrapeTimeout: 3s
+  grafana:
+    enabled: false  # Disabled by default for development
+    dashboards:
+      enabled: false
+
+# Development service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "smc-trading-agent-dev"
+
+# Development pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/metrics"
+
+# Development pod labels
+podLabels:
+  version: "dev-latest"
+  environment: "development"
+  tier: "application"
+  component: "trading-agent"
+
+# Development namespace
+namespace:
+  create: true
+  name: "smc-trading-dev"
+  labels:
+    name: "smc-trading-dev"
+    environment: "development"
+    tier: "application"
+
+# Disabled PDB for development
+podDisruptionBudget:
+  enabled: false
+
+# Enable dependencies for development (local PostgreSQL and Redis)
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "dev-password"
+    username: "smc_user"
+    password: "dev-password"
+    database: "smc_trading"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+redis:
+  enabled: true
+  auth:
+    enabled: false  # No auth for development
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+# Development-specific environment variables for database connections
+envFrom:
+  - configMapRef:
+      name: smc-trading-agent-config
+  - secretRef:
+      name: smc-trading-agent-secrets
+      optional: true
+
+# Additional development configuration
+development:
+  # Enable debug endpoints
+  debug:
+    enabled: true
+    endpoints:
+      - /debug/pprof
+      - /debug/vars
+      - /debug/health
+  
+  # Hot reload configuration
+  hotReload:
+    enabled: false  # Can be enabled for development
+    watchPaths:
+      - /app/src
+      - /app/config
+  
+  # Development tools
+  tools:
+    enabled: false
+    image: "busybox:latest"
+    command: ["/bin/sh"]
+    args: ["-c", "sleep 3600"]
+
+# Override security context for development (less restrictive)
+securityContext:
+  runAsNonRoot: false  # Allow root for easier debugging
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0
+  capabilities:
+    add:
+      - SYS_PTRACE  # Allow debugging tools
+
+podSecurityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  runAsGroup: 0
+  fsGroup: 0

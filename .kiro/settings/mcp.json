@@ -1,0 +1,82 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": ""
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/arkadiuszfudali"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "create_directory",
+        "create_directory",
+        "write_file",
+        "write_file"
+      ]
+    },
+    "sequentialthinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "sequentialthinking"
+      ]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "puppeteer_navigate",
+        "puppeteer_screenshot"
+      ]
+    },
+    "time": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-time"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "create_entities",
+        "add_observations"
+      ]
+    },
+    "skillz": {
+      "command": "uvx",
+      "args": [
+        "skillz@latest"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

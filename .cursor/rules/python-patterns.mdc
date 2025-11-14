@@ -1,0 +1,434 @@
+# TypeScript Patterns & Best Practices
+
+## 🏗️ **Application Stack**
+
+- **Backend**: Express + TypeScript (ES modules)
+- **Frontend**: React 18 + TypeScript + Redux Toolkit
+- **Full TypeScript codebase** with strict type checking
+
+**Note**: Legacy Python code is in `app_old/` for reference
+
+---
+
+## 🚨 **TypeScript Patterns**
+
+### **1. Async/Await Patterns (Redux Toolkit)**
+
+```typescript
+// ✅ Correct async thunk pattern
+export const loginUser = createAsyncThunk(
+  'auth/login',
+  async (userData: LoginData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, userData);
+      localStorage.setItem('token', response.data.token);
+      toast.success('Login successful!');
+      return response.data;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Login failed');
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+```
+
+### **2. React Hook Form + Zod Validation**
+
+```typescript
+// ✅ Correct validation pattern
+const loginSchema = z.object({
+  email: z.string().email({ message: 'Invalid email' }),
+  password: z.string().min(6, { message: 'Min 6 characters' }),
+});
+
+type LoginFormInputs = z.infer<typeof loginSchema>;
+
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+} = useForm<LoginFormInputs>({
+  resolver: zodResolver(loginSchema),
+});
+```
+
+### **3. Express Middleware Patterns**
+
+```typescript
+// ✅ Correct middleware pattern
+import { Request, Response, NextFunction } from 'express';
+
+export const authGuard = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
+```
+
+---
+
+## 🔧 **TypeScript Best Practices**
+
+### **4. Mongoose Model Patterns**
+
+```typescript
+// ✅ Correct Mongoose schema pattern
+import mongoose, { Document, Schema } from 'mongoose';
+
+interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+}
+
+const userSchema = new Schema<IUser>({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true, select: false },
+}, { timestamps: true });
+
+export const User = mongoose.model<IUser>('User', userSchema);
+```
+
+### **5. Redux Slice Patterns**
+
+```typescript
+// ✅ Correct Redux slice with TypeScript
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface AuthState {
+  token: string | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  user: any;
+  error: string | null;
+}
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState: {
+    token: localStorage.getItem('token'),
+    isAuthenticated: !!localStorage.getItem('token'),
+    loading: false,
+    user: null,
+    error: null,
+  } as AuthState,
+  reducers: {
+    logout: (state) => {
+      state.token = null;
+      state.isAuthenticated = false;
+      localStorage.removeItem('token');
+    },
+  },
+  extraReducers: (builder) => {
+    // Handle async thunk actions
+  },
+});
+```
+
+### **6. React Component Patterns**
+
+```typescript
+// ✅ Functional component with hooks
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '../store/store';
+
+const LoginForm = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const { loading } = useSelector((state: RootState) => state.auth);
+
+  const handleSubmit = async (data: LoginFormInputs) => {
+    const result = await dispatch(loginUser(data));
+    if (loginUser.fulfilled.match(result)) {
+      navigate('/');
+    }
+  };
+
+  return (
+    // JSX
+  );
+};
+
+export default LoginForm;
+```
+
+---
+
+## 📚 **Additional Resources**
+
+For TypeScript best practices:
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/)
+- [Redux Toolkit TypeScript](https://redux-toolkit.js.org/usage/usage-with-typescript)
+
+For legacy Python patterns (app_old/):
+- See `app_old/` directory for Python decorator patterns  
+- Python-specific rules archived with legacy code
+
+**Archived Python Content**: All Python decorator documentation has been moved to app_old/ with the legacy code.
+
+description:
+globs:
+alwaysApply: true
+---
+    # ❌ Wrong parameter order - func should be first
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    return wrapper
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # ❌ Wrong usage
+def execute_trade(self, trade_details: Dict[str, Any]):
+    pass
+```
+
+#### **Solution Pattern (USE)**
+```python
+def safe_execute(component: str, severity: ErrorSeverity = ErrorSeverity.MEDIUM):
+    # ✅ Correct parameter order - component first, func comes from decorator
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # ✅ Correct usage
+def execute_trade(self, trade_details: Dict[str, Any]):
+    pass
+```
+
+## 🔧 **Common Python Issues & Fixes**
+
+### **Issue 1: Decorator Parameter Mismatch**
+
+**Error**: `TypeError: 'str' object is not callable`
+**Cause**: Decorator expects function as first parameter but receives string
+**Solution**: Restructure decorator to take parameters first, then function
+
+**Before (Broken):**
+```python
+def safe_execute(func: Callable, component: str, severity: ErrorSeverity):
+    # func is first parameter
+    pass
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # Wrong order
+def method():
+    pass
+```
+
+**After (Fixed):**
+```python
+def safe_execute(component: str, severity: ErrorSeverity = ErrorSeverity.MEDIUM):
+    # component is first parameter
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@safe_execute("execution_engine", ErrorSeverity.HIGH)  # Correct order
+def method():
+    pass
+```
+
+### **Issue 2: Instance Method Decorators**
+
+**Error**: `TypeError: VaultClient._retry_on_failure() missing 1 required positional argument: 'func'`
+**Cause**: Using instance method as decorator
+**Solution**: Convert to static method or function
+
+**Before (Broken):**
+```python
+class VaultClient:
+    def _retry_on_failure(self, func):  # Instance method
+        # implementation
+        pass
+    
+    @_retry_on_failure  # Will fail - missing 'self'
+    def method(self):
+        pass
+```
+
+**After (Fixed):**
+```python
+class VaultClient:
+    @staticmethod  # Static method
+    def _retry_on_failure(func):
+        # implementation
+        pass
+    
+    @_retry_on_failure  # Will work correctly
+    def method(self):
+        pass
+```
+
+### **Issue 3: Decorator Return Type Issues**
+
+**Error**: `TypeError: 'NoneType' object is not callable`
+**Cause**: Decorator doesn't return the wrapped function
+**Solution**: Ensure decorator returns the wrapper function
+
+**Before (Broken):**
+```python
+def bad_decorator(func):
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    # ❌ Missing return statement
+```
+
+**After (Fixed):**
+```python
+def good_decorator(func):
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    return wrapper  # ✅ Return the wrapper
+```
+
+## 📋 **Decorator Best Practices**
+
+### **1. Parameter Order**
+```python
+# ✅ Correct: Parameters first, function comes from decorator
+def decorator(param1: str, param2: int = 0):
+    def wrapper(func: Callable) -> Callable:
+        @wraps(func)
+        def inner(*args, **kwargs):
+            # implementation using param1, param2
+            return func(*args, **kwargs)
+        return inner
+    return wrapper
+
+# Usage
+@decorator("value", 42)
+def function():
+    pass
+```
+
+### **2. Static Methods for Class Decorators**
+```python
+class MyClass:
+    @staticmethod
+    def class_decorator(func):
+        def wrapper(*args, **kwargs):
+            # implementation
+            return func(*args, **kwargs)
+        return wrapper
+    
+    @class_decorator  # ✅ Works correctly
+    def method(self):
+        pass
+```
+
+### **3. Proper Function Wrapping**
+```python
+import functools
+
+def my_decorator(func):
+    @functools.wraps(func)  # ✅ Preserve function metadata
+    def wrapper(*args, **kwargs):
+        # implementation
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+## 🧪 **Testing Decorators**
+
+### **Test Decorator Functionality**
+```python
+# Test decorator without using it
+def test_decorator():
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# Test the decorator
+@test_decorator
+def test_function():
+    return "success"
+
+# Verify it works
+assert test_function() == "success"
+print("✅ Decorator works correctly")
+```
+
+### **Test Decorator with Parameters**
+```python
+def test_param_decorator(param: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Use param in wrapper
+            print(f"Decorator param: {param}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@test_param_decorator("test_value")
+def test_function():
+    return "success"
+
+# This should print "Decorator param: test_value" and return "success"
+result = test_function()
+```
+
+## 📁 **Key Files Using These Patterns**
+
+### **Backend**
+- [backend/src/server.ts](mdc:backend/src/server.ts) - Express setup with middleware
+- [backend/src/middleware/auth.ts](mdc:backend/src/middleware/auth.ts) - JWT authentication
+- [backend/src/models/User.ts](mdc:backend/src/models/User.ts) - Mongoose models
+- [backend/src/routes/auth.ts](mdc:backend/src/routes/auth.ts) - Auth route handlers
+
+### **Frontend**
+- [frontend/src/components/LoginForm.tsx](mdc:frontend/src/components/LoginForm.tsx) - Form with validation
+- [frontend/src/store/slices/authSlice.ts](mdc:frontend/src/store/slices/authSlice.ts) - Redux async thunks
+- [frontend/src/App.tsx](mdc:frontend/src/App.tsx) - Router and provider setup
+
+## ⚠️ **Common TypeScript Pitfalls**
+
+1. **Forgetting type annotations**: Always type function parameters and return values
+2. **Any type abuse**: Avoid `any`, use proper types or `unknown`
+3. **Missing error handling**: Always wrap async operations in try-catch
+4. **Ignoring type errors**: Fix TypeScript errors, don't use `@ts-ignore`
+5. **Not using type inference**: Let TypeScript infer when obvious
+
+## 🔍 **TypeScript Debugging**
+
+### **Checklist for Import/Type Issues**
+1. **Import path correct?** - Check relative path (`./` vs `../`)
+2. **Named vs default export?** - Match import with export style
+3. **Type definitions available?** - Check `@types/*` packages installed
+4. **Compilation successful?** - Run `npm run build`
+5. **IDE showing errors?** - Restart TypeScript server
+
+---
+
+**Remember**: This is a full TypeScript application. Use TypeScript patterns for all code. See `app_old/` for archived Python reference.
+description:
+globs:
+alwaysApply: true
+---

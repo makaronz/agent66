@@ -1,0 +1,165 @@
+# Patroni configuration for PostgreSQL High Availability
+# This configuration sets up streaming replication with automatic failover
+
+scope: smc-trading-postgres
+namespace: /smc-trading/
+name: postgresql-{HOSTNAME}
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: {PATRONI_RESTAPI_CONNECT_ADDRESS}:8008
+  authentication:
+    username: patroni
+    password: {PATRONI_RESTAPI_PASSWORD}
+
+etcd3:
+  hosts: etcd-cluster:2379
+  protocol: http
+  username: {ETCD_USERNAME}
+  password: {ETCD_PASSWORD}
+
+bootstrap:
+  # this section will be written into Etcd:/<namespace>/<scope>/config after initializing new cluster
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 30
+    maximum_lag_on_failover: 1048576
+    master_start_timeout: 300
+    synchronous_mode: true
+    synchronous_mode_strict: false
+    synchronous_node_count: 1
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        # PostgreSQL configuration for high performance and reliability
+        max_connections: 200
+        shared_buffers: 256MB
+        effective_cache_size: 1GB
+        maintenance_work_mem: 64MB
+        checkpoint_completion_target: 0.9
+        wal_buffers: 16MB
+        default_statistics_target: 100
+        random_page_cost: 1.1
+        effective_io_concurrency: 200
+        work_mem: 4MB
+        min_wal_size: 1GB
+        max_wal_size: 4GB
+        max_worker_processes: 8
+        max_parallel_workers_per_gather: 2
+        max_parallel_workers: 8
+        max_parallel_maintenance_workers: 2
+        
+        # Replication settings
+        wal_level: replica
+        max_wal_senders: 10
+        max_replication_slots: 10
+        hot_standby: on
+        hot_standby_feedback: on
+        
+        # Logging
+        log_destination: stderr
+        logging_collector: on
+        log_directory: /var/log/postgresql
+        log_filename: postgresql-%Y-%m-%d_%H%M%S.log
+        log_rotation_age: 1d
+        log_rotation_size: 100MB
+        log_min_duration_statement: 1000
+        log_checkpoints: on
+        log_connections: on
+        log_disconnections: on
+        log_lock_waits: on
+        log_temp_files: 0
+        
+        # Performance monitoring
+        shared_preload_libraries: pg_stat_statements,auto_explain
+        pg_stat_statements.max: 10000
+        pg_stat_statements.track: all
+        auto_explain.log_min_duration: 2s
+        auto_explain.log_analyze: true
+        auto_explain.log_buffers: true
+        
+        # Security
+        ssl: on
+        ssl_cert_file: /etc/ssl/certs/server.crt
+        ssl_key_file: /etc/ssl/private/server.key
+        ssl_ca_file: /etc/ssl/certs/ca.crt
+        ssl_ciphers: 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384'
+        ssl_prefer_server_ciphers: on
+        
+      pg_hba:
+        - host replication replicator 0.0.0.0/0 md5
+        - host all all 0.0.0.0/0 md5
+        - local all all trust
+        - host all all 127.0.0.1/32 trust
+        - host all all ::1/128 trust
+
+  # some desired options for 'initdb'
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+
+  # Additional script to be launched after initial cluster creation
+  post_bootstrap: /scripts/post_bootstrap.sh
+
+  # Some additional users which needs to be created after initializing new cluster
+  users:
+    admin:
+      password: {POSTGRES_ADMIN_PASSWORD}
+      options:
+        - createrole
+        - createdb
+    replicator:
+      password: {POSTGRES_REPLICATOR_PASSWORD}
+      options:
+        - replication
+    smc_app_user:
+      password: {POSTGRES_APP_PASSWORD}
+      options:
+        - login
+    smc_read_user:
+      password: {POSTGRES_READ_PASSWORD}
+      options:
+        - login
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: {PATRONI_POSTGRESQL_CONNECT_ADDRESS}:5432
+  data_dir: /var/lib/postgresql/data
+  bin_dir: /usr/lib/postgresql/15/bin
+  config_dir: /var/lib/postgresql/data
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: {POSTGRES_REPLICATOR_PASSWORD}
+    superuser:
+      username: postgres
+      password: {POSTGRES_SUPERUSER_PASSWORD}
+    rewind:
+      username: rewind_user
+      password: {POSTGRES_REWIND_PASSWORD}
+  parameters:
+    unix_socket_directories: /var/run/postgresql
+    stats_temp_directory: /var/run/postgresql
+
+  # Custom bootstrap method
+  create_replica_methods:
+    - basebackup
+  basebackup:
+    checkpoint: 'fast'
+    max-rate: '100M'
+    verbose: true
+
+# Watchdog configuration for automatic failover
+watchdog:
+  mode: required
+  device: /dev/watchdog
+  safety_margin: 5
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false

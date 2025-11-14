@@ -1,0 +1,66 @@
+# Multi-stage build for Rust execution engine
+FROM rust:1.75-slim AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy Cargo files
+COPY Cargo.toml Cargo.lock ./
+
+# Create dummy main.rs to cache dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies (this layer will be cached)
+RUN cargo build --release && rm -rf src
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN cargo build --release
+
+# Production stage
+FROM debian:bookworm-slim AS production
+
+# Install runtime dependencies and security updates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    dumb-init \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash --uid 1001 rustuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/target/release/smc_trading_agent ./smc_trading_agent
+
+# Change ownership to non-root user
+RUN chown rustuser:rustuser /app/smc_trading_agent && \
+    chmod +x /app/smc_trading_agent
+
+# Switch to non-root user
+USER rustuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:9090/health || exit 1
+
+# Expose port
+EXPOSE 9090
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["./smc_trading_agent"]

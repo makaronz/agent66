@@ -1,0 +1,49 @@
+# Grafana Dashboard Provisioning for SMC Trading Agent
+# Automatyczne ładowanie dashboardów
+
+apiVersion: 1
+
+providers:
+  # SMC Trading Agent Dashboards
+  - name: 'smc-dashboards'
+    orgId: 1
+    folder: 'SMC Trading Agent'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      
+  # System Monitoring Dashboards
+  - name: 'system-dashboards'
+    orgId: 1
+    folder: 'System Monitoring'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/system
+      
+  # Trading Analytics Dashboards
+  - name: 'trading-dashboards'
+    orgId: 1
+    folder: 'Trading Analytics'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/trading
+      
+  # Infrastructure Dashboards
+  - name: 'infrastructure-dashboards'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/infrastructure
