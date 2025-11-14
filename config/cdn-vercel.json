@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install",
+  "framework": "vite",
+
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.binance.com https://testnet.binance.vision; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ],
+
+  "redirects": [
+    {
+      "source": "/home",
+      "destination": "/"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/"
+    },
+    {
+      "source": "/api/docs",
+      "destination": "https://api.filmtracker.com/api-docs",
+      "permanent": true
+    }
+  ],
+
+  "env": {
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_APP_URL": "https://filmtracker.com",
+    "NEXT_PUBLIC_API_URL": "https://api.filmtracker.com"
+  },
+
+  "functions": {
+    "app/api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 30
+    }
+  },
+
+  "regions": ["iad1", "hnd1", "sin1"],
+
+  "cleanUrls": true,
+  "trailingSlash": false,
+
+  "edge": {
+    "version": "2"
+  },
+
+  "analytics": {
+    "enabled": true
+  },
+
+  "domains": [
+    "filmtracker.com",
+    "www.filmtracker.com",
+    "app.filmtracker.com"
+  ]
+}

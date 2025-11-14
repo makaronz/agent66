@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { config } from '../config';
+import { config } from '../config/env-validation';
 import { logger } from '../utils/logger';
 
 const router = Router();

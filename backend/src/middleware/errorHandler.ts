@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
-import { config } from '../config';
+import { config } from '../config/env-validation';
 
 export interface ApiError extends Error {
   statusCode?: number;

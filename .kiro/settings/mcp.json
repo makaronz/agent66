@@ -69,6 +69,14 @@
         "create_entities",
         "add_observations"
       ]
+    },
+    "skillz": {
+      "command": "uvx",
+      "args": [
+        "skillz@latest"
+      ],
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }

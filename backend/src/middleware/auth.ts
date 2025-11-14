@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config';
+import { config } from '../config/env-validation';
 import { logger } from '../utils/logger';
 import { AuthenticationError, AuthorizationError } from './errorHandler';
 

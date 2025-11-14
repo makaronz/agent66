@@ -66,6 +66,12 @@
         "create_relations",
         "delete_entities"
       ]
+    },
+    "skillz": {
+      "command": "uvx",
+      "args": [
+        "skillz@latest"
+      ]
     }
   }
 }

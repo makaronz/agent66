@@ -16,12 +16,30 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    
+    /* Type Checking - Enhanced for Better Quality */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": false,
+    "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    
+    /* Additional Strict Checks */
     "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitOverride": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "alwaysStrict": true,
+    
+    /* Module Resolution */
     "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"],
@@ -38,5 +56,11 @@
   "include": [
     "src",
     "api"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage"
   ]
 }

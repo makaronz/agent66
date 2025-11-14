@@ -1,4 +1,4 @@
-import { config } from '../config';
+import { config } from '../config/env-validation';
 
 export enum LogLevel {
   ERROR = 0,

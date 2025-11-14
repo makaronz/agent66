@@ -1,0 +1,8 @@
+Security Scan Summary - 20251114_234732
+=================================
+Critical Vulnerability Scan: FAIL
+Dependency Vulnerability Scan: FAIL
+Static Application Security Testing: FAIL
+Secret Detection: FAIL
+Security Headers Validation: FAIL
+Docker Security Scan: FAIL

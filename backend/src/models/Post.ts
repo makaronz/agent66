@@ -1,10 +1,10 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { IUser } from './User';
+import { User } from './User';
 
 export interface IPost extends Document {
   title: string;
   content: string;
-  author: IUser['_id'];
+  author: User['id'];
   createdAt: Date;
   updatedAt: Date;
 }

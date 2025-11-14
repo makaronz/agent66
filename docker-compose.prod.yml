@@ -1,0 +1,539 @@
+# Film Industry Time Tracking System - Production High Availability
+version: '3.8'
+
+services:
+  # Load Balancer
+  nginx-lb:
+    image: nginx:alpine
+    container_name: film-tracker-lb
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx-prod.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - frontend-1
+      - frontend-2
+      - backend-1
+      - backend-2
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # Frontend Services (Multiple instances)
+  frontend-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: film-tracker-frontend-1
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - film-tracker-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  frontend-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: film-tracker-frontend-2
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - film-tracker-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Backend Services (Multiple instances)
+  backend-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: film-tracker-backend-1
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=INFO
+      - INSTANCE_ID=backend-1
+    depends_on:
+      - postgres-primary
+      - redis-cluster
+    networks:
+      - film-tracker-network
+    volumes:
+      - ./logs/backend-1:/app/logs
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  backend-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: film-tracker-backend-2
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=INFO
+      - INSTANCE_ID=backend-2
+    depends_on:
+      - postgres-primary
+      - redis-cluster
+    networks:
+      - film-tracker-network
+    volumes:
+      - ./logs/backend-2:/app/logs
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # PostgreSQL Primary-Replica Setup
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: film-tracker-postgres-primary
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-film_tracker}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${POSTGRES_REPLICATION_PASSWORD}
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./config/postgres-primary.conf:/etc/postgresql/postgresql.conf
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    networks:
+      - film-tracker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: film-tracker-postgres-replica
+    restart: unless-stopped
+    environment:
+      - PGUSER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_MASTER_HOST=postgres-primary
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${POSTGRES_REPLICATION_PASSWORD}
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./config/postgres-replica.conf:/etc/postgresql/postgresql.conf
+    depends_on:
+      - postgres-primary
+    networks:
+      - film-tracker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cluster
+  redis-cluster-master:
+    image: redis:7-alpine
+    container_name: film-tracker-redis-master
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_master_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - film-tracker-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  redis-cluster-slave:
+    image: redis:7-alpine
+    container_name: film-tracker-redis-slave
+    restart: unless-stopped
+    command: redis-server --slaveof redis-cluster-master 6379 --masterauth ${REDIS_PASSWORD} --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_slave_data:/data
+    depends_on:
+      - redis-cluster-master
+    networks:
+      - film-tracker-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: film-tracker-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/alert-rules.yml:/etc/prometheus/alert-rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: film-tracker-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # AlertManager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: film-tracker-alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+
+  # Node Exporter (System metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: film-tracker-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$$'
+    networks:
+      - film-tracker-network
+
+  # PostgreSQL Exporter
+  postgres-exporter-primary:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: film-tracker-postgres-exporter-primary
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres-primary:5432/${POSTGRES_DB:-film_tracker}?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres-primary
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+
+  postgres-exporter-replica:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: film-tracker-postgres-exporter-replica
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres-replica:5432/${POSTGRES_DB:-film_tracker}?sslmode=disable
+    ports:
+      - "9188:9187"
+    depends_on:
+      - postgres-replica
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+
+  # Redis Exporter
+  redis-exporter-master:
+    image: oliver006/redis_exporter:latest
+    container_name: film-tracker-redis-exporter-master
+    restart: unless-stopped
+    environment:
+      - REDIS_ADDR=redis://redis-cluster-master:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis-cluster-master
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  redis-exporter-slave:
+    image: oliver006/redis_exporter:latest
+    container_name: film-tracker-redis-exporter-slave
+    restart: unless-stopped
+    environment:
+      - REDIS_ADDR=redis://redis-cluster-slave:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "9122:9121"
+    depends_on:
+      - redis-cluster-slave
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  # Nginx Exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: film-tracker-nginx-exporter
+    restart: unless-stopped
+    command:
+      - '-nginx.scrape-uri=http://nginx-lb:80/nginx_status'
+    ports:
+      - "9113:9113"
+    depends_on:
+      - nginx-lb
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+
+  # cAdvisor for container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: film-tracker-cadvisor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 512M
+
+  # Docker Exporter
+  docker-exporter:
+    image: prometheuscommunity/docker-exporter:latest
+    container_name: film-tracker-docker-exporter
+    restart: unless-stopped
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    ports:
+      - "9323:9323"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: film-tracker-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: film-tracker-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  # Promtail for log collection
+  promtail:
+    image: grafana/promtail:latest
+    container_name: film-tracker-promtail
+    restart: unless-stopped
+    volumes:
+      - ./config/promtail.yml:/etc/promtail/config.yml
+      - ./logs:/var/log/app
+      - /var/log:/var/log/host:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - film-tracker-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_master_data:
+    driver: local
+  redis_slave_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  loki_data:
+    driver: local
+
+networks:
+  film-tracker-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

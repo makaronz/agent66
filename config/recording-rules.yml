@@ -1,0 +1,96 @@
+# Recording Rules for Film Industry Time Tracking System
+groups:
+  - name: film-tracker-recording-rules
+    interval: 30s
+    rules:
+      # HTTP Performance Recording Rules
+      - record: film_tracker:http_requests:rate5m
+        expr: rate(http_requests_total[5m])
+
+      - record: film_tracker:http_request_errors:rate5m
+        expr: rate(http_requests_total{status_code=~"5.."}[5m])
+
+      - record: film_tracker:http_request_duration:p95:5m
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+      - record: film_tracker:http_request_duration:p99:5m
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+
+      # Business Metrics Recording Rules
+      - record: film_tracker:active_users:total
+        expr: sum(active_users_total)
+
+      - record: film_tracker:active_users:by_department
+        expr: sum by (department) (active_users_total)
+
+      - record: film_tracker:time_entries:rate5m
+        expr: rate(time_entries_total[5m])
+
+      - record: film_tracker:projects_active:total
+        expr: sum(projects_active_total)
+
+      - record: film_tracker:crew_members_active:total
+        expr: sum(crew_members_active_total)
+
+      # Infrastructure Recording Rules
+      - record: film_tracker:database_connections:total
+        expr: sum(database_connections_active)
+
+      - record: film_tracker:cache_hit_rate:average
+        expr: avg(cache_hit_rate)
+
+      - record: film_tracker:websocket_connections:total
+        expr: sum(websocket_connections_active)
+
+      # System Performance Recording Rules
+      - record: film_tracker:cpu_usage:percent
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+      - record: film_tracker:memory_usage:percent
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+
+      - record: film_tracker:disk_usage:percent
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100
+
+      # Error Rate Recording Rules
+      - record: film_tracker:error_rate:percent
+        expr: (rate(http_requests_total{status_code=~"5.."}[5m]) / rate(http_requests_total[5m])) * 100
+
+      - record: film_tracker:authentication_failures:rate5m
+        expr: rate(authentication_attempts_total{status="failure"}[5m])
+
+  - name: postgresql-recording-rules
+    interval: 30s
+    rules:
+      - record: postgres:connections:percent
+        expr: (pg_stat_database_numbackends / pg_settings_max_connections) * 100
+
+      - record: postgres:query_duration:p95:5m
+        expr: histogram_quantile(0.95, rate(pg_stat_statements_mean_time_seconds_bucket[5m]))
+
+      - record: postgres:transactions:rate5m
+        expr: rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m])
+
+  - name: redis-recording-rules
+    interval: 30s
+    rules:
+      - record: redis:memory_usage:percent
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) * 100
+
+      - record: redis:connections:current
+        expr: redis_connected_clients
+
+      - record: redis:operations:rate5m
+        expr: rate(redis_commands_processed_total[5m])
+
+  - name: nginx-recording-rules
+    interval: 30s
+    rules:
+      - record: nginx:requests:rate5m
+        expr: rate(nginx_http_requests_total[5m])
+
+      - record: nginx:request_duration:p95:5m
+        expr: histogram_quantile(0.95, rate(nginx_http_request_duration_seconds_bucket[5m]))
+
+      - record: nginx:connections:active
+        expr: nginx_connections_active
