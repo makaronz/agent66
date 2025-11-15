@@ -1,85 +1,78 @@
 # SMC Trading Agent - Smart Money Concepts Automated Trading System
 
-A sophisticated hybrid trading system that combines AI/ML techniques with Smart Money Concepts analysis for automated cryptocurrency trading with real-time market data integration.
+**Personal trading bot for ≤5 users** - Fast path to first paper trade with live Binance data.
 
-## 🏗️ Architecture
+A simplified, production-ready hybrid trading system combining Smart Money Concepts analysis with live market data for automated cryptocurrency paper trading.
+
+## 🏗️ Simplified Architecture (Personal Use)
 
 **Frontend (React 18 + TypeScript)**
-- Modern React UI with Vite for fast development
-- Real-time trading dashboard with WebSocket connections
-- Advanced charting and technical analysis visualization
-- Tailwind CSS for responsive, professional design
+- Modern React UI with real-time dashboard
+- Live market data from Binance WebSocket
+- Paper trading visualization
 
 **Backend (Express.js + TypeScript)**
-- RESTful API server with WebSocket support
-- Real-time market data aggregation from multiple exchanges
-- Circuit breaker patterns for fault tolerance
-- Comprehensive rate limiting and error handling
+- RESTful API with WebSocket connections to Binance
+- Real-time market data aggregation
+- Circuit breaker patterns and rate limiting
 
-**Trading Engine**
-- **Python ML Pipeline**: TensorFlow/PyTorch for pattern recognition
-- **Smart Money Concepts (SMC)**: Order block detection, CHOCH/BOS analysis
-- **Risk Management**: Circuit breakers, position sizing, stop-loss automation
-- **Multi-Exchange Integration**: Binance, ByBit, OANDA real-time data
+**Trading Engine (Python + FastAPI)**
+- **SMC Analysis**: Order block detection, pattern recognition
+- **Paper Trading**: Simulated execution with live prices
+- **Risk Management**: Position sizing, stop-loss, daily limits
+- **Simple Heuristic**: Fast decisions without ML training (ML optional later)
+
+**Key Simplifications vs Enterprise Version**:
+- ❌ Kafka removed (direct REST API)
+- ❌ Multiple exchanges removed (Binance only)
+- ❌ PostgreSQL/Redis removed (SQLite)
+- ❌ Prometheus/Grafana removed (simple logging)
+- ❌ Complex ML ensemble removed (simple heuristic first, ML optional)
+- ✅ 2 processes only: TypeScript backend + Python agent
 
 ## ✨ Key Features
 
-- **🔄 Real-Time Market Data**: Live WebSocket connections to multiple exchanges
-- **📊 SMC Pattern Detection**: Advanced Smart Money Concepts analysis
-- **🤖 ML-Based Decisions**: Ensemble models for trading signals
-- **⚡ Ultra-Low Latency**: <50ms trade execution with Rust engine
-- **🛡️ Risk Management**: Comprehensive circuit breakers and monitoring
-- **📈 Live Dashboard**: Real-time P&L, positions, and system health
-- **🔒 Security**: API key protection and safe trading practices
+- **🔄 Live Binance Data**: Real-time WebSocket price feeds
+- **📊 SMC Pattern Detection**: Order block and reversal detection
+- **🎯 Simple Heuristic**: Fast decisions based on SMC patterns (no ML training needed)
+- **📄 Paper Trading**: Risk-free simulation with live prices
+- **🛡️ Risk Management**: Position limits, stop loss, daily loss limits
+- **📈 Live Dashboard**: Real-time P&L, positions, and trade history
+- **🔒 Safety First**: Paper mode default, risk controls enforced
+- **⚡ Fast Setup**: < 30 minutes to first paper trade
 
-## 🚀 Quick Start
+## 🚀 Quick Start (< 30 minutes to first paper trade)
 
 ### Prerequisites
 - Node.js 18+
 - Python 3.9+
-- Rust 1.70+ (optional, for execution engine)
-- Valid exchange API keys (Binance, ByBit)
+- Binance API keys (read-only for paper trading)
 
 ### Installation
 
-1. **Clone and install dependencies**
 ```bash
-git clone <repository-url>
-cd agent66
-
-# Frontend and Backend dependencies
+# 1. Install dependencies
 npm install
-
-# Python ML dependencies
 pip install -r requirements.txt
 
-# Rust execution engine (optional)
-cd src/execution_engine && cargo build --release
+# 2. Configure API keys
+cp env.example .env
+nano .env  # Add your BINANCE_API_KEY and BINANCE_API_SECRET
+
+# 3. Start TypeScript backend (Terminal 1)
+npm run server:dev
+
+# 4. Start Python trading agent (Terminal 2)
+python main.py
+
+# 5. Start frontend (Terminal 3)
+npm run client:dev
+
+# 6. Open browser
+open http://localhost:5173
 ```
 
-2. **Environment Configuration**
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Configure your API keys
-nano .env
-```
-
-3. **Start Development Servers**
-```bash
-# Start both frontend and backend concurrently
-npm run dev
-
-# Or start individually:
-npm run client:dev  # Frontend at http://localhost:5173
-npm run server:dev  # Backend API at http://localhost:3001
-```
-
-4. **Start Python Trading Engine** (Optional)
-```bash
-python run_smc_agent.py
-```
+**📖 Detailed guide**: See [docs/QUICK_START.md](docs/QUICK_START.md) for step-by-step instructions.
 
 ## 📡 Market Data Integration
 

@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tradingMode] = useState<'paper' | 'real'>('paper'); // Trading mode indicator
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -116,6 +117,37 @@ export default function Dashboard() {
           <span>{currentTime.toLocaleTimeString()}</span>
         </div>
       </div>
+
+      {/* Trading Mode Banner */}
+      {tradingMode === 'paper' && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong className="font-semibold">PAPER TRADING MODE</strong> - All trades are simulated with live market prices. No real capital at risk.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tradingMode === 'real' && (
+        <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded-md">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                <strong className="font-semibold">⚠️ LIVE TRADING MODE</strong> - Real capital at risk. Trades execute on live exchange.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading/ Error Status */}
       {loading && (

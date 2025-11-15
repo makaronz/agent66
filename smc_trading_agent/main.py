@@ -237,9 +237,31 @@ async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceMana
 
                             # 5. Execute the paper trade
                             try:
-                                # Calculate position size (simple 1% of balance)
+                                # Calculate position size with risk validation
                                 account_summary = execution_engine.get_account_summary()
-                                position_size = account_summary['balance'] * 0.01 / validated_signal.entry_price
+                                initial_position_size = account_summary['balance'] * 0.01 / validated_signal.entry_price
+                                
+                                # Validate and adjust position size if needed
+                                size_validation = risk_manager.validate_position_size(
+                                    symbol=validated_signal.symbol,
+                                    size=initial_position_size,
+                                    price=validated_signal.entry_price,
+                                    balance=account_summary['balance'],
+                                    max_risk_percent=0.02
+                                )
+                                
+                                if size_validation['adjusted']:
+                                    position_size = size_validation['adjusted_size']
+                                    logger.warning(
+                                        f"Position size adjusted: {size_validation['reason']}"
+                                    )
+                                else:
+                                    position_size = initial_position_size
+                                
+                                # Check daily loss limit before trading
+                                if not risk_manager.check_daily_loss_limit(risk_manager.daily_pnl):
+                                    logger.critical("🚨 Trading halted: Daily loss limit reached")
+                                    continue
                                 
                                 # Execute paper order
                                 paper_trade = execution_engine.execute_order(
@@ -346,7 +368,10 @@ async def main_async():
         data_processor = LiveDataClient(base_url="http://localhost:3001")
         smc_detector = SMCIndicators()
         decision_engine = AdaptiveModelSelector()
-        risk_manager = SMCRiskManager()
+        
+        # Initialize risk manager with config
+        risk_config = config.get('risk_manager', {})
+        risk_manager = SMCRiskManager(config=risk_config)
         
         # CHANGED: Use PaperTradingEngine instead of placeholder
         # Get trading mode from config (default: paper)
