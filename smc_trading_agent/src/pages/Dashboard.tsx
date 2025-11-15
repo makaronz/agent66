@@ -10,36 +10,98 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Mock data - replace with real API calls
-const mockMarketData = [
-  { symbol: 'BTCUSDT', price: 43250.50, change: 2.45, volume: '1.2B' },
-  { symbol: 'ETHUSDT', price: 2650.75, change: -1.23, volume: '890M' },
-  { symbol: 'ADAUSDT', price: 0.485, change: 3.67, volume: '245M' },
-  { symbol: 'SOLUSDT', price: 98.32, change: 1.89, volume: '156M' },
-];
-
-const mockPositions = [
-  { symbol: 'BTCUSDT', side: 'LONG', size: 0.5, entryPrice: 42800, currentPrice: 43250.50, pnl: 225.25, pnlPercent: 1.05 },
-  { symbol: 'ETHUSDT', side: 'SHORT', size: 2.0, entryPrice: 2680, currentPrice: 2650.75, pnl: 58.50, pnlPercent: 1.09 },
-];
-
-const mockSystemHealth = [
-  { name: 'Data Pipeline', status: 'healthy', latency: '12ms' },
-  { name: 'SMC Detection', status: 'healthy', latency: '8ms' },
-  { name: 'Execution Engine', status: 'warning', latency: '45ms' },
-  { name: 'Risk Manager', status: 'healthy', latency: '5ms' },
-];
+import { apiService, type MarketData, type Position, type SystemHealth, type PerformanceMetrics } from '@/services/api';
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [marketData, setMarketData] = useState<MarketData[]>([]);
+  const [positions, setPositions] = useState<{ positions: Position[]; totalPnL: number; totalPositions: number }>({
+    positions: [],
+    totalPnL: 0,
+    totalPositions: 0
+  });
+  const [systemHealth, setSystemHealth] = useState<{ components: SystemHealth[]; overall: string }>({
+    components: [],
+    overall: 'unknown'
+  });
+  const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const totalPnL = mockPositions.reduce((sum, pos) => sum + pos.pnl, 0);
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [marketDataRes, positionsRes, healthRes, performanceRes] = await Promise.all([
+          apiService.getMarketData(),
+          apiService.getPositions(),
+          apiService.getSystemHealth(),
+          apiService.getPerformanceMetrics()
+        ]);
+
+        setMarketData(marketDataRes);
+        setPositions(positionsRes);
+        setSystemHealth(healthRes);
+        setPerformance(performanceRes);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load data. Using demo mode.');
+
+        // Fallback to demo mode
+        setMarketData([
+          { symbol: 'BTCUSDT', price: 43250.50, change: 2.45, volume: '1.2B' },
+          { symbol: 'ETHUSDT', price: 2650.75, change: -1.23, volume: '890M' },
+          { symbol: 'ADAUSDT', price: 0.485, change: 3.67, volume: '245M' },
+          { symbol: 'SOLUSDT', price: 98.32, change: 1.89, volume: '156M' },
+        ]);
+        setPositions({
+          positions: [
+            { symbol: 'BTCUSDT', side: 'LONG', size: 0.5, entryPrice: 42800, currentPrice: 43250.50, pnl: 225.25, pnlPercent: 1.05 },
+            { symbol: 'ETHUSDT', side: 'SHORT', size: 2.0, entryPrice: 2680, currentPrice: 2650.75, pnl: 58.50, pnlPercent: 1.09 },
+          ],
+          totalPnL: 283.75,
+          totalPositions: 2
+        });
+        setSystemHealth({
+          components: [
+            { name: 'Data Pipeline', status: 'healthy', latency: '12ms' },
+            { name: 'SMC Detection', status: 'healthy', latency: '8ms' },
+            { name: 'Execution Engine', status: 'warning', latency: '45ms' },
+            { name: 'Risk Manager', status: 'healthy', latency: '5ms' },
+          ],
+          overall: 'warning'
+        });
+        setPerformance({
+          totalPnL: 283.75,
+          sharpeRatio: 1.67,
+          maxDrawdown: -3.2,
+          winRate: 68.5,
+          totalTrades: 47,
+          winningTrades: 32,
+          losingTrades: 15,
+          averageWin: 25.43,
+          averageLoss: -12.18,
+          profitFactor: 2.09,
+          dailyReturn: 1.85
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -55,6 +117,22 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Loading/ Error Status */}
+      {loading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Activity className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                Loading trading data... {error && '(Using demo mode)'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
@@ -67,9 +145,9 @@ export default function Dashboard() {
                 <dt className="text-sm font-medium text-gray-500 truncate">Total P&L</dt>
                 <dd className={cn(
                   "text-lg font-medium",
-                  totalPnL >= 0 ? "text-green-600" : "text-red-600"
+                  positions.totalPnL >= 0 ? "text-green-600" : "text-red-600"
                 )}>
-                  ${totalPnL.toFixed(2)}
+                  ${positions.totalPnL.toFixed(2)}
                 </dd>
               </dl>
             </div>
@@ -84,7 +162,9 @@ export default function Dashboard() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Sharpe Ratio</dt>
-                <dd className="text-lg font-medium text-gray-900">1.67</dd>
+                <dd className="text-lg font-medium text-gray-900">
+                  {performance ? performance.sharpeRatio.toFixed(2) : '1.67'}
+                </dd>
               </dl>
             </div>
           </div>
@@ -98,7 +178,9 @@ export default function Dashboard() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Max Drawdown</dt>
-                <dd className="text-lg font-medium text-gray-900">-3.2%</dd>
+                <dd className="text-lg font-medium text-gray-900">
+                  {performance ? `${performance.maxDrawdown.toFixed(1)}%` : '-3.2%'}
+                </dd>
               </dl>
             </div>
           </div>
@@ -112,7 +194,9 @@ export default function Dashboard() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Win Rate</dt>
-                <dd className="text-lg font-medium text-gray-900">68.5%</dd>
+                <dd className="text-lg font-medium text-gray-900">
+                  {performance ? `${performance.winRate.toFixed(1)}%` : '68.5%'}
+                </dd>
               </dl>
             </div>
           </div>
@@ -127,7 +211,7 @@ export default function Dashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {mockMarketData.map((market) => (
+              {marketData.map((market) => (
                 <div key={market.symbol} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
@@ -162,7 +246,7 @@ export default function Dashboard() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {mockPositions.map((position, index) => (
+              {positions.positions.map((position, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
@@ -211,7 +295,7 @@ export default function Dashboard() {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {mockSystemHealth.map((service) => (
+            {systemHealth.components.map((service) => (
               <div key={service.name} className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   {service.status === 'healthy' ? (

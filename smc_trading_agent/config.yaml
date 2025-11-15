@@ -1,14 +1,15 @@
-# SMC Trading Agent Configuration
+# SMC Trading Agent Configuration - Simplified for Personal Use
 
 # Application settings
 app:
   name: "SMC Trading Agent"
   version: "1.0.0"
   environment: "development"
+  mode: "paper"  # Trading mode: "paper" or "real" (default: paper)
   debug: true
   log_level: "INFO"
 
-# Exchange configurations
+# Exchange configurations - SIMPLIFIED to ONE exchange
 exchanges:
   binance:
     enabled: true
@@ -18,93 +19,21 @@ exchanges:
     rest_url: "https://api.binance.com"
     rate_limit: 1200  # requests per minute
     symbols:
-      - "BTCUSDT"
-      - "ETHUSDT"
-      - "ADAUSDT"
-      - "DOTUSDT"
-      - "LINKUSDT"
+      - "BTCUSDT"  # Start with ONE symbol for simplicity
     data_types:
       - "trade"
-      - "orderbook"
-      - "kline"
-    
-  bybit:
-    enabled: true
-    api_key: ""  # Set via environment variable BYBIT_API_KEY
-    api_secret: ""  # Set via environment variable BYBIT_API_SECRET
-    websocket_url: "wss://stream.bybit.com/v5/public/spot"
-    rest_url: "https://api.bybit.com"
-    rate_limit: 120  # requests per second
-    symbols:
-      - "BTCUSDT"
-      - "ETHUSDT"
-      - "ADAUSDT"
-      - "DOTUSDT"
-      - "LINKUSDT"
-    data_types:
-      - "trade"
-      - "orderbook"
-      - "kline"
-    
-  oanda:
-    enabled: true
-    api_key: ""  # Set via environment variable OANDA_API_KEY
-    account_id: ""  # Set via environment variable OANDA_ACCOUNT_ID
-    websocket_url: "wss://stream-fxtrade.oanda.com/v3/accounts/{account_id}/pricing/stream"
-    rest_url: "https://api-fxtrade.oanda.com/v3"
-    rate_limit: 120  # requests per second
-    symbols:
-      - "EUR_USD"
-      - "GBP_USD"
-      - "USD_JPY"
-      - "USD_CHF"
-      - "AUD_USD"
-    data_types:
-      - "trade"
-      - "orderbook"
       - "kline"
 
-# Kafka configuration
-kafka:
-  bootstrap_servers:
-    - "localhost:9092"
-  topic_prefix: "market_data"
-  compression_type: "gzip"
-  acks: "all"
-  retries: 3
-  batch_size: 16384
-  linger_ms: 5
-  buffer_memory: 33554432
-  max_request_size: 1048576
-  request_timeout_ms: 30000
-  delivery_timeout_ms: 120000
+# REMOVED: Kafka - not needed for <1000 msg/s personal trading bot
+# All data now flows through direct REST API calls
 
-# Performance optimization settings
-performance:
-  kafka:
-    bootstrap_servers:
-      - "localhost:9092"
-    batch_size: 2000
-    linger_ms: 5
-    compression_type: "gzip"
-  
-  ml_ensemble:
-    parallel_execution: true
-    cache_ttl_seconds: 60
-    model_timeout_ms: 50
-    max_workers: 4
-    
-  risk_manager:
-    parallel_calculation: true
-    cache_ttl_seconds: 30
-    db_pool_size: 20
-    
-  monitoring:
-    prometheus_gateway: "localhost:9091"
-    redis_url: "redis://localhost:6379"
-    alert_thresholds:
-      max_latency_ms: 50
-      max_error_rate: 0.05
+# Paper Trading Configuration
+paper_trading:
+  enabled: true
+  initial_balance: 10000.0  # USD
+  max_positions: 3
+  position_size_percent: 1.0  # % of balance per trade
+  update_interval: 60  # seconds
 
 # Data pipeline settings
 data_pipeline:
@@ -114,24 +43,16 @@ data_pipeline:
   max_reconnection_attempts: 10
   message_batch_size: 100
 
-# Risk management settings
+# Risk management settings - SIMPLIFIED
 risk_manager:
-  max_position_size: 10000  # USD
-  max_daily_loss: 1000     # USD
-  max_drawdown: 0.05       # 5%
-  circuit_breaker_threshold: 0.1  # 10%
+  max_position_size: 1000   # USD (conservative for paper trading)
+  max_daily_loss: 500       # USD
+  max_drawdown: 0.10        # 10%
   position_limits:
-    BTCUSDT: 1.0
-    ETHUSDT: 10.0
-    default: 1000.0
-  # Optimized circuit breaker settings
-  parallel_calculation: true
-  cache_ttl_seconds: 30
-  db_pool_size: 20
-  max_var: 0.02
-  var_confidence: 0.95
-  max_correlation: 0.7
-  leverage_limit: 3.0
+    BTCUSDT: 0.1  # BTC
+    default: 100.0  # USD
+  stop_loss_percent: 2.0    # % from entry
+  take_profit_ratio: 3.0    # Risk:Reward ratio
 
 # SMC detection settings
 smc_detector:
@@ -145,28 +66,11 @@ smc_detector:
     order_flow_imbalance: true
     liquidity_analysis: true
 
-# Model ensemble settings
-model_ensemble:
-  models:
-    - name: "lstm_price_predictor"
-      weight: 0.4
-      enabled: true
-    - name: "random_forest_classifier"
-      weight: 0.3
-      enabled: true
-    - name: "gradient_boosting_regressor"
-      weight: 0.3
-      enabled: true
-  prediction_horizon: 300  # 5 minutes
-  retraining_interval: 3600  # 1 hour
-  min_confidence: 0.6
-  # Optimized ensemble settings
-  parallel_execution: true
-  cache_ttl_seconds: 60
-  model_timeout_ms: 50
-  max_workers: 4
-  adaptive_selection: true
-  preload_models: true
+# Decision engine settings - SIMPLIFIED (no ML for v1)
+decision_engine:
+  mode: "heuristic"  # "heuristic" or "ml" (v1 uses simple SMC heuristic)
+  confidence_threshold: 0.70  # Minimum confidence to execute trade
+  use_ml_ensemble: false  # Disabled for faster startup
 
 # Execution engine settings
 execution_engine:
@@ -189,49 +93,18 @@ execution_engine:
       enabled: true
       testnet: false
 
-# Monitoring and logging
+# Monitoring and logging - SIMPLIFIED
 monitoring:
-  health_check_interval: 30  # seconds
-  metrics_collection: true
-  alerting:
-    enabled: true
-    email_notifications: false
-    slack_webhook: ""
-  grafana:
-    enabled: true
-    dashboard_url: "http://localhost:3000"
-  prometheus:
-    enabled: true
-    port: 9090
-    gateway: "localhost:9091"
-  # Performance monitoring thresholds
-  performance_thresholds:
-    max_latency_ms: 50.0
-    warning_latency_ms: 30.0
-    max_error_rate: 0.05
-    max_cpu_usage: 0.80
-    max_memory_usage: 0.85
-    min_cache_hit_rate: 0.70
-    max_queue_size: 1000
+  health_check_interval: 60  # seconds
+  port: 8000  # Python backend port
+  metrics_collection: false  # Disabled for simplicity
+  # REMOVED: Prometheus/Grafana - use simple logging instead
 
-# Database settings
+# Database settings - SIMPLIFIED to SQLite
 database:
-  type: "postgresql"
-  host: "localhost"
-  port: 5432
-  name: "smc_trading_agent"
-  user: "postgres"
-  password: ""  # Set via environment variable DB_PASSWORD
-  pool_size: 10
-  max_overflow: 20
-
-# Redis settings
-redis:
-  host: "localhost"
-  port: 6379
-  db: 0
-  password: ""  # Set via environment variable REDIS_PASSWORD
-  max_connections: 20
+  type: "sqlite"
+  path: "data/trades.db"  # Local SQLite database
+  # REMOVED: PostgreSQL - not needed for personal use
 
 # API settings
 api:
@@ -253,9 +126,16 @@ security:
 
 # Development settings
 development:
-  mock_exchanges: false
+  mock_exchanges: false  # Use live data from TypeScript backend
   mock_data: false
   debug_mode: true
-  hot_reload: true
+  hot_reload: false
   test_mode: false
+  
+# Backend API Configuration
+backend_api:
+  host: "localhost"
+  port: 3001  # TypeScript backend (Express)
+  python_port: 8000  # Python backend (FastAPI)
+  timeout: 10  # seconds
 

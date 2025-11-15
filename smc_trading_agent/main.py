@@ -11,10 +11,11 @@ from .config_loader import load_secure_config, ConfigValidationError, Environmen
 from .config_validator import validate_config
 
 # Component Imports
-from .data_pipeline.ingestion import MarketDataProcessor
+from .data_pipeline.live_data_client import LiveDataClient  # CHANGED: Live data instead of mock
 from .smc_detector.indicators import SMCIndicators
 from .decision_engine.model_ensemble import AdaptiveModelSelector
 from .risk_manager.smc_risk_manager import SMCRiskManager
+from .execution_engine.paper_trading import PaperTradingEngine  # ADDED: Paper trading engine
 
 # Error handling and validation imports
 from .error_handlers import (
@@ -36,51 +37,8 @@ import uvicorn
 # Global flag to indicate shutdown
 shutdown_flag = False
 
-# Placeholder for the Rust-based execution engine
-class ExecutionEngine:
-    def __init__(self, config: Dict[str, Any]):
-        self.logger = logging.getLogger(__name__)
-        self.config = config.get("execution_engine", {})
-        self.logger.info("Execution Engine (Placeholder) initialized.")
-        
-        # Initialize circuit breaker for execution engine
-        self.circuit_breaker = CircuitBreaker(
-            name="execution_engine",
-            failure_threshold=3,
-            recovery_timeout=120.0,
-            logger=self.logger
-        )
-        
-        # Initialize retry handler for transient failures
-        self.retry_handler = RetryHandler(
-            max_retries=2,
-            base_delay=1.0,
-            max_delay=10.0,
-            logger=self.logger
-        )
-
-    @safe_execute("execution_engine", ErrorSeverity.HIGH)
-    def execute_trade(self, trade_details: Dict[str, Any]):
-        """Execute trade with comprehensive error handling."""
-        # Validate trade details
-        validated_signal = data_validator.validate_trade_signal(trade_details)
-        
-        self.logger.info("Executing trade", extra={'trade': trade_details})
-        
-        # Use circuit breaker and retry handler for execution
-        def _execute():
-            print(f"--- EXECUTION ENGINE ---")
-            print(f"  Action: {validated_signal.action}")
-            print(f"  Symbol: {validated_signal.symbol}")
-            print(f"  Entry: {validated_signal.entry_price}")
-            print(f"  Stop Loss: {validated_signal.stop_loss}")
-            print(f"  Take Profit: {validated_signal.take_profit}")
-            print(f"------------------------")
-            return True
-        
-        return self.circuit_breaker.call(
-            lambda: self.retry_handler.call(_execute)
-        )
+# REMOVED: Placeholder ExecutionEngine - replaced with PaperTradingEngine
+# See execution_engine/paper_trading.py for full implementation
 
 def setup_logging(config: Dict[str, Any]):
     try:
@@ -169,14 +127,11 @@ async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceMana
                 await asyncio.sleep(30)  # Wait before retry
                 continue
             
-            # 1. Get market data with error handling
+            # 1. Get market data with error handling (LIVE DATA via REST API)
             market_data_df = None
             try:
-                market_data_df = data_circuit_breaker.call(
-                    lambda: data_retry_handler.call(
-                        data_processor.get_latest_ohlcv_data, "BTC/USDT", "1h"
-                    )
-                )
+                # CHANGED: Async call to LiveDataClient
+                market_data_df = await data_processor.get_latest_ohlcv_data("BTC/USDT", "1h")
                 
                 # Validate market data quality
                 is_valid, validation_errors = data_validator.validate_market_data(market_data_df)
@@ -217,23 +172,42 @@ async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceMana
                 logger.error(f"Failed to detect SMC patterns: {str(e)}", exc_info=True)
                 continue
 
-            # 3. Make a decision with error handling
+            # 3. Make a decision - SIMPLIFIED HEURISTIC (no ML for v1)
             trade_signal = None
             if order_blocks:
                 try:
-                    trade_signal = decision_circuit_breaker.call(
-                        lambda: decision_retry_handler.call(
-                            decision_engine.make_decision, order_blocks, market_data_df
-                        )
-                    )
+                    # SIMPLE SMC HEURISTIC: Use latest order block direction
+                    latest_ob = order_blocks[0]
+                    
+                    # Determine direction from order block
+                    ob_direction = latest_ob.get('direction') or latest_ob.get('type')
+                    
+                    if ob_direction in ['bullish', 'BULLISH']:
+                        trade_signal = {
+                            "action": "BUY",
+                            "symbol": "BTC/USDT",
+                            "entry_price": latest_ob['price_level'][0] if isinstance(latest_ob['price_level'], tuple) else latest_ob['price_level'],
+                            "confidence": min(0.75 + latest_ob.get('strength', 0) * 0.2, 0.95)
+                        }
+                    elif ob_direction in ['bearish', 'BEARISH']:
+                        trade_signal = {
+                            "action": "SELL",
+                            "symbol": "BTC/USDT",
+                            "entry_price": latest_ob['price_level'][1] if isinstance(latest_ob['price_level'], tuple) else latest_ob['price_level'],
+                            "confidence": min(0.75 + latest_ob.get('strength', 0) * 0.2, 0.95)
+                        }
                     
                     if trade_signal:
                         # Validate trade signal
                         validated_signal = data_validator.validate_trade_signal(trade_signal)
                         
-                        if validated_signal.confidence > config.get('decision_engine', {}).get('confidence_threshold', 0.7):
-                            logger.info("Decision engine generated a high-confidence trade signal.", 
-                                      extra={'signal': trade_signal})
+                        confidence_threshold = config.get('decision_engine', {}).get('confidence_threshold', 0.7)
+                        if validated_signal.confidence > confidence_threshold:
+                            logger.info(
+                                f"🎯 SIMPLE SMC HEURISTIC: {trade_signal['action']} signal generated "
+                                f"(confidence: {validated_signal.confidence:.2%}, direction: {ob_direction})", 
+                                extra={'signal': trade_signal}
+                            )
                             
                             # 4. Apply risk management with error handling
                             stop_loss = None
@@ -261,28 +235,60 @@ async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceMana
                                 logger.error(f"Risk management calculation failed: {str(e)}", exc_info=True)
                                 continue
 
-                            # 5. Execute the trade with error handling
+                            # 5. Execute the paper trade
                             try:
-                                final_trade = {
-                                    **trade_signal, 
-                                    "stop_loss": stop_loss, 
-                                    "take_profit": take_profit
-                                }
-                                execution_engine.execute_trade(final_trade)
+                                # Calculate position size (simple 1% of balance)
+                                account_summary = execution_engine.get_account_summary()
+                                position_size = account_summary['balance'] * 0.01 / validated_signal.entry_price
+                                
+                                # Execute paper order
+                                paper_trade = execution_engine.execute_order(
+                                    symbol=validated_signal.symbol,
+                                    side=validated_signal.action,
+                                    size=position_size,
+                                    price=validated_signal.entry_price,
+                                    stop_loss=stop_loss,
+                                    take_profit=take_profit,
+                                    reason=f"SMC pattern detected with {validated_signal.confidence:.2%} confidence"
+                                )
+                                
+                                if paper_trade:
+                                    logger.info("✅ Paper trade executed successfully", extra={'trade': paper_trade.dict()})
+                                else:
+                                    logger.warning("⚠️ Paper trade rejected by engine")
                                 
                             except Exception as e:
                                 logger.error(f"Trade execution failed: {str(e)}", exc_info=True)
                                 continue
                                 
-                        elif trade_signal:
-                            logger.info("Trade signal confidence below threshold, no action taken.", 
-                                      extra={'signal': trade_signal})
+                        else:
+                            logger.info(
+                                f"Trade signal confidence below threshold "
+                                f"({validated_signal.confidence:.2%} < {confidence_threshold:.2%}), no action taken.", 
+                                extra={'signal': trade_signal}
+                            )
                             
                 except Exception as e:
                     logger.error(f"Decision engine failed: {str(e)}", exc_info=True)
                     continue
             else:
                 logger.info("No significant SMC patterns detected in this cycle.")
+            
+            # 6. Update open positions with live prices (check SL/TP)
+            if execution_engine.positions:
+                try:
+                    # Get live prices for all open positions
+                    live_prices = {}
+                    for symbol in execution_engine.positions.keys():
+                        symbol_data = await data_processor.get_latest_ohlcv_data(symbol, "1h", limit=1)
+                        if symbol_data is not None and not symbol_data.empty:
+                            live_prices[symbol] = symbol_data['close'].iloc[-1]
+                    
+                    # Update positions and check stop loss / take profit
+                    execution_engine.update_positions(live_prices)
+                    
+                except Exception as e:
+                    logger.error(f"Failed to update positions: {str(e)}", exc_info=True)
 
         except Exception as e:
             logger.error(f"Unexpected error in orchestration cycle: {str(e)}", exc_info=True)
@@ -336,11 +342,18 @@ async def main_async():
     
     # Initialize all services with error handling
     try:
-        data_processor = MarketDataProcessor()
+        # CHANGED: Use LiveDataClient instead of mock MarketDataProcessor
+        data_processor = LiveDataClient(base_url="http://localhost:3001")
         smc_detector = SMCIndicators()
         decision_engine = AdaptiveModelSelector()
         risk_manager = SMCRiskManager()
-        execution_engine = ExecutionEngine(config)
+        
+        # CHANGED: Use PaperTradingEngine instead of placeholder
+        # Get trading mode from config (default: paper)
+        trading_mode = config.get('app', {}).get('mode', 'paper')
+        initial_balance = config.get('paper_trading', {}).get('initial_balance', 10000.0)
+        execution_engine = PaperTradingEngine(initial_balance=initial_balance)
+        logger.info(f"Trading mode: {trading_mode.upper()} with ${initial_balance:.2f} balance")
         
         # Register services with service manager
         service_manager.register_service("data_processor", data_processor, lambda: True, critical=True)
@@ -361,6 +374,37 @@ async def main_async():
     
     # Create FastAPI app for health monitoring
     app = health_monitor.get_fastapi_app()
+    
+    # Add paper trading API endpoints
+    @app.get("/api/python/paper-trades")
+    async def get_paper_trades():
+        """Get paper trading history."""
+        try:
+            trades = execution_engine.get_trade_history(limit=50)
+            return {"success": True, "data": trades}
+        except Exception as e:
+            logger.error(f"Failed to get paper trades: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
+    @app.get("/api/python/positions")
+    async def get_positions():
+        """Get open positions."""
+        try:
+            positions = execution_engine.get_open_positions()
+            return {"success": True, "data": positions}
+        except Exception as e:
+            logger.error(f"Failed to get positions: {str(e)}")
+            return {"success": False, "error": str(e)}
+    
+    @app.get("/api/python/account")
+    async def get_account():
+        """Get account summary."""
+        try:
+            summary = execution_engine.get_account_summary()
+            return {"success": True, "data": summary}
+        except Exception as e:
+            logger.error(f"Failed to get account summary: {str(e)}")
+            return {"success": False, "error": str(e)}
     
     # Start health monitoring server
     config_uvicorn = uvicorn.Config(

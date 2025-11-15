@@ -1,0 +1,34 @@
+SMC Trading Agent SBOM Workflow - Sat Aug 16 23:05:19 CEST 2025
+Scan Mode: full
+Format: table
+Security Environment: development
+----------------------------------------
+[0;34m[VERBOSE][0m Project root: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+[0;34m[VERBOSE][0m SBOM directory: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom
+[0;34m[VERBOSE][0m Log file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/logs/sbom_workflow_20250816_230519.log
+[0;34m[INFO][0m Checking required dependencies
+[0;32m[SUCCESS][0m All required dependencies are available
+[0;34m[INFO][0m Starting SBOM generation
+[0;34m[INFO][0m Generating Python SBOM
+[0;32m[SUCCESS][0m Python SBOM generated successfully
+[0;34m[INFO][0m Generating Node.js SBOM
+[0;32m[SUCCESS][0m Node.js SBOM generated successfully
+[0;34m[VERBOSE][0m Generated SBOM files:
+[0;34m[INFO][0m Starting Trivy security scans
+[0;34m[INFO][0m Running full filesystem scan
+[0;32m[SUCCESS][0m Filesystem scan completed
+[0;34m[VERBOSE][0m Scan results saved to: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/scan_results.list
+[0;34m[INFO][0m Applying security policies
+[0;34m[VERBOSE][0m Policy command: python3 tools/security_policy.py --config config/security_policy.yaml --environment development --format table --output /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom --input "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/trivy_fs_full.json"
+[0;32m[SUCCESS][0m Security policies applied successfully
+[0;34m[INFO][0m Generating consolidated security report
+[0;32m[SUCCESS][0m Consolidated report generated: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/consolidated_report.json
+[0;32m[SUCCESS][0m Summary report generated: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/security_summary.txt
+[0;34m[INFO][0m Cleaning up temporary files
+[0;34m[VERBOSE][0m Removed temporary scan results list
+[0;34m[VERBOSE][0m Cleaned up old log files
+[0;34m[VERBOSE][0m Trivy cache directory exists (not cleaning to preserve performance)
+[0;32m[SUCCESS][0m SBOM workflow completed successfully in 37s
+[0;32m[SUCCESS][0m No security policy violations detected
+[0;34m[INFO][0m Log file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom/logs/sbom_workflow_20250816_230519.log
+[0;34m[INFO][0m Reports directory: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/docs/sbom

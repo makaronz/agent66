@@ -12,7 +12,8 @@ from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
 
 from .exchange_connectors import ExchangeConnector, BinanceConnector, ByBitConnector, OANDAConnector
-from .kafka_producer import KafkaProducerManager, KafkaConfig, DataType, DataSerializer, TopicManager
+# REMOVED: Kafka dependencies - replaced with direct callback processing for <1000 msg/s throughput
+# from .kafka_producer import KafkaProducerManager, KafkaConfig, DataType, DataSerializer, TopicManager
 
 logger = logging.getLogger(__name__)
 
@@ -40,18 +41,17 @@ class DataIngestion:
     normalizes data formats, and streams to Kafka.
     """
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], message_callback: Optional[Callable] = None):
         """
         Initialize data ingestion service.
         
         Args:
             config: Configuration dictionary
+            message_callback: Optional callback for processing messages directly (replaces Kafka)
         """
         self.config = config
         self.exchanges: Dict[str, ExchangeConnector] = {}
-        self.kafka_producer: Optional[KafkaProducerManager] = None
-        self.topic_manager: Optional[TopicManager] = None
-        self.data_serializer: Optional[DataSerializer] = None
+        self.message_callback = message_callback  # Direct callback instead of Kafka
         
         # Service state
         self.running = False
@@ -69,9 +69,9 @@ class DataIngestion:
         
         # Initialize components
         self._initialize_exchanges()
-        self._initialize_kafka()
+        # REMOVED: Kafka initialization - using direct callbacks for simplicity
         
-        logger.info("Data ingestion service initialized")
+        logger.info("Data ingestion service initialized (direct callback mode)")
     
     def _initialize_exchanges(self):
         """Initialize exchange connectors."""
@@ -98,30 +98,11 @@ class DataIngestion:
             except Exception as e:
                 logger.error(f"Failed to initialize {exchange_name} connector: {e}")
     
-    def _initialize_kafka(self):
-        """Initialize Kafka producer."""
-        try:
-            kafka_config = self.config.get('kafka', {})
-            
-            # Create Kafka configuration
-            kafka_cfg = KafkaConfig(
-                bootstrap_servers=kafka_config.get('bootstrap_servers', ['localhost:9092']),
-                topic_prefix=kafka_config.get('topic_prefix', 'market_data'),
-                compression_type=kafka_config.get('compression_type', 'gzip'),
-                acks=kafka_config.get('acks', 'all'),
-                retries=kafka_config.get('retries', 3),
-                batch_size=kafka_config.get('batch_size', 16384),
-                linger_ms=kafka_config.get('linger_ms', 5)
-            )
-            
-            self.kafka_producer = KafkaProducerManager(kafka_cfg)
-            self.topic_manager = TopicManager(kafka_cfg.topic_prefix)
-            self.data_serializer = DataSerializer()
-            
-            logger.info("Kafka producer initialized")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize Kafka producer: {e}")
+    # REMOVED: Kafka initialization - no longer needed for simplified architecture
+    # def _initialize_kafka(self):
+    #     """Initialize Kafka producer."""
+    #     # Kafka removed for <5 user personal trading bot
+    #     pass
     
     async def start(self) -> bool:
         """
@@ -131,14 +112,9 @@ class DataIngestion:
             bool: True if startup successful, False otherwise
         """
         try:
-            logger.info("Starting data ingestion service")
+            logger.info("Starting data ingestion service (direct callback mode)")
             
-            # Connect to Kafka
-            if self.kafka_producer:
-                kafka_connected = await self.kafka_producer.connect()
-                if not kafka_connected:
-                    logger.error("Failed to connect to Kafka")
-                    return False
+            # REMOVED: Kafka connection - using direct callbacks instead
             
             # Start exchange connectors
             exchange_tasks = []
@@ -210,10 +186,7 @@ class DataIngestion:
                 except Exception as e:
                     logger.error(f"Error stopping {exchange_name} connector: {e}")
             
-            # Disconnect from Kafka
-            if self.kafka_producer:
-                await self.kafka_producer.disconnect()
-                logger.info("Disconnected from Kafka")
+            # REMOVED: Kafka disconnection - no longer using Kafka
             
             logger.info("Data ingestion service stopped successfully")
             return True
@@ -278,18 +251,27 @@ class DataIngestion:
                     # Extract symbol from data
                     symbol = data.get('symbol', '')
                     
-                    # Send to Kafka
-                    if self.kafka_producer and symbol:
-                        success = await self.kafka_producer.send_market_data(
-                            exchange=exchange_name,
-                            symbol=symbol,
-                            data_type=data_type,
-                            data=data
-                        )
+                    # SIMPLIFIED: Direct callback instead of Kafka
+                    if self.message_callback and symbol:
+                        # Call callback directly with enriched data
+                        enriched_data = {
+                            'exchange': exchange_name,
+                            'symbol': symbol,
+                            'data_type': data_type,
+                            'data': data,
+                            'timestamp': time.time()
+                        }
                         
-                        if success:
+                        try:
+                            # Call callback (can be sync or async)
+                            if asyncio.iscoroutinefunction(self.message_callback):
+                                await self.message_callback(enriched_data)
+                            else:
+                                self.message_callback(enriched_data)
+                            
                             self.metrics['total_messages_sent'] += 1
-                        else:
+                        except Exception as cb_error:
+                            logger.error(f"Error in message callback: {cb_error}")
                             self.metrics['total_errors'] += 1
                     
                     self.metrics['total_messages_processed'] += 1
@@ -304,22 +286,22 @@ class DataIngestion:
         except Exception as e:
             logger.error(f"Error in exchange listener for {exchange_name}: {e}")
     
-    def _determine_data_type(self, data: Dict[str, Any], exchange_name: str) -> DataType:
+    def _determine_data_type(self, data: Dict[str, Any], exchange_name: str) -> str:
         """Determine the data type from the message structure."""
         try:
             # Check for specific fields that indicate data type
             if 'price' in data and 'quantity' in data and 'side' in data:
-                return DataType.TRADE
+                return 'trade'
             elif 'bids' in data and 'asks' in data:
-                return DataType.ORDERBOOK
+                return 'orderbook'
             elif 'open' in data and 'high' in data and 'low' in data and 'close' in data:
-                return DataType.KLINE
+                return 'kline'
             else:
                 # Default to trade data
-                return DataType.TRADE
+                return 'trade'
                 
         except Exception:
-            return DataType.TRADE
+            return 'trade'
     
     async def _health_monitor(self):
         """Monitor health of all exchange connectors and Kafka."""
@@ -332,25 +314,18 @@ class DataIngestion:
                     try:
                         health_status = await connector.get_health_status()
                         
-                        # Send health status to Kafka
-                        if self.kafka_producer:
-                            await self.kafka_producer.send_health_status(
-                                exchange=exchange_name,
-                                health_data=health_status
-                            )
+                        # REMOVED: Kafka health status reporting - just log now
                         
                         # Log health status
                         if not health_status.get('connected', False):
                             logger.warning(f"{exchange_name} health check failed: {health_status}")
+                        else:
+                            logger.debug(f"{exchange_name} health check passed")
                         
                     except Exception as e:
                         logger.error(f"Health check failed for {exchange_name}: {e}")
                 
-                # Check Kafka health
-                if self.kafka_producer:
-                    kafka_health = self.kafka_producer.get_health_status()
-                    if not kafka_health.get('connected', False):
-                        logger.warning(f"Kafka health check failed: {kafka_health}")
+                # REMOVED: Kafka health check - no longer using Kafka
                 
                 self.metrics['last_health_check'] = current_time
                 
@@ -388,18 +363,12 @@ class DataIngestion:
             logger.info(f"Performance Metrics - "
                        f"Uptime: {uptime:.1f}s, "
                        f"Messages: {self.metrics['total_messages_processed']}, "
-                       f"Sent: {self.metrics['total_messages_sent']}, "
+                       f"Processed: {self.metrics['total_messages_sent']}, "
                        f"Errors: {self.metrics['total_errors']}, "
                        f"Rate: {messages_per_second:.2f} msg/s, "
                        f"Error Rate: {error_rate:.2%}")
             
-            # Log Kafka metrics if available
-            if self.kafka_producer:
-                kafka_metrics = self.kafka_producer.get_performance_metrics()
-                logger.info(f"Kafka Metrics - "
-                           f"Messages Sent: {kafka_metrics['messages_sent']}, "
-                           f"Error Rate: {kafka_metrics['error_rate']:.2%}, "
-                           f"Avg Size: {kafka_metrics['average_message_size']:.0f} bytes")
+            # REMOVED: Kafka metrics - no longer applicable
             
         except Exception as e:
             logger.error(f"Error logging performance metrics: {e}")
@@ -422,15 +391,13 @@ class DataIngestion:
                         "connected": False
                     }
             
-            kafka_health = {}
-            if self.kafka_producer:
-                kafka_health = self.kafka_producer.get_health_status()
+            # REMOVED: Kafka health - no longer using Kafka
             
             return {
                 "service": "data_ingestion",
                 "running": self.running,
+                "mode": "direct_callback",
                 "exchanges": exchange_health,
-                "kafka": kafka_health,
                 "metrics": self.metrics.copy(),
                 "timestamp": time.time()
             }
@@ -455,11 +422,7 @@ class DataIngestion:
         """
         return self.exchanges.get(exchange_name)
     
-    def get_kafka_producer(self) -> Optional[KafkaProducerManager]:
-        """
-        Get Kafka producer instance.
-        
-        Returns:
-            KafkaProducerManager: Kafka producer instance or None
-        """
-        return self.kafka_producer
+    # REMOVED: Kafka producer getter - no longer needed
+    # def get_kafka_producer(self) -> Optional[KafkaProducerManager]:
+    #     """Get Kafka producer instance."""
+    #     return None
