@@ -79,6 +79,33 @@ kafka:
   request_timeout_ms: 30000
   delivery_timeout_ms: 120000
 
+# Performance optimization settings
+performance:
+  kafka:
+    bootstrap_servers:
+      - "localhost:9092"
+    batch_size: 2000
+    linger_ms: 5
+    compression_type: "gzip"
+  
+  ml_ensemble:
+    parallel_execution: true
+    cache_ttl_seconds: 60
+    model_timeout_ms: 50
+    max_workers: 4
+    
+  risk_manager:
+    parallel_calculation: true
+    cache_ttl_seconds: 30
+    db_pool_size: 20
+    
+  monitoring:
+    prometheus_gateway: "localhost:9091"
+    redis_url: "redis://localhost:6379"
+    alert_thresholds:
+      max_latency_ms: 50
+      max_error_rate: 0.05
+
 # Data pipeline settings
 data_pipeline:
   health_check_interval: 30  # seconds
@@ -97,6 +124,14 @@ risk_manager:
     BTCUSDT: 1.0
     ETHUSDT: 10.0
     default: 1000.0
+  # Optimized circuit breaker settings
+  parallel_calculation: true
+  cache_ttl_seconds: 30
+  db_pool_size: 20
+  max_var: 0.02
+  var_confidence: 0.95
+  max_correlation: 0.7
+  leverage_limit: 3.0
 
 # SMC detection settings
 smc_detector:
@@ -125,6 +160,13 @@ model_ensemble:
   prediction_horizon: 300  # 5 minutes
   retraining_interval: 3600  # 1 hour
   min_confidence: 0.6
+  # Optimized ensemble settings
+  parallel_execution: true
+  cache_ttl_seconds: 60
+  model_timeout_ms: 50
+  max_workers: 4
+  adaptive_selection: true
+  preload_models: true
 
 # Execution engine settings
 execution_engine:
@@ -161,6 +203,16 @@ monitoring:
   prometheus:
     enabled: true
     port: 9090
+    gateway: "localhost:9091"
+  # Performance monitoring thresholds
+  performance_thresholds:
+    max_latency_ms: 50.0
+    warning_latency_ms: 30.0
+    max_error_rate: 0.05
+    max_cpu_usage: 0.80
+    max_memory_usage: 0.85
+    min_cache_hit_rate: 0.70
+    max_queue_size: 1000
 
 # Database settings
 database:
