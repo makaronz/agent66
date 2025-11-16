@@ -66,7 +66,8 @@ export default function TradingInterface() {
     };
 
     fetchData();
-    // Refresh patterns every 30 seconds, orders every 10 seconds, chart every 60 seconds
+    // Refresh patterns every 30 seconds, orders every 10 seconds
+    // Chart refreshes automatically when timeframe or symbol changes via useEffect
     const patternsInterval = setInterval(() => {
       apiService.getSMCPatterns().then(setSmcPatterns).catch(console.error);
     }, 30000);
@@ -75,10 +76,18 @@ export default function TradingInterface() {
       apiService.getTradingHistory(10, selectedSymbol).then(setRecentOrders).catch(console.error);
     }, 10000);
 
+    // Optional: Auto-refresh chart data every 60 seconds (only if timeframe/symbol haven't changed)
     const chartInterval = setInterval(() => {
+      setChartLoading(true);
       apiService.getOHLCVData(selectedSymbol, timeframe, 100)
-        .then(setOhlcvData)
-        .catch(console.error);
+        .then((data) => {
+          setOhlcvData(data);
+          setChartLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error refreshing chart:', error);
+          setChartLoading(false);
+        });
     }, 60000);
 
     return () => {
@@ -217,13 +226,26 @@ export default function TradingInterface() {
                   </div>
                 </div>
               ) : (
-                <div className="h-96">
+                <div className="h-96" key={`chart-${selectedSymbol}-${timeframe}`}>
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={ohlcvData.map(d => {
                       const isUp = d.close >= d.open;
+                      const date = new Date(d.timestamp);
+                      let timeLabel: string;
+                      
+                      // Format time label based on timeframe
+                      if (timeframe === '1d') {
+                        timeLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      } else if (timeframe === '4h' || timeframe === '1h') {
+                        timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                      } else {
+                        timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                      }
+                      
                       return {
-                        time: new Date(d.timestamp).toLocaleTimeString(),
+                        time: timeLabel,
                         timestamp: d.timestamp,
+                        fullTime: date,
                         open: d.open,
                         high: d.high,
                         low: d.low,
@@ -233,13 +255,13 @@ export default function TradingInterface() {
                       };
                     })}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis 
-                        dataKey="time" 
-                        stroke="#6b7280"
-                        fontSize={12}
-                        tick={{ fill: '#6b7280' }}
-                        interval="preserveStartEnd"
-                      />
+                    <XAxis 
+                      dataKey="time" 
+                      stroke="#6b7280"
+                      fontSize={12}
+                      tick={{ fill: '#6b7280' }}
+                      interval="preserveStartEnd"
+                    />
                       <YAxis 
                         yAxisId="left"
                         stroke="#6b7280"

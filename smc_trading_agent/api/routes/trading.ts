@@ -599,13 +599,24 @@ router.get('/live-ohlcv', async (req: Request, res: Response) => {
     // Get live market data from aggregator
     const marketData = marketDataAggregator.getMarketData(symbol);
 
+    // Map timeframe strings to milliseconds
+    const timeframeMap: Record<string, number> = {
+      '1m': 60000,        // 1 minute
+      '5m': 300000,       // 5 minutes
+      '15m': 900000,      // 15 minutes
+      '1h': 3600000,      // 1 hour
+      '4h': 14400000,     // 4 hours
+      '1d': 86400000      // 1 day
+    };
+
+    const timeframeMs = timeframeMap[timeframe as string] || timeframeMap['1h'];
+
     if (!marketData) {
       // Return mock data if aggregator doesn't have data yet
       console.log(`⚠️ No live data for ${symbol}, returning mock data`);
       const mockPrice = 95000; // Default BTC price
       const ohlcvData = [];
       const now = Date.now();
-      const timeframeMs = timeframe === '1h' ? 3600000 : 60000;
       
       for (let i = parseInt(limit as string) - 1; i >= 0; i--) {
         const timestamp = now - (i * timeframeMs);
@@ -635,7 +646,6 @@ router.get('/live-ohlcv', async (req: Request, res: Response) => {
     // In production, you'd aggregate multiple ticks into candles
     const ohlcvData = [];
     const now = Date.now();
-    const timeframeMs = timeframe === '1h' ? 3600000 : 60000; // 1h or 1m
 
     // Generate historical OHLCV data (last 'limit' candles)
     for (let i = parseInt(limit as string) - 1; i >= 0; i--) {
