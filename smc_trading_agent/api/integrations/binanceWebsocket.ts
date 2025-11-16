@@ -100,6 +100,7 @@ export class BinanceWebSocket extends WebSocketManager {
   subscribeToOrderBook(symbols: string[], depth: number = 20, callback: (data: BinanceOrderBook) => void): string[] {
     const subscriptionIds: string[] = [];
 
+    // Register subscriptions first
     for (const symbol of symbols) {
       const subscriptionId = this.subscribe(
         [symbol.toLowerCase()],
@@ -113,6 +114,14 @@ export class BinanceWebSocket extends WebSocketManager {
       );
 
       subscriptionIds.push(subscriptionId);
+    }
+
+    // If already connected, reconnect with new streams
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.disconnect();
+      this.connect().catch(err => {
+        console.error('Failed to reconnect with new streams:', err);
+      });
     }
 
     return subscriptionIds;
