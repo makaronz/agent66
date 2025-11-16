@@ -12,7 +12,7 @@ import logging
 import signal
 import pandas as pd
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
@@ -35,6 +35,12 @@ shutdown_flag = False
 
 # Global paper trading engine (will be set in main)
 paper_engine = None
+
+# Global SMC detector (will be set in main)
+smc_detector = None
+
+# Global storage for detected SMC patterns (for API access)
+detected_patterns = []
 
 # FastAPI app
 app = FastAPI(title="SMC Trading Agent API")
@@ -85,6 +91,70 @@ async def get_account():
         logger.error(f"Failed to get account summary: {str(e)}")
         return {"success": False, "error": str(e)}
 
+@app.get("/api/python/smc-patterns")
+async def get_smc_patterns():
+    """Get detected SMC patterns."""
+    global detected_patterns
+    try:
+        # Return last 20 patterns
+        patterns = detected_patterns[-20:] if detected_patterns else []
+        return {"success": True, "data": patterns}
+    except Exception as e:
+        logger.error(f"Failed to get SMC patterns: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/python/execute-order")
+async def execute_manual_order(request: Request):
+    """Execute a manual order through paper trading engine."""
+    if paper_engine is None:
+        return {"success": False, "error": "Paper trading engine not initialized"}
+    
+    try:
+        # Parse request body
+        body = await request.json()
+        symbol = body.get("symbol", "").replace("/", "").upper()  # BTC/USDT -> BTCUSDT
+        side = body.get("side", "").upper()  # BUY or SELL
+        size = float(body.get("size", 0))
+        price = float(body.get("price", 0))
+        stop_loss = float(body.get("stopLoss", 0)) if body.get("stopLoss") else None
+        take_profit = float(body.get("takeProfit", 0)) if body.get("takeProfit") else None
+        
+        if not symbol or not side or size <= 0 or price <= 0:
+            return {"success": False, "error": "Missing required fields: symbol, side, size, price"}
+        
+        # Execute order
+        trade = paper_engine.execute_order(
+            symbol=symbol,
+            side=side,
+            size=size,
+            price=price,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
+            reason="Manual order from trading interface"
+        )
+        
+        if trade:
+            return {
+                "success": True,
+                "data": {
+                    "id": trade.id,
+                    "symbol": trade.symbol,
+                    "side": trade.side,
+                    "size": trade.size,
+                    "entry_price": trade.entry_price,
+                    "stop_loss": trade.stop_loss,
+                    "take_profit": trade.take_profit,
+                    "status": trade.status,
+                    "timestamp": trade.timestamp.isoformat() if hasattr(trade.timestamp, 'isoformat') else str(trade.timestamp)
+                }
+            }
+        else:
+            return {"success": False, "error": "Failed to execute order"}
+            
+    except Exception as e:
+        logger.error(f"Failed to execute manual order: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -103,7 +173,7 @@ def handle_shutdown(signum, frame):
 
 async def main():
     """Main trading loop - simplified version."""
-    global paper_engine
+    global paper_engine, smc_detector, detected_patterns
     
     logger.info("=" * 60)
     logger.info("SMC TRADING AGENT - PAPER TRADING MODE")
@@ -186,6 +256,23 @@ async def main():
                 # 2. Detect SMC patterns
                 logger.info("Step 2: Detecting SMC patterns...")
                 order_blocks = smc_detector.detect_order_blocks(market_data)
+                
+                # Store patterns for API access
+                if order_blocks:
+                    for ob in order_blocks:
+                        pattern = {
+                            "id": f"pattern_{len(detected_patterns) + 1}",
+                            "symbol": "BTCUSDT",
+                            "type": "order_block",
+                            "direction": ob.get('direction', 'bullish'),
+                            "strength": ob.get('strength', 0.7),
+                            "price": ob.get('price_level', [0, 0])[0] if isinstance(ob.get('price_level'), (list, tuple)) else ob.get('price_level', 0),
+                            "timestamp": ob.get('timestamp', pd.Timestamp.now()).isoformat() if hasattr(ob.get('timestamp', pd.Timestamp.now()), 'isoformat') else str(ob.get('timestamp', pd.Timestamp.now())),
+                            "confidence": ob.get('strength', 0.7)
+                        }
+                        detected_patterns.append(pattern)
+                    # Keep only last 50 patterns
+                    detected_patterns = detected_patterns[-50:]
                 
                 if not order_blocks:
                     logger.info("→ No significant SMC patterns detected")

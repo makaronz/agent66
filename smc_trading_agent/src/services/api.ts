@@ -139,6 +139,8 @@ class ApiService {
     price: number;
     size: number;
     reason?: string;
+    stopLoss?: number;
+    takeProfit?: number;
   }): Promise<Trade> {
     const response = await fetch(`${API_BASE_URL}/trading/execute-trade`, {
       method: 'POST',
@@ -147,6 +149,11 @@ class ApiService {
       },
       body: JSON.stringify(tradeData),
     });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to execute trade');
+    }
 
     const data = await response.json();
     return data.data;

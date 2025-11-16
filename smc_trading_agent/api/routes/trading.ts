@@ -133,82 +133,157 @@ router.get('/system-health', (req: Request, res: Response) => {
 });
 
 /**
- * Get SMC pattern analysis
+ * Get SMC pattern analysis from Python backend
  */
-router.get('/smc-patterns', (req: Request, res: Response) => {
-  const mockPatterns = [
-    {
-      id: 'pattern_1',
-      symbol: 'BTCUSDT',
-      type: 'order_block',
-      direction: 'bullish',
-      strength: 0.85,
-      price: 43200,
-      timestamp: new Date().toISOString(),
-      confidence: 0.92
-    },
-    {
-      id: 'pattern_2',
-      symbol: 'BTCUSDT',
-      type: 'choch',
-      direction: 'bearish',
-      strength: 0.73,
-      price: 43100,
-      timestamp: new Date(Date.now() - 300000).toISOString(),
-      confidence: 0.78
-    }
-  ];
+router.get('/smc-patterns', async (req: Request, res: Response) => {
+  try {
+    // Try to get real patterns from Python backend
+    const pythonResponse = await fetch('http://localhost:8000/api/python/smc-patterns');
+    
+    if (pythonResponse.ok) {
+      const pythonData = await pythonResponse.json();
+      
+      if (pythonData.success && pythonData.data && pythonData.data.length > 0) {
+        // Transform Python format to frontend format
+        const patterns = pythonData.data.map((p: any) => ({
+          id: p.id || `pattern_${Date.now()}`,
+          symbol: p.symbol || 'BTCUSDT',
+          type: p.type || 'order_block',
+          direction: p.direction || 'bullish',
+          strength: p.strength || p.confidence || 0.7,
+          price: p.price || 0,
+          timestamp: p.timestamp || new Date().toISOString(),
+          confidence: p.confidence || p.strength || 0.7
+        }));
 
-  res.json({
-    success: true,
-    data: mockPatterns,
-    timestamp: new Date().toISOString()
-  });
+        return res.json({
+          success: true,
+          data: patterns,
+          timestamp: new Date().toISOString(),
+          dataSource: 'python-backend'
+        });
+      }
+    }
+
+    // If no patterns from Python backend, return empty array
+    return res.json({
+      success: true,
+      data: [],
+      timestamp: new Date().toISOString(),
+      dataSource: 'python-backend',
+      message: 'No SMC patterns detected yet'
+    });
+
+  } catch (error) {
+    console.error('Error fetching SMC patterns from Python backend:', error);
+
+    // Fallback to mock patterns only if Python backend unavailable
+    const mockPatterns = [
+      {
+        id: 'pattern_1',
+        symbol: 'BTCUSDT',
+        type: 'order_block',
+        direction: 'bullish',
+        strength: 0.85,
+        price: 43200,
+        timestamp: new Date().toISOString(),
+        confidence: 0.92
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: mockPatterns,
+      timestamp: new Date().toISOString(),
+      dataSource: 'fallback',
+      warning: 'Python backend unavailable - using mock data'
+    });
+  }
 });
 
 /**
- * Get trading history
+ * Get trading history from Python backend
  */
-router.get('/history', (req: Request, res: Response) => {
+router.get('/history', async (req: Request, res: Response) => {
   const { limit = 50, symbol = 'all' } = req.query;
 
-  const mockTrades = [
-    {
-      id: 'trade_1',
-      symbol: 'BTCUSDT',
-      action: 'BUY',
-      price: 42800,
-      size: 0.5,
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      status: 'CLOSED',
-      pnl: 225.25,
-      reason: 'Strong bullish order block detected'
-    },
-    {
-      id: 'trade_2',
-      symbol: 'ETHUSDT',
-      action: 'SELL',
-      price: 2680,
-      size: 2.0,
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      status: 'CLOSED',
-      pnl: 58.50,
-      reason: 'Bearish CHOCH pattern confirmed'
-    }
-  ];
+  try {
+    // Get trades from Python backend
+    const pythonResponse = await fetch(`http://localhost:8000/api/python/paper-trades?limit=${limit}`);
+    
+    if (pythonResponse.ok) {
+      const pythonData = await pythonResponse.json();
+      
+      if (pythonData.success && pythonData.data && pythonData.data.length > 0) {
+        // Transform Python format to frontend format
+        let trades = pythonData.data.map((t: any) => ({
+          id: t.id || `trade_${Date.now()}`,
+          symbol: t.symbol || 'BTCUSDT',
+          action: t.side || 'BUY',
+          price: t.entry_price || t.price || 0,
+          size: t.size || 0,
+          timestamp: t.timestamp || new Date().toISOString(),
+          status: t.status || 'OPEN',
+          pnl: t.pnl || 0,
+          reason: t.reason || 'Trading signal'
+        }));
 
-  res.json({
-    success: true,
-    data: mockTrades,
-    timestamp: new Date().toISOString()
-  });
+        // Filter by symbol if specified
+        if (symbol && symbol !== 'all') {
+          trades = trades.filter((t: any) => t.symbol === symbol);
+        }
+
+        return res.json({
+          success: true,
+          data: trades,
+          timestamp: new Date().toISOString(),
+          dataSource: 'python-backend'
+        });
+      }
+    }
+
+    // If no trades, return empty array
+    return res.json({
+      success: true,
+      data: [],
+      timestamp: new Date().toISOString(),
+      dataSource: 'python-backend',
+      message: 'No trades yet'
+    });
+
+  } catch (error) {
+    console.error('Error fetching trading history from Python backend:', error);
+
+    // Fallback to mock trades only if Python backend unavailable
+    const mockTrades = [
+      {
+        id: 'trade_1',
+        symbol: 'BTCUSDT',
+        action: 'BUY',
+        price: 42800,
+        size: 0.5,
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        status: 'CLOSED',
+        pnl: 225.25,
+        reason: 'Strong bullish order block detected'
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: mockTrades,
+      timestamp: new Date().toISOString(),
+      dataSource: 'fallback',
+      warning: 'Python backend unavailable - using mock data'
+    });
+  }
 });
 
 /**
- * Execute manual trade
+ * Execute manual trade through Python backend
  */
-router.post('/execute-trade', (req: Request, res: Response) => {
-  const { symbol, action, price, size, reason } = req.body;
+router.post('/execute-trade', async (req: Request, res: Response) => {
+  const { symbol, action, price, size, reason, stopLoss, takeProfit } = req.body;
 
   if (!symbol || !action || !price || !size) {
     return res.status(400).json({
@@ -217,24 +292,69 @@ router.post('/execute-trade', (req: Request, res: Response) => {
     });
   }
 
-  // Mock trade execution
-  const trade = {
-    id: `trade_${Date.now()}`,
-    symbol,
-    action: action.toUpperCase(),
-    price: parseFloat(price),
-    size: parseFloat(size),
-    timestamp: new Date().toISOString(),
-    status: 'EXECUTED',
-    reason: reason || 'Manual trade request',
-    orderId: `order_${Date.now()}`
-  };
+  try {
+    // Forward to Python backend
+    const pythonResponse = await fetch('http://localhost:8000/api/python/execute-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        symbol: symbol,
+        side: action.toUpperCase(), // BUY or SELL
+        size: parseFloat(size),
+        price: parseFloat(price),
+        stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+        takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+        reason: reason || 'Manual trade from trading interface'
+      }),
+    });
 
-  res.json({
-    success: true,
-    data: trade,
-    message: 'Trade executed successfully'
-  });
+    if (pythonResponse.ok) {
+      const pythonData = await pythonResponse.json();
+      
+      if (pythonData.success) {
+        // Transform Python format to frontend format
+        const trade = {
+          id: pythonData.data.id || `trade_${Date.now()}`,
+          symbol: pythonData.data.symbol,
+          action: pythonData.data.side,
+          price: pythonData.data.entry_price,
+          size: pythonData.data.size,
+          timestamp: pythonData.data.timestamp,
+          status: pythonData.data.status || 'EXECUTED',
+          reason: reason || 'Manual trade request',
+          orderId: pythonData.data.id,
+          stopLoss: pythonData.data.stop_loss,
+          takeProfit: pythonData.data.take_profit
+        };
+
+        return res.json({
+          success: true,
+          data: trade,
+          message: 'Trade executed successfully through paper trading engine'
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: pythonData.error || 'Failed to execute trade'
+        });
+      }
+    } else {
+      const errorData = await pythonResponse.json().catch(() => ({}));
+      return res.status(pythonResponse.status).json({
+        success: false,
+        error: errorData.error || 'Python backend unavailable'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error executing trade through Python backend:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to connect to Python backend'
+    });
+  }
 });
 
 /**

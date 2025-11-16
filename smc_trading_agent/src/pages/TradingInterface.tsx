@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -10,6 +10,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { apiService, type SMCPattern, type Trade } from '@/services/api';
 
 // Mock SMC patterns data
 const mockSMCPatterns = [
@@ -82,18 +83,85 @@ export default function TradingInterface() {
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [autoTrading, setAutoTrading] = useState(false);
+  
+  // Real data from API
+  const [smcPatterns, setSmcPatterns] = useState<SMCPattern[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
-  const handlePlaceOrder = () => {
-    // TODO: Implement order placement logic
-    console.log('Placing order:', {
-      symbol: selectedSymbol,
-      side: orderSide,
-      type: orderType,
-      quantity,
-      price,
-      stopLoss,
-      takeProfit
-    });
+  // Fetch SMC patterns and recent orders
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [patterns, orders] = await Promise.all([
+          apiService.getSMCPatterns(),
+          apiService.getTradingHistory(10, selectedSymbol)
+        ]);
+        setSmcPatterns(patterns);
+        setRecentOrders(orders);
+      } catch (error) {
+        console.error('Error fetching trading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    // Refresh patterns every 30 seconds, orders every 10 seconds
+    const patternsInterval = setInterval(() => {
+      apiService.getSMCPatterns().then(setSmcPatterns).catch(console.error);
+    }, 30000);
+    
+    const ordersInterval = setInterval(() => {
+      apiService.getTradingHistory(10, selectedSymbol).then(setRecentOrders).catch(console.error);
+    }, 10000);
+
+    return () => {
+      clearInterval(patternsInterval);
+      clearInterval(ordersInterval);
+    };
+  }, [selectedSymbol]);
+
+  const handlePlaceOrder = async () => {
+    if (!quantity || !price) {
+      setOrderError('Please fill in quantity and price');
+      return;
+    }
+
+    setOrderLoading(true);
+    setOrderError(null);
+
+    try {
+      const trade = await apiService.executeTrade({
+        symbol: selectedSymbol,
+        action: orderSide,
+        price: parseFloat(price),
+        size: parseFloat(quantity),
+        reason: `Manual ${orderSide} order`,
+        stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+        takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+      });
+
+      // Refresh orders list
+      const orders = await apiService.getTradingHistory(10, selectedSymbol);
+      setRecentOrders(orders);
+
+      // Reset form
+      setQuantity('');
+      setPrice('');
+      setStopLoss('');
+      setTakeProfit('');
+
+      alert(`Order placed successfully! Trade ID: ${trade.id}`);
+    } catch (error: any) {
+      setOrderError(error.message || 'Failed to place order');
+      console.error('Error placing order:', error);
+    } finally {
+      setOrderLoading(false);
+    }
   };
 
   return (
@@ -173,8 +241,13 @@ export default function TradingInterface() {
               <h3 className="text-lg font-medium text-gray-900">Detected SMC Patterns</h3>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
-                {mockSMCPatterns.map((pattern) => (
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">Loading SMC patterns...</div>
+              ) : smcPatterns.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No SMC patterns detected yet</div>
+              ) : (
+                <div className="space-y-4">
+                  {smcPatterns.map((pattern) => (
                   <div key={pattern.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
@@ -342,17 +415,27 @@ export default function TradingInterface() {
                 />
               </div>
 
+              {/* Error message */}
+              {orderError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                  {orderError}
+                </div>
+              )}
+
               {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
+                disabled={orderLoading || !quantity || !price}
                 className={cn(
                   "w-full py-3 px-4 text-sm font-medium rounded-md transition-colors",
-                  orderSide === 'BUY'
+                  orderLoading || !quantity || !price
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : orderSide === 'BUY'
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "bg-red-600 hover:bg-red-700 text-white"
                 )}
               >
-                Place {orderSide} Order
+                {orderLoading ? 'Placing Order...' : `Place ${orderSide} Order`}
               </button>
             </div>
           </div>
@@ -363,8 +446,13 @@ export default function TradingInterface() {
               <h3 className="text-lg font-medium text-gray-900">Recent Orders</h3>
             </div>
             <div className="p-6">
-              <div className="space-y-3">
-                {mockOrders.map((order) => (
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">Loading orders...</div>
+              ) : recentOrders.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No recent orders</div>
+              ) : (
+                <div className="space-y-3">
+                  {recentOrders.map((order) => (
                   <div key={order.id} className="border rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
@@ -391,14 +479,22 @@ export default function TradingInterface() {
                       </div>
                     </div>
                     <div className="text-xs text-gray-500 space-y-1">
-                      <div>Qty: {order.quantity}</div>
+                      <div>Qty: {order.size}</div>
                       {order.price && <div>Price: ${order.price.toLocaleString()}</div>}
-                      {order.fillPrice && <div>Fill: ${order.fillPrice.toLocaleString()}</div>}
-                      <div>Time: {order.timestamp}</div>
+                      {order.pnl !== undefined && (
+                        <div className={cn(
+                          order.pnl >= 0 ? "text-green-600" : "text-red-600"
+                        )}>
+                          P&L: ${order.pnl.toFixed(2)}
+                        </div>
+                      )}
+                      <div>Time: {new Date(order.timestamp).toLocaleTimeString()}</div>
+                      {order.reason && <div className="text-gray-400 italic">{order.reason}</div>}
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
