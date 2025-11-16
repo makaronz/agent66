@@ -7,28 +7,28 @@ import asyncio
 from typing import Dict, Any, Optional
 
 # Secure configuration loading
-from .config_loader import load_secure_config, ConfigValidationError, EnvironmentVariableError
-from .config_validator import validate_config
+from config_loader import load_secure_config, ConfigValidationError, EnvironmentVariableError
+from config_validator import validate_config
 
 # Component Imports
-from .data_pipeline.live_data_client import LiveDataClient  # CHANGED: Live data instead of mock
-from .smc_detector.indicators import SMCIndicators
-from .decision_engine.model_ensemble import AdaptiveModelSelector
-from .risk_manager.smc_risk_manager import SMCRiskManager
-from .execution_engine.paper_trading import PaperTradingEngine  # ADDED: Paper trading engine
+from data_pipeline.live_data_client import LiveDataClient  # CHANGED: Live data instead of mock
+from smc_detector.indicators import SMCIndicators
+from decision_engine.simple_heuristic import SimpleSMCHeuristic as AdaptiveModelSelector
+from risk_manager.smc_risk_manager import SMCRiskManager
+from execution_engine.paper_trading import PaperTradingEngine  # ADDED: Paper trading engine
 
 # Error handling and validation imports
-from .error_handlers import (
+from error_handlers import (
     CircuitBreaker, RetryHandler, error_boundary, safe_execute,
     health_monitor, TradingError, ComponentHealthError, ErrorSeverity
 )
-from .validators import (
+from validators import (
     data_validator, DataQualityLevel, DataValidationError
 )
 
 # New service coordination and health monitoring
-from .service_manager import ServiceManager
-from .health_monitor import EnhancedHealthMonitor
+from service_manager import ServiceManager
+from health_monitor import EnhancedHealthMonitor
 
 # FastAPI and server imports
 from fastapi import FastAPI
@@ -63,7 +63,7 @@ def handle_shutdown_signal(signum, frame):
         logging.getLogger().warning("Received second shutdown signal. Forcing exit.")
         sys.exit(1)
 
-def load_config(config_path: str = "smc_trading_agent/config.yaml") -> Dict[str, Any]:
+def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
     """
     Load configuration using secure configuration loader with environment variable substitution.
     
