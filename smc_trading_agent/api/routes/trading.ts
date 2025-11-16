@@ -37,14 +37,17 @@ const apiCircuitBreaker = circuitBreakerRegistry.create('trading_api', {
 
 // Initialize market data aggregator on startup
 let aggregatorInitialized = false;
-marketDataAggregator.initialize()
-  .then(() => {
+(async () => {
+  try {
+    await marketDataAggregator.initialize();
     aggregatorInitialized = true;
-    console.log('Market data aggregator initialized successfully');
-  })
-  .catch(error => {
-    console.error('Failed to initialize market data aggregator:', error);
-  });
+    console.log('✅ Market data aggregator initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize market data aggregator:', error);
+    // Don't block - allow API to start even if aggregator fails
+    aggregatorInitialized = false;
+  }
+})();
 
 // Fallback data for when real data is unavailable
 const fallbackMarketData = [
@@ -353,13 +356,54 @@ router.get('/live-ohlcv', async (req: Request, res: Response) => {
       });
     }
 
+    // Ensure aggregator is initialized
+    if (!aggregatorInitialized) {
+      console.log('⚠️ Market data aggregator not yet initialized, attempting initialization...');
+      try {
+        await marketDataAggregator.initialize();
+        aggregatorInitialized = true;
+        console.log('✅ Market data aggregator initialized on-demand');
+      } catch (error) {
+        console.error('❌ Failed to initialize aggregator on-demand:', error);
+        return res.status(503).json({
+          success: false,
+          error: 'Market data service not available - aggregator initialization failed'
+        });
+      }
+    }
+
     // Get live market data from aggregator
     const marketData = marketDataAggregator.getMarketData(symbol);
 
     if (!marketData) {
-      return res.status(404).json({
-        success: false,
-        error: `No live data available for ${symbol}`
+      // Return mock data if aggregator doesn't have data yet
+      console.log(`⚠️ No live data for ${symbol}, returning mock data`);
+      const mockPrice = 95000; // Default BTC price
+      const ohlcvData = [];
+      const now = Date.now();
+      const timeframeMs = timeframe === '1h' ? 3600000 : 60000;
+      
+      for (let i = parseInt(limit as string) - 1; i >= 0; i--) {
+        const timestamp = now - (i * timeframeMs);
+        const variance = mockPrice * 0.02;
+        ohlcvData.push({
+          timestamp: new Date(timestamp).toISOString(),
+          open: mockPrice + (Math.random() - 0.5) * variance,
+          high: mockPrice + Math.random() * variance,
+          low: mockPrice - Math.random() * variance,
+          close: i === 0 ? mockPrice : mockPrice + (Math.random() - 0.5) * variance,
+          volume: 1000000
+        });
+      }
+      
+      return res.json({
+        success: true,
+        data: ohlcvData,
+        symbol,
+        timeframe,
+        source: 'mock',
+        timestamp: new Date().toISOString(),
+        warning: 'Using mock data - aggregator not ready'
       });
     }
 
