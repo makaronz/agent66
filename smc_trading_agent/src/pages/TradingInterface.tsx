@@ -239,6 +239,7 @@ export default function TradingInterface() {
                     );
                   })}
                 </div>
+              )}
             </div>
           </div>
         </div>
