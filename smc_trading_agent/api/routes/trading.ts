@@ -238,28 +238,132 @@ router.post('/execute-trade', (req: Request, res: Response) => {
 });
 
 /**
- * Get performance metrics
+ * Get performance metrics calculated from real trades
  */
-router.get('/performance', (req: Request, res: Response) => {
-  const mockMetrics = {
-    totalPnL: 283.75,
-    sharpeRatio: 1.67,
-    maxDrawdown: -3.2,
-    winRate: 68.5,
-    totalTrades: 47,
-    winningTrades: 32,
-    losingTrades: 15,
-    averageWin: 25.43,
-    averageLoss: -12.18,
-    profitFactor: 2.09,
-    dailyReturn: 1.85
-  };
+router.get('/performance', async (req: Request, res: Response) => {
+  try {
+    // Get all trades from Python backend
+    const tradesResponse = await fetch('http://localhost:8000/api/python/paper-trades?limit=1000');
+    
+    if (tradesResponse.ok) {
+      const tradesData = await tradesResponse.json();
+      
+      if (tradesData.success && tradesData.data && tradesData.data.length > 0) {
+        const trades = tradesData.data;
+        
+        // Calculate performance metrics from real trades
+        const closedTrades = trades.filter((t: any) => t.status === 'CLOSED');
+        const winningTrades = closedTrades.filter((t: any) => t.pnl > 0);
+        const losingTrades = closedTrades.filter((t: any) => t.pnl < 0);
+        
+        const totalPnL = trades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0);
+        const totalTrades = closedTrades.length;
+        const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
+        
+        const totalWins = winningTrades.reduce((sum: number, t: any) => sum + t.pnl, 0);
+        const totalLosses = Math.abs(losingTrades.reduce((sum: number, t: any) => sum + t.pnl, 0));
+        const averageWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+        const averageLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+        const profitFactor = totalLosses > 0 ? totalWins / totalLosses : (totalWins > 0 ? 999 : 0);
+        
+        // Simple max drawdown calculation (simplified)
+        let maxDrawdown = 0;
+        let peak = 0;
+        let current = 0;
+        for (const trade of trades) {
+          current += trade.pnl || 0;
+          if (current > peak) peak = current;
+          const drawdown = ((peak - current) / Math.max(peak, 1)) * 100;
+          if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+        }
+        
+        // Simplified Sharpe Ratio (would need returns for proper calculation)
+        const sharpeRatio = totalTrades > 0 && averageLoss !== 0 
+          ? (averageWin / Math.abs(averageLoss)) * (winRate / 100) 
+          : 0;
+        
+        // Daily return (simplified - based on total P&L)
+        const accountResponse = await fetch('http://localhost:8000/api/python/account');
+        let dailyReturn = 0;
+        if (accountResponse.ok) {
+          const accountData = await accountResponse.json();
+          if (accountData.success && accountData.data) {
+            const initialBalance = 10000; // From config
+            const currentEquity = accountData.data.equity || initialBalance;
+            dailyReturn = ((currentEquity - initialBalance) / initialBalance) * 100;
+          }
+        }
+        
+        const metrics = {
+          totalPnL: totalPnL,
+          sharpeRatio: Math.round(sharpeRatio * 100) / 100,
+          maxDrawdown: Math.round(maxDrawdown * 10) / 10,
+          winRate: Math.round(winRate * 10) / 10,
+          totalTrades: totalTrades,
+          winningTrades: winningTrades.length,
+          losingTrades: losingTrades.length,
+          averageWin: Math.round(averageWin * 100) / 100,
+          averageLoss: Math.round(averageLoss * 100) / 100,
+          profitFactor: Math.round(profitFactor * 100) / 100,
+          dailyReturn: Math.round(dailyReturn * 100) / 100
+        };
 
-  res.json({
-    success: true,
-    data: mockMetrics,
-    timestamp: new Date().toISOString()
-  });
+        return res.json({
+          success: true,
+          data: metrics,
+          timestamp: new Date().toISOString(),
+          dataSource: 'calculated-from-trades'
+        });
+      }
+    }
+
+    // If no trades, return zero metrics
+    return res.json({
+      success: true,
+      data: {
+        totalPnL: 0,
+        sharpeRatio: 0,
+        maxDrawdown: 0,
+        winRate: 0,
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        averageWin: 0,
+        averageLoss: 0,
+        profitFactor: 0,
+        dailyReturn: 0
+      },
+      timestamp: new Date().toISOString(),
+      dataSource: 'no-trades',
+      message: 'No trades yet - metrics will appear after first trade'
+    });
+
+  } catch (error) {
+    console.error('Error calculating performance metrics:', error);
+
+    // Fallback to mock metrics only if Python backend unavailable
+    const mockMetrics = {
+      totalPnL: 283.75,
+      sharpeRatio: 1.67,
+      maxDrawdown: -3.2,
+      winRate: 68.5,
+      totalTrades: 47,
+      winningTrades: 32,
+      losingTrades: 15,
+      averageWin: 25.43,
+      averageLoss: -12.18,
+      profitFactor: 2.09,
+      dailyReturn: 1.85
+    };
+
+    res.json({
+      success: true,
+      data: mockMetrics,
+      timestamp: new Date().toISOString(),
+      dataSource: 'fallback',
+      warning: 'Python backend unavailable - using mock metrics'
+    });
+  }
 });
 
 /**
@@ -495,55 +599,86 @@ router.get('/data-health', async (req: Request, res: Response) => {
 });
 
 /**
- * Get positions with real-time P&L
+ * Get positions with real-time P&L from Python backend
  */
 router.get('/positions', async (req: Request, res: Response) => {
   try {
-    const result = await apiCircuitBreaker.execute(async () => {
-      if (!aggregatorInitialized) {
-        throw new Error('Market data aggregator not initialized');
-      }
+    // First, try to get real positions from Python backend
+    const pythonResponse = await fetch('http://localhost:8000/api/python/positions');
+    
+    if (pythonResponse.ok) {
+      const pythonData = await pythonResponse.json();
+      
+      if (pythonData.success && pythonData.data && pythonData.data.length > 0) {
+        // We have real positions from Python backend
+        // Update with real-time prices from market data aggregator
+        const positionsWithPrices = pythonData.data.map((position: any) => {
+          if (aggregatorInitialized) {
+            const marketData = marketDataAggregator.getMarketData(position.symbol);
+            if (marketData) {
+              const currentPrice = marketData.price;
+              // Recalculate P&L with live price
+              const pnl = position.side === 'LONG' || position.side === 'BUY'
+                ? (currentPrice - position.entry_price) * position.size
+                : (position.entry_price - currentPrice) * position.size;
+              const pnlPercent = (pnl / (position.entry_price * position.size)) * 100;
 
-      // Update positions with real-time market data
-      const realPositions = mockPositions.map(position => {
-        const marketData = marketDataAggregator.getMarketData(position.symbol);
-        if (marketData) {
-          const currentPrice = marketData.price;
-          const pnl = position.side === 'LONG'
-            ? (currentPrice - position.entryPrice) * position.size
-            : (position.entryPrice - currentPrice) * position.size;
-          const pnlPercent = (pnl / (position.entryPrice * position.size)) * 100;
-
+              return {
+                symbol: position.symbol,
+                side: position.side,
+                size: position.size,
+                entryPrice: position.entry_price,
+                currentPrice: currentPrice,
+                pnl: pnl,
+                pnlPercent: pnlPercent
+              };
+            }
+          }
+          
+          // Fallback to position data from Python if no market data
           return {
-            ...position,
-            currentPrice,
-            pnl,
-            pnlPercent
+            symbol: position.symbol,
+            side: position.side,
+            size: position.size,
+            entryPrice: position.entry_price,
+            currentPrice: position.current_price,
+            pnl: position.unrealized_pnl || 0,
+            pnlPercent: position.unrealized_pnl_percent || 0
           };
-        }
-        return position;
-      });
+        });
 
-      const totalPnL = realPositions.reduce((sum, pos) => sum + pos.pnl, 0);
+        const totalPnL = positionsWithPrices.reduce((sum: number, pos: any) => sum + pos.pnl, 0);
 
-      return {
-        positions: realPositions,
-        totalPnL,
-        totalPositions: realPositions.length
-      };
-    });
+        return res.json({
+          success: true,
+          data: {
+            positions: positionsWithPrices,
+            totalPnL,
+            totalPositions: positionsWithPrices.length
+          },
+          timestamp: new Date().toISOString(),
+          dataSource: 'python-backend'
+        });
+      }
+    }
 
-    res.json({
+    // If Python backend has no positions, return empty
+    return res.json({
       success: true,
-      data: result,
+      data: {
+        positions: [],
+        totalPnL: 0,
+        totalPositions: 0
+      },
       timestamp: new Date().toISOString(),
-      dataSource: 'real-time'
+      dataSource: 'python-backend',
+      message: 'No open positions'
     });
 
   } catch (error) {
-    console.error('Error fetching positions:', error);
+    console.error('Error fetching positions from Python backend:', error);
 
-    // Return fallback positions
+    // Return fallback mock positions only if Python backend is completely unavailable
     const totalPnL = mockPositions.reduce((sum, pos) => sum + pos.pnl, 0);
 
     res.json({
@@ -555,7 +690,7 @@ router.get('/positions', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString(),
       dataSource: 'fallback',
-      warning: 'Using fallback data - real-time data unavailable'
+      warning: 'Python backend unavailable - using mock data'
     });
   }
 });

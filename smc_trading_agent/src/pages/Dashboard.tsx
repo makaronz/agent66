@@ -99,8 +99,8 @@ export default function Dashboard() {
     };
 
     fetchData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    // Refresh data every 2 seconds
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
   }, []);
 

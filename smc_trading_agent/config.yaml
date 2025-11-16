@@ -33,11 +33,11 @@ paper_trading:
   initial_balance: 10000.0  # USD
   max_positions: 3
   position_size_percent: 1.0  # % of balance per trade
-  update_interval: 60  # seconds
+  update_interval: 10  # seconds
 
 # Data pipeline settings
 data_pipeline:
-  health_check_interval: 30  # seconds
+  health_check_interval: 60  # seconds
   reconnection_interval: 5   # seconds
   performance_log_interval: 60  # seconds
   max_reconnection_attempts: 10
