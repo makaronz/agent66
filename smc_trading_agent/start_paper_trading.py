@@ -12,6 +12,9 @@ import logging
 import signal
 import pandas as pd
 from pathlib import Path
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -30,6 +33,67 @@ logger = logging.getLogger(__name__)
 # Global flag for shutdown
 shutdown_flag = False
 
+# Global paper trading engine (will be set in main)
+paper_engine = None
+
+# FastAPI app
+app = FastAPI(title="SMC Trading Agent API")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# API Endpoints
+@app.get("/api/python/paper-trades")
+async def get_paper_trades(limit: int = 50):
+    """Get paper trading history."""
+    if paper_engine is None:
+        return {"success": False, "error": "Paper trading engine not initialized"}
+    try:
+        trades = paper_engine.get_trade_history(limit=limit)
+        return {"success": True, "data": trades}
+    except Exception as e:
+        logger.error(f"Failed to get paper trades: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/python/positions")
+async def get_positions():
+    """Get open positions."""
+    if paper_engine is None:
+        return {"success": False, "error": "Paper trading engine not initialized"}
+    try:
+        positions = paper_engine.get_open_positions()
+        return {"success": True, "data": positions}
+    except Exception as e:
+        logger.error(f"Failed to get positions: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/python/account")
+async def get_account():
+    """Get account summary."""
+    if paper_engine is None:
+        return {"success": False, "error": "Paper trading engine not initialized"}
+    try:
+        summary = paper_engine.get_account_summary()
+        return {"success": True, "data": summary}
+    except Exception as e:
+        logger.error(f"Failed to get account summary: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "success": True,
+        "status": "healthy",
+        "paper_engine_initialized": paper_engine is not None
+    }
+
 
 def handle_shutdown(signum, frame):
     global shutdown_flag
@@ -39,6 +103,7 @@ def handle_shutdown(signum, frame):
 
 async def main():
     """Main trading loop - simplified version."""
+    global paper_engine
     
     logger.info("=" * 60)
     logger.info("SMC TRADING AGENT - PAPER TRADING MODE")
@@ -68,6 +133,19 @@ async def main():
         
         logger.info("✓ All components initialized")
         logger.info(f"✓ Paper Trading Engine: ${paper_engine.balance:.2f} balance")
+        logger.info("")
+        
+        # Start FastAPI server in background
+        logger.info("🌐 Starting FastAPI server on port 8000...")
+        config = uvicorn.Config(
+            app=app,
+            host="0.0.0.0",
+            port=8000,
+            log_level="info"
+        )
+        server = uvicorn.Server(config)
+        server_task = asyncio.create_task(server.serve())
+        logger.info("✅ FastAPI server started - API available at http://localhost:8000")
         logger.info("")
         
         # Main trading loop
@@ -227,6 +305,15 @@ async def main():
                 await asyncio.sleep(1)
         
         logger.info("Shutting down gracefully...")
+        
+        # Stop FastAPI server
+        if 'server_task' in locals():
+            logger.info("Stopping FastAPI server...")
+            server.should_exit = True
+            try:
+                await asyncio.wait_for(server_task, timeout=5.0)
+            except asyncio.TimeoutError:
+                server_task.cancel()
         
         # Close data client
         await data_client.close()
