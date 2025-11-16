@@ -12,68 +12,6 @@ import {
 import { cn } from '@/lib/utils';
 import { apiService, type SMCPattern, type Trade } from '@/services/api';
 
-// Mock SMC patterns data
-const mockSMCPatterns = [
-  {
-    id: 1,
-    symbol: 'BTCUSDT',
-    type: 'Order Block',
-    direction: 'Bullish',
-    confidence: 0.85,
-    priceLevel: 42800,
-    timeframe: '1H',
-    detected: '2 min ago',
-    status: 'active'
-  },
-  {
-    id: 2,
-    symbol: 'ETHUSDT',
-    type: 'CHoCH',
-    direction: 'Bearish',
-    confidence: 0.72,
-    priceLevel: 2680,
-    timeframe: '4H',
-    detected: '5 min ago',
-    status: 'triggered'
-  },
-  {
-    id: 3,
-    symbol: 'ADAUSDT',
-    type: 'Liquidity Sweep',
-    direction: 'Bullish',
-    confidence: 0.91,
-    priceLevel: 0.485,
-    timeframe: '15M',
-    detected: '1 min ago',
-    status: 'active'
-  }
-];
-
-const mockOrders = [
-  {
-    id: 'ORD001',
-    symbol: 'BTCUSDT',
-    side: 'BUY',
-    type: 'LIMIT',
-    quantity: 0.5,
-    price: 42800,
-    status: 'FILLED',
-    fillPrice: 42805,
-    timestamp: '10:30:45'
-  },
-  {
-    id: 'ORD002',
-    symbol: 'ETHUSDT',
-    side: 'SELL',
-    type: 'MARKET',
-    quantity: 2.0,
-    price: null,
-    status: 'PENDING',
-    fillPrice: null,
-    timestamp: '10:32:12'
-  }
-];
-
 export default function TradingInterface() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [orderSide, setOrderSide] = useState<'BUY' | 'SELL'>('BUY');
