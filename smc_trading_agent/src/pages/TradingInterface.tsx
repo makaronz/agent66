@@ -43,16 +43,30 @@ export default function TradingInterface() {
   const [orderError, setOrderError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState('1h');
 
+  // Calculate appropriate limit based on timeframe
+  const getLimitForTimeframe = (tf: string): number => {
+    switch (tf) {
+      case '1m': return 60;      // 1 hour of data (60 candles)
+      case '5m': return 144;    // 12 hours of data (144 candles)
+      case '15m': return 96;    // 24 hours of data (96 candles)
+      case '1h': return 48;     // 2 days of data (48 candles)
+      case '4h': return 168;    // 28 days of data (168 candles)
+      case '1d': return 90;     // 3 months of data (90 candles)
+      default: return 100;
+    }
+  };
+
   // Fetch SMC patterns, recent orders, and OHLCV data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setChartLoading(true);
+        const limit = getLimitForTimeframe(timeframe);
         const [patterns, orders, ohlcv] = await Promise.all([
           apiService.getSMCPatterns(),
           apiService.getTradingHistory(10, selectedSymbol),
-          apiService.getOHLCVData(selectedSymbol, timeframe, 100)
+          apiService.getOHLCVData(selectedSymbol, timeframe, limit)
         ]);
         setSmcPatterns(patterns);
         setRecentOrders(orders);
@@ -79,7 +93,8 @@ export default function TradingInterface() {
     // Optional: Auto-refresh chart data every 60 seconds (only if timeframe/symbol haven't changed)
     const chartInterval = setInterval(() => {
       setChartLoading(true);
-      apiService.getOHLCVData(selectedSymbol, timeframe, 100)
+      const limit = getLimitForTimeframe(timeframe);
+      apiService.getOHLCVData(selectedSymbol, timeframe, limit)
         .then((data) => {
           setOhlcvData(data);
           setChartLoading(false);
@@ -228,32 +243,41 @@ export default function TradingInterface() {
               ) : (
                 <div className="h-96" key={`chart-${selectedSymbol}-${timeframe}`}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={ohlcvData.map(d => {
-                      const isUp = d.close >= d.open;
-                      const date = new Date(d.timestamp);
-                      let timeLabel: string;
-                      
-                      // Format time label based on timeframe
-                      if (timeframe === '1d') {
-                        timeLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                      } else if (timeframe === '4h' || timeframe === '1h') {
-                        timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                      } else {
-                        timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                      }
-                      
-                      return {
-                        time: timeLabel,
-                        timestamp: d.timestamp,
-                        fullTime: date,
-                        open: d.open,
-                        high: d.high,
-                        low: d.low,
-                        close: d.close,
-                        volume: d.volume,
-                        isUp
-                      };
-                    })}>
+                    <ComposedChart data={ohlcvData
+                      .map(d => {
+                        const isUp = d.close >= d.open;
+                        const date = new Date(d.timestamp);
+                        let timeLabel: string;
+                        
+                        // Format time label based on timeframe
+                        if (timeframe === '1d') {
+                          timeLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        } else if (timeframe === '4h' || timeframe === '1h') {
+                          // For hourly timeframes, show date and time
+                          timeLabel = date.toLocaleString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          });
+                        } else {
+                          // For minute timeframes, show time only
+                          timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        }
+                        
+                        return {
+                          time: timeLabel,
+                          timestamp: d.timestamp,
+                          fullTime: date.getTime(),
+                          open: d.open,
+                          high: d.high,
+                          low: d.low,
+                          close: d.close,
+                          volume: d.volume,
+                          isUp
+                        };
+                      })
+                      .sort((a, b) => a.fullTime - b.fullTime)}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis 
                       dataKey="time" 
