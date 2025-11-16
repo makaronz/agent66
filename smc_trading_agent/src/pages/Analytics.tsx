@@ -105,10 +105,15 @@ function InfoTooltip({ content, children }: InfoTooltipProps) {
             top: `${position.y + 15}px`,
             maxWidth: '320px',
             minWidth: '280px',
-            lineHeight: '1.5'
+            lineHeight: '1.5',
+            whiteSpace: 'normal',
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word'
           }}
         >
-          {content}
+          <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+            {content}
+          </div>
         </div>
       )}
     </div>
