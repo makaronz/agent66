@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BarChart3,
   TrendingUp,
@@ -7,7 +7,8 @@ import {
   Download,
   Play,
   Settings,
-  Target
+  Target,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService, type EquityPoint } from '@/services/api';
@@ -57,6 +58,81 @@ const mockStrategies = [
   { name: 'CHoCH Detector', returns: 28.7, sharpe: 2.01, drawdown: -9.5, active: true }
 ];
 
+// InfoTooltip component (renamed to avoid conflict with recharts Tooltip)
+interface InfoTooltipProps {
+  content: string;
+  children: React.ReactNode;
+}
+
+function InfoTooltip({ content, children }: InfoTooltipProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setPosition({ x: e.clientX, y: e.clientY });
+    setIsVisible(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isVisible) {
+      setPosition({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(false);
+    }, 100);
+  };
+
+  return (
+    <div
+      className="relative inline-flex items-center"
+      onMouseEnter={handleMouseEnter}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      {children}
+      {isVisible && (
+        <div
+          className="fixed z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none max-w-xs"
+          style={{
+            left: `${Math.min(position.x + 15, window.innerWidth - 250)}px`,
+            top: `${position.y + 15}px`
+          }}
+        >
+          {content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Definitions for metrics and strategies
+const definitions = {
+  'Total Return': 'The total percentage return of the portfolio over the selected time period. Calculated as (Final Value - Initial Value) / Initial Value × 100%.',
+  'Sharpe Ratio': 'A measure of risk-adjusted return. It indicates how much excess return you receive for the extra volatility you endure. Higher values indicate better risk-adjusted performance. Generally, a Sharpe ratio above 1 is considered good, above 2 is very good, and above 3 is excellent.',
+  'Max Drawdown': 'The maximum peak-to-trough decline in portfolio value during the selected period. It represents the largest percentage loss from a peak value to a subsequent low. Lower (less negative) values indicate better downside protection.',
+  'Win Rate': 'The percentage of profitable trades out of all trades executed. Calculated as (Winning Trades / Total Trades) × 100%. A higher win rate indicates more consistent profitability.',
+  'SMC Momentum': 'A trading strategy that identifies and trades on momentum patterns using Smart Money Concepts (SMC). It looks for institutional order flow and follows the direction of smart money movements.',
+  'Order Block Hunter': 'A strategy that specifically targets order blocks - areas where large institutional orders were placed. These zones often act as strong support or resistance levels and provide high-probability trading opportunities.',
+  'Liquidity Sweep': 'A strategy that capitalizes on liquidity sweeps - when price moves to collect stop losses before reversing direction. This pattern is commonly used by institutions to gather liquidity before major moves.',
+  'CHoCH Detector': 'Change of Character (CHoCH) detection strategy. CHoCH occurs when market structure shifts, indicating a potential change in institutional sentiment and trend direction.',
+  'Profit Factor': 'The ratio of gross profit to gross loss. Calculated as Total Profits / Total Losses. A profit factor above 1.0 indicates profitability. Values above 2.0 are considered excellent.',
+  'Calmar Ratio': 'The ratio of annualized return to maximum drawdown. It measures return per unit of risk. Higher values indicate better risk-adjusted returns. A Calmar ratio above 1 is good, above 2 is excellent.',
+  'Avg Trade': 'The average percentage return per trade. Calculated as Total Return / Number of Trades. This metric helps assess the consistency of trading performance.',
+  'Total Trades': 'The total number of trades executed during the backtest period. This includes both winning and losing trades.',
+  'Value at Risk (95%)': 'The maximum expected loss at a 95% confidence level over a specified time period. It estimates the worst-case scenario loss that could occur under normal market conditions.',
+  'Expected Shortfall': 'Also known as Conditional Value at Risk (CVaR). It measures the average loss that occurs in the worst 5% of scenarios, providing a more conservative risk estimate than VaR.',
+  'Volatility (Annualized)': 'A measure of price variability, expressed as an annualized percentage. Higher volatility indicates greater price swings. It helps assess the riskiness of the trading strategy.',
+  'Beta (vs BTC)': 'A measure of how the portfolio\'s returns move relative to Bitcoin. A beta of 1.0 means the portfolio moves in line with BTC. Values above 1 indicate higher volatility than BTC, below 1 indicates lower volatility.',
+  'Correlation (vs Market)': 'A measure of how closely the portfolio\'s returns move with the overall market. Values range from -1 (perfect negative correlation) to +1 (perfect positive correlation). Lower correlation indicates better diversification.'
+};
+
 export default function Analytics() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1Y');
   const [,] = useState('All Strategies');
@@ -101,6 +177,14 @@ export default function Analytics() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics & Backtesting</h1>
           <p className="text-gray-600">Historical performance analysis and strategy optimization</p>
+          <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong>What is Backtesting?</strong> Backtesting is the process of testing a trading strategy on historical data to evaluate its performance. 
+              This section provides comprehensive analytics including performance metrics, risk analysis, and strategy comparisons. 
+              Use the backtest feature to simulate how your trading strategies would have performed in the past, helping you optimize 
+              parameters and identify the most profitable approaches before risking real capital.
+            </p>
+          </div>
         </div>
         <div className="flex items-center space-x-3">
           <select
@@ -139,7 +223,12 @@ export default function Analytics() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Total Return</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                  <InfoTooltip content={definitions['Total Return']}>
+                    <span>Total Return</span>
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </InfoTooltip>
+                </dt>
                 <dd className="text-lg font-medium text-green-600">
                   +{mockBacktestResults.totalReturn}%
                 </dd>
@@ -155,7 +244,12 @@ export default function Analytics() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Sharpe Ratio</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                  <InfoTooltip content={definitions['Sharpe Ratio']}>
+                    <span>Sharpe Ratio</span>
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </InfoTooltip>
+                </dt>
                 <dd className="text-lg font-medium text-gray-900">
                   {mockBacktestResults.sharpeRatio}
                 </dd>
@@ -171,7 +265,12 @@ export default function Analytics() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Max Drawdown</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                  <InfoTooltip content={definitions['Max Drawdown']}>
+                    <span>Max Drawdown</span>
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </InfoTooltip>
+                </dt>
                 <dd className="text-lg font-medium text-red-600">
                   {mockBacktestResults.maxDrawdown}%
                 </dd>
@@ -187,7 +286,12 @@ export default function Analytics() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Win Rate</dt>
+                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                  <InfoTooltip content={definitions['Win Rate']}>
+                    <span>Win Rate</span>
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </InfoTooltip>
+                </dt>
                 <dd className="text-lg font-medium text-gray-900">
                   {mockBacktestResults.winRate}%
                 </dd>
@@ -332,7 +436,12 @@ export default function Analytics() {
                         "w-3 h-3 rounded-full",
                         strategy.active ? "bg-green-500" : "bg-gray-300"
                       )} />
-                      <span className="text-sm font-medium text-gray-900">{strategy.name}</span>
+                      <InfoTooltip content={definitions[strategy.name as keyof typeof definitions] || 'Trading strategy performance metrics'}>
+                        <span className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                          {strategy.name}
+                          <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                        </span>
+                      </InfoTooltip>
                     </div>
                     <span className={cn(
                       "text-sm font-medium",
@@ -369,19 +478,39 @@ export default function Analytics() {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{mockBacktestResults.totalTrades}</div>
-                <div className="text-sm text-gray-500">Total Trades</div>
+                <InfoTooltip content={definitions['Total Trades']}>
+                  <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                    Total Trades
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </div>
+                </InfoTooltip>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">+{mockBacktestResults.avgTrade}%</div>
-                <div className="text-sm text-gray-500">Avg Trade</div>
+                <InfoTooltip content={definitions['Avg Trade']}>
+                  <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                    Avg Trade
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </div>
+                </InfoTooltip>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{mockBacktestResults.profitFactor}</div>
-                <div className="text-sm text-gray-500">Profit Factor</div>
+                <InfoTooltip content={definitions['Profit Factor']}>
+                  <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                    Profit Factor
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </div>
+                </InfoTooltip>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">{mockBacktestResults.calmarRatio}</div>
-                <div className="text-sm text-gray-500">Calmar Ratio</div>
+                <InfoTooltip content={definitions['Calmar Ratio']}>
+                  <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
+                    Calmar Ratio
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </div>
+                </InfoTooltip>
               </div>
             </div>
           </div>
@@ -395,23 +524,48 @@ export default function Analytics() {
           <div className="p-6">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Value at Risk (95%)</span>
+                <InfoTooltip content={definitions['Value at Risk (95%)']}>
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    Value at Risk (95%)
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </span>
+                </InfoTooltip>
                 <span className="text-sm font-medium text-red-600">-2.4%</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Expected Shortfall</span>
+                <InfoTooltip content={definitions['Expected Shortfall']}>
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    Expected Shortfall
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </span>
+                </InfoTooltip>
                 <span className="text-sm font-medium text-red-600">-3.8%</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Volatility (Annualized)</span>
+                <InfoTooltip content={definitions['Volatility (Annualized)']}>
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    Volatility (Annualized)
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </span>
+                </InfoTooltip>
                 <span className="text-sm font-medium text-gray-900">14.6%</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Beta (vs BTC)</span>
+                <InfoTooltip content={definitions['Beta (vs BTC)']}>
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    Beta (vs BTC)
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </span>
+                </InfoTooltip>
                 <span className="text-sm font-medium text-gray-900">0.78</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Correlation (vs Market)</span>
+                <InfoTooltip content={definitions['Correlation (vs Market)']}>
+                  <span className="text-sm text-gray-600 flex items-center gap-1">
+                    Correlation (vs Market)
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                  </span>
+                </InfoTooltip>
                 <span className="text-sm font-medium text-gray-900">0.65</span>
               </div>
             </div>
