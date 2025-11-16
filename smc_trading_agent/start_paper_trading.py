@@ -133,27 +133,37 @@ async def execute_manual_order(request: Request):
             reason="Manual order from trading interface"
         )
         
-        if trade:
-            return {
-                "success": True,
-                "data": {
-                    "id": trade.id,
-                    "symbol": trade.symbol,
-                    "side": trade.side,
-                    "size": trade.size,
-                    "entry_price": trade.entry_price,
-                    "stop_loss": trade.stop_loss,
-                    "take_profit": trade.take_profit,
-                    "status": trade.status,
-                    "timestamp": trade.timestamp.isoformat() if hasattr(trade.timestamp, 'isoformat') else str(trade.timestamp)
-                }
-            }
+        # Format timestamp
+        if hasattr(trade.timestamp, 'isoformat'):
+            timestamp_str = trade.timestamp.isoformat()
+        elif isinstance(trade.timestamp, (int, float)):
+            from datetime import datetime
+            timestamp_str = datetime.fromtimestamp(trade.timestamp).isoformat()
         else:
-            return {"success": False, "error": "Failed to execute order"}
+            timestamp_str = str(trade.timestamp)
+        
+        return {
+            "success": True,
+            "data": {
+                "id": trade.id,
+                "symbol": trade.symbol,
+                "side": trade.side,
+                "size": trade.size,
+                "entry_price": trade.entry_price,
+                "stop_loss": trade.stop_loss,
+                "take_profit": trade.take_profit,
+                "status": trade.status,
+                "timestamp": timestamp_str
+            }
+        }
             
-    except Exception as e:
-        logger.error(f"Failed to execute manual order: {str(e)}")
+    except ValueError as e:
+        # User-friendly validation errors
+        logger.warning(f"Order validation failed: {str(e)}")
         return {"success": False, "error": str(e)}
+    except Exception as e:
+        logger.error(f"Failed to execute manual order: {str(e)}", exc_info=True)
+        return {"success": False, "error": f"Failed to execute order: {str(e)}"}
 
 @app.get("/health")
 async def health_check():
@@ -314,17 +324,17 @@ async def main():
                         position_size = (account['balance'] * 0.01) / signal['entry_price']
                         
                         # Execute
-                        trade = paper_engine.execute_order(
-                            symbol="BTC/USDT",
-                            side=signal['action'],
-                            size=position_size,
-                            price=signal['entry_price'],
-                            stop_loss=stop_loss,
-                            take_profit=take_profit,
-                            reason=f"SMC {signal.get('pattern_type', 'pattern')} detected"
-                        )
-                        
-                        if trade:
+                        try:
+                            trade = paper_engine.execute_order(
+                                symbol="BTC/USDT",
+                                side=signal['action'],
+                                size=position_size,
+                                price=signal['entry_price'],
+                                stop_loss=stop_loss,
+                                take_profit=take_profit,
+                                reason=f"SMC {signal.get('pattern_type', 'pattern')} detected"
+                            )
+                            
                             logger.info(f"✅ PAPER TRADE EXECUTED!")
                             logger.info(f"   Trade ID: {trade.id}")
                             logger.info(f"   Symbol: {trade.symbol}")
@@ -333,8 +343,10 @@ async def main():
                             logger.info(f"   Entry: ${trade.entry_price:.2f}")
                             logger.info(f"   Stop Loss: ${trade.stop_loss:.2f if trade.stop_loss else 'None'}")
                             logger.info(f"   Take Profit: ${trade.take_profit:.2f if trade.take_profit else 'None'}")
-                        else:
-                            logger.warning("⚠️ Paper trade rejected by engine")
+                        except ValueError as e:
+                            logger.warning(f"⚠️ Paper trade rejected: {str(e)}")
+                        except Exception as e:
+                            logger.error(f"❌ Failed to execute paper trade: {str(e)}", exc_info=True)
                     else:
                         if signal:
                             logger.info(f"→ Signal confidence too low ({signal.get('confidence', 0):.1%} < 70%)")

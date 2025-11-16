@@ -218,8 +218,9 @@ class PaperTradingEngine:
             
             # Check max positions
             if len(self.positions) >= self.max_positions:
-                self.logger.warning(f"Max positions ({self.max_positions}) reached, cannot open new position")
-                return None
+                error_msg = f"Max positions ({self.max_positions}) reached, cannot open new position"
+                self.logger.warning(error_msg)
+                raise ValueError(error_msg)
             
             # Calculate position value
             position_value = size * price
@@ -227,11 +228,13 @@ class PaperTradingEngine:
             # Check if we have sufficient balance (margin check)
             required_margin = position_value * 0.1  # Assume 10x leverage
             if required_margin > self.balance:
-                self.logger.warning(
+                error_msg = (
                     f"Insufficient balance for position: "
-                    f"Required ${required_margin:.2f}, Available ${self.balance:.2f}"
+                    f"Required ${required_margin:.2f}, Available ${self.balance:.2f}. "
+                    f"Position value: ${position_value:.2f} (size: {size}, price: ${price:.2f})"
                 )
-                return None
+                self.logger.warning(error_msg)
+                raise ValueError(error_msg)
             
             # Create trade
             trade_id = f"paper_{int(time.time() * 1000)}"
