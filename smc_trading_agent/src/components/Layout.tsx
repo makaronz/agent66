@@ -5,7 +5,6 @@ import {
   TrendingUp,
   Settings,
   Activity,
-  BookOpen,
   Shield,
   FileText,
   Menu,
@@ -22,7 +21,6 @@ const navigation = [
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Configuration', href: '/config', icon: Settings },
   { name: 'Monitoring', href: '/monitoring', icon: Activity },
-  { name: 'Research', href: '/research', icon: BookOpen },
   { name: 'Risk Management', href: '/risk', icon: Shield },
   { name: 'Reports', href: '/reports', icon: FileText },
 ];
