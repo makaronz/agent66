@@ -192,8 +192,8 @@ async def main():
                     
                     # Log position status
                     for symbol, position in paper_engine.positions.items():
-                        pnl = position.pnl
-                        pnl_pct = position.pnl_percent
+                        pnl = position.unrealized_pnl
+                        pnl_pct = position.unrealized_pnl_percent
                         logger.info(
                             f"  Position {symbol}: "
                             f"${pnl:+.2f} ({pnl_pct:+.2f}%)"
