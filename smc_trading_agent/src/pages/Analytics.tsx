@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   BarChart3,
   TrendingUp,
@@ -10,6 +10,17 @@ import {
   Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { apiService, type EquityPoint } from '@/services/api';
+import {
+  Area,
+  AreaChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from 'recharts';
 
 // Mock backtest results
 const mockBacktestResults = {
@@ -50,11 +61,37 @@ export default function Analytics() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1Y');
   const [,] = useState('All Strategies');
   const [backtestRunning, setBacktestRunning] = useState(false);
+  const [equityCurve, setEquityCurve] = useState<EquityPoint[]>([]);
+  const [equityLoading, setEquityLoading] = useState(true);
+
+  // Fetch equity curve data
+  useEffect(() => {
+    const fetchEquityCurve = async () => {
+      try {
+        setEquityLoading(true);
+        const data = await apiService.getEquityCurve(selectedTimeframe);
+        setEquityCurve(data);
+      } catch (error) {
+        console.error('Error fetching equity curve:', error);
+      } finally {
+        setEquityLoading(false);
+      }
+    };
+
+    fetchEquityCurve();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchEquityCurve, 30000);
+    return () => clearInterval(interval);
+  }, [selectedTimeframe]);
 
   const handleRunBacktest = () => {
     setBacktestRunning(true);
     // Simulate backtest running
-    setTimeout(() => setBacktestRunning(false), 3000);
+    setTimeout(() => {
+      setBacktestRunning(false);
+      // Refresh equity curve after backtest
+      apiService.getEquityCurve(selectedTimeframe).then(setEquityCurve).catch(console.error);
+    }, 3000);
   };
 
   return (
@@ -173,13 +210,110 @@ export default function Analytics() {
             </div>
           </div>
           <div className="p-6">
-            <div className="h-80 bg-gray-50 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Equity Curve Chart</p>
-                <p className="text-sm text-gray-400">Portfolio value over time with drawdown periods</p>
+            {equityLoading ? (
+              <div className="h-80 bg-gray-50 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4 animate-pulse" />
+                  <p className="text-gray-500">Loading equity curve...</p>
+                </div>
               </div>
-            </div>
+            ) : equityCurve.length === 0 ? (
+              <div className="h-80 bg-gray-50 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No equity data available</p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={equityCurve.map(point => ({
+                    date: new Date(point.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    value: point.value,
+                    drawdown: point.drawdown || 0
+                  }))}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorDrawdown" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#6b7280"
+                      fontSize={12}
+                      tick={{ fill: '#6b7280' }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      stroke="#6b7280"
+                      fontSize={12}
+                      tick={{ fill: '#6b7280' }}
+                      domain={['auto', 'auto']}
+                      tickFormatter={(value) => `$${value.toLocaleString()}`}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#ef4444"
+                      fontSize={12}
+                      tick={{ fill: '#ef4444' }}
+                      domain={['auto', 0]}
+                      tickFormatter={(value) => `${value.toFixed(1)}%`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1f2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        color: '#f3f4f6'
+                      }}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'value') {
+                          return [`$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Portfolio Value'];
+                        }
+                        if (name === 'drawdown') {
+                          return [`${Number(value).toFixed(2)}%`, 'Drawdown'];
+                        }
+                        return [value, name];
+                      }}
+                    />
+                    <Area
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fill="url(#colorValue)"
+                      name="value"
+                    />
+                    <Area
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="drawdown"
+                      stroke="#ef4444"
+                      strokeWidth={1}
+                      strokeDasharray="5 5"
+                      fill="url(#colorDrawdown)"
+                      name="drawdown"
+                    />
+                    <Legend 
+                      formatter={(value) => {
+                        if (value === 'value') return 'Portfolio Value';
+                        if (value === 'drawdown') return 'Drawdown';
+                        return value;
+                      }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
 

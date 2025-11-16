@@ -10,7 +10,18 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { apiService, type SMCPattern, type Trade } from '@/services/api';
+import { apiService, type SMCPattern, type Trade, type OHLCVData } from '@/services/api';
+import {
+  Line,
+  ComposedChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine
+} from 'recharts';
 
 export default function TradingInterface() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
@@ -25,30 +36,37 @@ export default function TradingInterface() {
   // Real data from API
   const [smcPatterns, setSmcPatterns] = useState<SMCPattern[]>([]);
   const [recentOrders, setRecentOrders] = useState<Trade[]>([]);
+  const [ohlcvData, setOhlcvData] = useState<OHLCVData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(true);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [timeframe, setTimeframe] = useState('1h');
 
-  // Fetch SMC patterns and recent orders
+  // Fetch SMC patterns, recent orders, and OHLCV data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [patterns, orders] = await Promise.all([
+        setChartLoading(true);
+        const [patterns, orders, ohlcv] = await Promise.all([
           apiService.getSMCPatterns(),
-          apiService.getTradingHistory(10, selectedSymbol)
+          apiService.getTradingHistory(10, selectedSymbol),
+          apiService.getOHLCVData(selectedSymbol, timeframe, 100)
         ]);
         setSmcPatterns(patterns);
         setRecentOrders(orders);
+        setOhlcvData(ohlcv);
       } catch (error) {
         console.error('Error fetching trading data:', error);
       } finally {
         setLoading(false);
+        setChartLoading(false);
       }
     };
 
     fetchData();
-    // Refresh patterns every 30 seconds, orders every 10 seconds
+    // Refresh patterns every 30 seconds, orders every 10 seconds, chart every 60 seconds
     const patternsInterval = setInterval(() => {
       apiService.getSMCPatterns().then(setSmcPatterns).catch(console.error);
     }, 30000);
@@ -57,11 +75,18 @@ export default function TradingInterface() {
       apiService.getTradingHistory(10, selectedSymbol).then(setRecentOrders).catch(console.error);
     }, 10000);
 
+    const chartInterval = setInterval(() => {
+      apiService.getOHLCVData(selectedSymbol, timeframe, 100)
+        .then(setOhlcvData)
+        .catch(console.error);
+    }, 60000);
+
     return () => {
       clearInterval(patternsInterval);
       clearInterval(ordersInterval);
+      clearInterval(chartInterval);
     };
-  }, [selectedSymbol]);
+  }, [selectedSymbol, timeframe]);
 
   const handlePlaceOrder = async () => {
     if (!quantity || !price) {
@@ -163,13 +188,138 @@ export default function TradingInterface() {
               </div>
             </div>
             <div className="p-6">
-              <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">TradingView Chart Integration</p>
-                  <p className="text-sm text-gray-400">Real-time {selectedSymbol} chart with SMC overlays</p>
-                </div>
+              <div className="mb-4 flex items-center space-x-2">
+                <select
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="1m">1 Minute</option>
+                  <option value="5m">5 Minutes</option>
+                  <option value="15m">15 Minutes</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="4h">4 Hours</option>
+                  <option value="1d">1 Day</option>
+                </select>
               </div>
+              {chartLoading ? (
+                <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4 animate-pulse" />
+                    <p className="text-gray-500">Loading chart data...</p>
+                  </div>
+                </div>
+              ) : ohlcvData.length === 0 ? (
+                <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No chart data available</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={ohlcvData.map(d => {
+                      const isUp = d.close >= d.open;
+                      return {
+                        time: new Date(d.timestamp).toLocaleTimeString(),
+                        timestamp: d.timestamp,
+                        open: d.open,
+                        high: d.high,
+                        low: d.low,
+                        close: d.close,
+                        volume: d.volume,
+                        isUp
+                      };
+                    })}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="time" 
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tick={{ fill: '#6b7280' }}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tick={{ fill: '#6b7280' }}
+                        domain={['auto', 'auto']}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1f2937',
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                          color: '#f3f4f6'
+                        }}
+                        formatter={(value: any, name: string) => {
+                          if (['open', 'high', 'low', 'close'].includes(name)) {
+                            return [`$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name.toUpperCase()];
+                          }
+                          return [value, name];
+                        }}
+                      />
+                      {/* Candlestick visualization using Area and Line */}
+                      <Area
+                        dataKey="high"
+                        stroke="none"
+                        fill="none"
+                        yAxisId="left"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="high"
+                        stroke="#6b7280"
+                        strokeWidth={1}
+                        dot={false}
+                        yAxisId="left"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="low"
+                        stroke="#6b7280"
+                        strokeWidth={1}
+                        dot={false}
+                        yAxisId="left"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="close"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={false}
+                        yAxisId="left"
+                        name="Close"
+                      />
+                      {/* SMC Pattern overlays */}
+                      {smcPatterns
+                        .filter(p => p.symbol === selectedSymbol)
+                        .map((pattern) => {
+                          const patternPrice = pattern.price || pattern.priceLevel || 0;
+                          const isBullish = pattern.direction?.toLowerCase() === 'bullish';
+                          return (
+                            <ReferenceLine
+                              key={pattern.id}
+                              y={patternPrice}
+                              yAxisId="left"
+                              stroke={isBullish ? '#10b981' : '#ef4444'}
+                              strokeDasharray="5 5"
+                              strokeWidth={2}
+                              label={{
+                                value: `${pattern.type?.replace('_', ' ') || 'Pattern'}`,
+                                position: 'right',
+                                fill: isBullish ? '#10b981' : '#ef4444',
+                                fontSize: 10
+                              }}
+                            />
+                          );
+                        })}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
           </div>
 
