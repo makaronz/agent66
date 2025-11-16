@@ -99,10 +99,13 @@ function InfoTooltip({ content, children }: InfoTooltipProps) {
       {children}
       {isVisible && (
         <div
-          className="fixed z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none max-w-xs"
+          className="fixed z-50 px-4 py-3 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none"
           style={{
-            left: `${Math.min(position.x + 15, window.innerWidth - 250)}px`,
-            top: `${position.y + 15}px`
+            left: `${Math.min(position.x + 15, window.innerWidth - 350)}px`,
+            top: `${position.y + 15}px`,
+            maxWidth: '320px',
+            minWidth: '280px',
+            lineHeight: '1.5'
           }}
         >
           {content}
