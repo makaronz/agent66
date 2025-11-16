@@ -37,12 +37,15 @@ export interface BinanceTrade {
 }
 
 export class BinanceWebSocket extends WebSocketManager {
-  private static readonly BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws';
-  private static readonly TESTNET_WS_URL = 'wss://testnet.binance.vision/ws';
+  private static readonly BINANCE_WS_BASE = 'wss://stream.binance.com:9443';
+  private static readonly TESTNET_WS_BASE = 'wss://testnet.binance.vision';
+  private activeStreams: string[] = [];
+  private testnet: boolean;
 
   constructor(testnet: boolean = false) {
+    // URL will be built dynamically based on streams
     const config: WebSocketConfig = {
-      url: testnet ? BinanceWebSocket.TESTNET_WS_URL : BinanceWebSocket.BINANCE_WS_URL,
+      url: '', // Will be set when connecting
       name: 'Binance',
       exchanges: ['binance'],
       maxReconnectAttempts: 5,
@@ -52,13 +55,21 @@ export class BinanceWebSocket extends WebSocketManager {
     };
 
     super(config);
+    this.testnet = testnet;
+  }
+
+  // Build Combined Streams URL for Binance
+  private buildCombinedStreamsUrl(streams: string[]): string {
+    const base = this.testnet ? BinanceWebSocket.TESTNET_WS_BASE : BinanceWebSocket.BINANCE_WS_BASE;
+    const streamsParam = streams.join('/');
+    return `${base}/stream?streams=${streamsParam}`;
   }
 
   // Subscribe to ticker data for symbols
   subscribeToTickers(symbols: string[], callback: (data: BinanceMarketData) => void): string[] {
     const subscriptionIds: string[] = [];
 
-    // Binance requires individual ticker subscriptions
+    // Register subscriptions first
     for (const symbol of symbols) {
       const subscriptionId = this.subscribe(
         [symbol.toLowerCase()],
@@ -72,6 +83,14 @@ export class BinanceWebSocket extends WebSocketManager {
       );
 
       subscriptionIds.push(subscriptionId);
+    }
+
+    // If already connected, reconnect with new streams
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.disconnect();
+      this.connect().catch(err => {
+        console.error('Failed to reconnect with new streams:', err);
+      });
     }
 
     return subscriptionIds;
@@ -121,86 +140,93 @@ export class BinanceWebSocket extends WebSocketManager {
     return subscriptionIds;
   }
 
-  // Send subscription message specific to Binance format
+  // Override connect to use Combined Streams URL
+  async connect(): Promise<void> {
+    // Build streams list from active subscriptions
+    const streams: string[] = [];
+    
+    for (const [id, sub] of this.subscriptions) {
+      for (const symbol of sub.symbols) {
+        for (const channel of sub.channels) {
+          // Map channel names to Binance format
+          let binanceChannel = channel;
+          if (channel === '24hrTicker') binanceChannel = 'ticker';
+          if (channel === 'depth20') binanceChannel = 'depth20@100ms';
+          if (channel === 'trade') binanceChannel = 'trade';
+          
+          const stream = `${symbol.toLowerCase()}@${binanceChannel}`;
+          if (!streams.includes(stream)) {
+            streams.push(stream);
+          }
+        }
+      }
+    }
+
+    // If no streams, use default ticker for BTCUSDT
+    if (streams.length === 0) {
+      streams.push('btcusdt@ticker');
+    }
+
+    // Update URL with combined streams
+    this.config.url = this.buildCombinedStreamsUrl(streams);
+    this.activeStreams = streams;
+
+    console.log(`Binance connecting to: ${this.config.url}`);
+    return super.connect();
+  }
+
+  // Binance Combined Streams don't use SUBSCRIBE method
+  // Streams are specified in the URL
   protected sendSubscription(subscription: SubscriptionRequest): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-
-    const messages: any[] = [];
-
-    for (const symbol of subscription.symbols) {
-      for (const channel of subscription.channels) {
-        const stream = `${symbol}@${channel}`;
-        messages.push({
-          method: 'SUBSCRIBE',
-          params: [stream],
-          id: Date.now() + Math.random()
-        });
-      }
-    }
-
-    // Send all subscription messages
-    messages.forEach(message => {
-      this.ws!.send(JSON.stringify(message));
-      console.log(`Binance subscription sent:`, message.params);
-    });
+    // No-op for Binance - streams are in URL
+    // If we need to add more streams, we need to reconnect with new URL
+    console.log(`Binance subscription registered: ${subscription.symbols.join(',')} @ ${subscription.channels.join(',')}`);
   }
 
-  // Send unsubscribe message specific to Binance format
+  // Binance Combined Streams don't use UNSUBSCRIBE method
   protected sendUnsubscription(subscription: SubscriptionRequest): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-
-    const messages: any[] = [];
-
-    for (const symbol of subscription.symbols) {
-      for (const channel of subscription.channels) {
-        const stream = `${symbol}@${channel}`;
-        messages.push({
-          method: 'UNSUBSCRIBE',
-          params: [stream],
-          id: Date.now() + Math.random()
-        });
-      }
-    }
-
-    // Send all unsubscribe messages
-    messages.forEach(message => {
-      this.ws!.send(JSON.stringify(message));
-      console.log(`Binance unsubscription sent:`, message.params);
-    });
+    // To unsubscribe, we need to reconnect with updated URL
+    console.log(`Binance unsubscription registered: ${subscription.symbols.join(',')} @ ${subscription.channels.join(',')}`);
+    // Note: Full reconnection would be needed to remove streams
   }
 
-  // Process Binance-specific message format
+  // Process Binance-specific message format (Combined Streams)
   protected processMessage(data: any, timestamp: number): WebSocketMessage | null {
-    // Handle different message types from Binance
-    if (data.stream) {
-      // Streaming data message
-      const [symbol, channel] = data.stream.split('@');
-      return {
-        type: channel,
-        symbol: symbol.toUpperCase(),
-        data: data.data,
-        timestamp,
-        source: 'Binance'
-      };
-    } else if (data.result !== undefined) {
-      // Response message (subscription confirmation)
-      return {
-        type: 'response',
-        data: data,
-        timestamp,
-        source: 'Binance'
-      };
-    } else if (data.error) {
-      // Error message
-      return {
-        type: 'error',
-        data: data.error,
-        timestamp,
-        source: 'Binance'
-      };
-    }
+    try {
+      // Binance Combined Streams format: { stream: "btcusdt@ticker", data: {...} }
+      if (data.stream && data.data) {
+        const [symbol, channel] = data.stream.split('@');
+        
+        // Map Binance channel names back to our format
+        let mappedChannel = channel;
+        if (channel === 'ticker') mappedChannel = '24hrTicker';
+        if (channel.startsWith('depth')) mappedChannel = 'depth20';
+        
+        return {
+          type: mappedChannel,
+          symbol: symbol.toUpperCase(),
+          data: data.data,
+          timestamp: data.data.E || timestamp, // Use event time if available
+          source: 'Binance'
+        };
+      }
+      
+      // Handle error messages
+      if (data.error) {
+        console.error('Binance WebSocket error:', data.error);
+        return {
+          type: 'error',
+          data: data.error,
+          timestamp,
+          source: 'Binance'
+        };
+      }
 
-    return null;
+      return null;
+    } catch (error) {
+      console.error('Error processing Binance message:', error, data);
+      return null;
+    }
   }
 
   // Parse ticker data from Binance format
