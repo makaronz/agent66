@@ -185,50 +185,60 @@ export default function TradingInterface() {
                 <div className="text-center py-8 text-gray-500">No SMC patterns detected yet</div>
               ) : (
                 <div className="space-y-4">
-                  {smcPatterns.map((pattern) => (
-                  <div key={pattern.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className={cn(
-                          "w-3 h-3 rounded-full",
-                          pattern.status === 'active' ? "bg-green-500" : "bg-yellow-500"
-                        )} />
-                        <span className="font-medium text-gray-900">{pattern.symbol}</span>
-                        <span className="text-sm text-gray-500">{pattern.type}</span>
-                        <span className={cn(
-                          "px-2 py-1 text-xs font-medium rounded",
-                          pattern.direction === 'Bullish' 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-red-100 text-red-800"
-                        )}>
-                          {pattern.direction}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">
-                          ${pattern.priceLevel.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500">{pattern.timeframe}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-4">
-                        <span className="text-gray-500">Confidence:</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${pattern.confidence * 100}%` }}
-                            />
+                  {smcPatterns.map((pattern) => {
+                    // Normalize direction for display
+                    const direction = pattern.direction?.toLowerCase() === 'bullish' ? 'Bullish' : 'Bearish';
+                    const price = pattern.price || pattern.priceLevel || 0;
+                    const confidence = pattern.confidence || pattern.strength || 0;
+                    const detectedTime = pattern.timestamp 
+                      ? new Date(pattern.timestamp).toLocaleString() 
+                      : 'Just now';
+                    
+                    return (
+                      <div key={pattern.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-3">
+                            <div className={cn(
+                              "w-3 h-3 rounded-full",
+                              direction === 'Bullish' ? "bg-green-500" : "bg-yellow-500"
+                            )} />
+                            <span className="font-medium text-gray-900">{pattern.symbol}</span>
+                            <span className="text-sm text-gray-500 capitalize">{pattern.type?.replace('_', ' ') || 'order_block'}</span>
+                            <span className={cn(
+                              "px-2 py-1 text-xs font-medium rounded",
+                              direction === 'Bullish' 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-red-100 text-red-800"
+                            )}>
+                              {direction}
+                            </span>
                           </div>
-                          <span className="text-gray-900">{(pattern.confidence * 100).toFixed(0)}%</span>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-gray-900">
+                              ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                            <div className="text-xs text-gray-500">1H</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-4">
+                            <span className="text-gray-500">Confidence:</span>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-20 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full" 
+                                  style={{ width: `${confidence * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-gray-900">{(confidence * 100).toFixed(0)}%</span>
+                            </div>
+                          </div>
+                          <span className="text-gray-500">{detectedTime}</span>
                         </div>
                       </div>
-                      <span className="text-gray-500">{pattern.detected}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
             </div>
           </div>
         </div>
