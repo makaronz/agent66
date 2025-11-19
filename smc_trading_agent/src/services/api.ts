@@ -311,6 +311,29 @@ class ApiService {
     return await response.json();
   }
 
+  // Account summary
+  async getAccountSummary(): Promise<{
+    balance: number;
+    equity: number;
+    initial_balance: number;
+    total_pnl: number;
+    total_pnl_percent: number;
+    unrealized_pnl: number;
+    used_margin: number;
+    free_margin: number;
+    margin_level: number;
+    open_positions: number;
+    max_positions: number;
+    total_trades: number;
+    winning_trades: number;
+    losing_trades: number;
+    win_rate: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/trading/account-summary`);
+    const data = await response.json();
+    return data.data;
+  }
+
   // Monitoring endpoints
   async getSystemMetrics(): Promise<{
     cpu: { usage: number; status: string };
