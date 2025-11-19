@@ -195,7 +195,7 @@ export default function Dashboard() {
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Sharpe Ratio</dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {performance ? performance.sharpeRatio.toFixed(2) : '1.67'}
+                  {performance && performance.sharpeRatio !== undefined ? performance.sharpeRatio.toFixed(2) : '1.67'}
                 </dd>
               </dl>
             </div>
@@ -211,7 +211,7 @@ export default function Dashboard() {
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Max Drawdown</dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {performance ? `${performance.maxDrawdown.toFixed(1)}%` : '-3.2%'}
+                  {performance && performance.maxDrawdown !== undefined ? `${performance.maxDrawdown.toFixed(1)}%` : '-3.2%'}
                 </dd>
               </dl>
             </div>
@@ -227,7 +227,7 @@ export default function Dashboard() {
               <dl>
                 <dt className="text-sm font-medium text-gray-500 truncate">Win Rate</dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {performance ? `${performance.winRate.toFixed(1)}%` : '68.5%'}
+                  {performance && performance.winRate !== undefined ? `${performance.winRate.toFixed(1)}%` : '68.5%'}
                 </dd>
               </dl>
             </div>

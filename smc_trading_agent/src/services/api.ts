@@ -310,6 +310,52 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/health`);
     return await response.json();
   }
+
+  // Monitoring endpoints
+  async getSystemMetrics(): Promise<{
+    cpu: { usage: number; status: string };
+    memory: { usage: number; status: string };
+    disk: { usage: number; status: string };
+    network: { latency: number; status: string };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/trading/monitoring/system-metrics`);
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getServicesStatus(): Promise<Array<{
+    name: string;
+    status: string;
+    uptime: string;
+    lastRestart: string;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/trading/monitoring/services`);
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getAlerts(): Promise<Array<{
+    id: number;
+    type: 'error' | 'warning' | 'info';
+    message: string;
+    timestamp: string;
+    service: string;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/trading/monitoring/alerts`);
+    const data = await response.json();
+    return data.data;
+  }
+
+  async getPerformanceMetrics(timeframe: string = '24h'): Promise<{
+    orders24h: number;
+    avgLatency: number;
+    systemUptime: string;
+    performanceData: Array<{ time: string; orders: number; latency: number }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/trading/monitoring/performance?timeframe=${timeframe}`);
+    const data = await response.json();
+    return data.data;
+  }
 }
 
 export const apiService = new ApiService();
