@@ -1,0 +1,103 @@
+# Production environment configuration
+# Overrides base configuration for production environment
+
+environment: "production"
+debug: false
+log_level: "INFO"
+
+# Production database settings
+database:
+  host: "${DATABASE_HOST}"
+  port: ${DATABASE_PORT:5432}
+  name: "${DATABASE_NAME}"
+  username: "${DATABASE_USERNAME}"
+  password: "${DATABASE_PASSWORD}"
+  ssl_mode: "require"
+  pool_size: 50
+  max_overflow: 100
+  pool_timeout: 30
+  pool_recycle: 7200  # 2 hours
+
+# Production Redis settings
+redis:
+  host: "${REDIS_HOST}"
+  port: ${REDIS_PORT:6379}
+  db: 0
+  password: "${REDIS_PASSWORD}"
+  ssl: true
+  max_connections: 500
+  socket_timeout: 5
+  socket_connect_timeout: 5
+
+# Production exchange settings (live trading)
+exchanges:
+  binance:
+    sandbox: false
+    testnet: false
+    timeout: 10
+    rate_limit: 1200
+
+  bybit:
+    sandbox: false
+    testnet: false
+    timeout: 10
+    rate_limit: 600
+
+  oanda:
+    sandbox: false
+    testnet: false
+    timeout: 10
+    rate_limit: 100
+
+# Production risk settings (institutional-grade)
+risk:
+  max_position_size: ${MAX_POSITION_SIZE:10000.0}
+  max_portfolio_risk: ${MAX_PORTFOLIO_RISK:0.02}
+  max_daily_loss: ${MAX_DAILY_LOSS:5000.0}
+  max_drawdown: ${MAX_DRAWDOWN:0.15}
+  min_risk_reward: ${MIN_RISK_REWARD:2.0}
+  max_leverage: ${MAX_LEVERAGE:3.0}
+  var_limit: ${VAR_LIMIT:0.05}
+  stress_test_loss: ${STRESS_TEST_LOSS:0.10}
+  position_sizing_method: "adaptive"
+  stop_loss_method: "adaptive"
+
+# Production monitoring settings
+monitoring:
+  enabled: true
+  prometheus_port: 8000
+  grafana_port: 3000
+  health_check_interval: 30
+  metrics_collection_interval: 60
+  alert_error_rate: 0.05  # More sensitive alerts
+  alert_circuit_breaker_rate: 0.1
+  alert_avg_response_time: 2000  # Stricter response time requirements
+  alert_critical_error_rate: 0.01
+  log_level: "INFO"
+
+# Production trading settings
+trading:
+  symbols: ${TRADING_SYMBOLS:["BTC/USDT", "ETH/USDT", "ADA/USDT"]}
+  timeframe: "1h"
+  max_concurrent_positions: ${MAX_CONCURRENT_POSITIONS:10}
+  order_timeout: 15  # Faster timeouts in production
+  slippage_tolerance: 0.0005  # Tighter slippage control
+  execution_delay_tolerance: 0.05  # 50ms target
+
+# Production features (all enabled)
+features:
+  enhanced_smc_detection: true
+  advanced_risk_management: true
+  ultra_low_latency_execution: true
+  circuit_breaker_protection: true
+  distributed_tracing: true
+  auto_scaling: true
+  machine_learning_integration: true
+  portfolio_optimization: true
+
+# Production experimental features (conservative approach)
+experimental:
+  neural_network_predictions: false  # Keep disabled for stability
+  reinforcement_learning: false
+  multi_agent_coordination: false
+  quantum_optimization: false

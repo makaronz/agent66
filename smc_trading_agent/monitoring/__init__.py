@@ -1,42 +1,79 @@
 """
-Monitoring Module - System Observability and Health Monitoring
+Enhanced Monitoring and Metrics System for SMC Trading Agent
 
-Provides comprehensive monitoring, logging, and observability features for the SMC Trading Agent.
-Includes health monitoring, Grafana dashboards, system metrics collection, and performance tracking.
-
-Key Features:
-- Real-time system health monitoring and alerts
-- Grafana dashboard integration for visualization
-- Comprehensive metrics collection and analysis
-- Performance monitoring and optimization tracking
-- Log aggregation and centralized logging
-- Alert management and notification systems
-- System diagnostics and troubleshooting tools
-
-Usage:
-    from smc_trading_agent.monitoring import EnhancedHealthMonitor, HealthMonitor
-    
-    # Enhanced health monitor (main package)
-    enhanced_monitor = EnhancedHealthMonitor()
-    health_status = await enhanced_monitor.get_system_health()
-    
-    # Local health monitor (monitoring package)
-    local_monitor = HealthMonitor()
-    service_status = await local_monitor.perform_health_checks()
+Provides comprehensive monitoring with:
+- Prometheus metrics collection and integration
+- Grafana dashboard configuration and management
+- Real-time performance monitoring and alerting
+- System health checks and diagnostics
+- Business metrics for trading operations
+- Distributed tracing and latency analysis
 """
 
-__version__ = "1.0.0"
-__description__ = "System monitoring and observability features"
-__keywords__ = ["monitoring", "observability", "health-check", "metrics", "grafana"]
+__version__ = "2.0.0"
+__description__ = "Enhanced monitoring and metrics system with Prometheus/Grafana integration"
+__keywords__ = ["monitoring", "metrics", "prometheus", "grafana", "trading", "performance"]
 
-# Import monitoring components
+# Import enhanced monitoring components
+from .enhanced_monitoring import (
+    EnhancedMonitoringSystem,
+    MetricRegistry,
+    SystemMonitor,
+    BusinessMetricsCollector,
+    AlertManager,
+    HealthChecker,
+    MetricConfig,
+    AlertConfig,
+    HealthCheck,
+    monitor_performance,
+    get_monitoring_system,
+    initialize_monitoring
+)
+
+from .grafana_dashboards import (
+    GrafanaDashboardManager,
+    DashboardConfig,
+    GrafanaConfig,
+    DashboardTemplates,
+    DashboardSetup
+)
+
+# Legacy imports for backward compatibility
 from .health_monitor import HealthMonitor
 from ..health_monitor import EnhancedHealthMonitor
 
 # Package-level exports
 __all__ = [
-    'HealthMonitor',
-    'EnhancedHealthMonitor',
-    '__version__',
-    '__description__'
+    # Enhanced monitoring system
+    "EnhancedMonitoringSystem",
+    "MetricRegistry",
+    "SystemMonitor",
+    "BusinessMetricsCollector",
+    "AlertManager",
+    "HealthChecker",
+
+    # Configuration classes
+    "MetricConfig",
+    "AlertConfig",
+    "HealthCheck",
+    "DashboardConfig",
+    "GrafanaConfig",
+    "DashboardTemplates",
+    "DashboardSetup",
+
+    # Grafana integration
+    "GrafanaDashboardManager",
+
+    # Utility functions
+    "monitor_performance",
+    "get_monitoring_system",
+    "initialize_monitoring",
+
+    # Legacy compatibility
+    "HealthMonitor",
+    "EnhancedHealthMonitor",
+
+    # Metadata
+    "__version__",
+    "__description__"
 ]

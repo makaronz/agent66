@@ -1,0 +1,255 @@
+# SMC Trading Agent Test Configuration
+# Comprehensive configuration for automated testing framework
+
+# Test Categories Configuration
+test_categories:
+  - unit
+  - integration
+  - performance
+  - e2e
+
+# Execution Configuration
+parallel_execution: true
+timeout_seconds: 3600  # 1 hour timeout for full test suite
+generate_reports: true
+notify_on_failure: true
+artifact_retention_days: 30
+
+# Performance Thresholds
+performance_thresholds:
+  max_test_duration: 600  # 10 minutes maximum for any test category
+  max_memory_usage: 1024  # 1GB maximum memory usage
+  min_throughput: 100  # Minimum 100 records/second throughput
+  max_cpu_usage: 80  # Maximum 80% CPU usage
+
+# Coverage Thresholds
+coverage_thresholds:
+  min_line_coverage: 80  # Minimum 80% line coverage
+  min_branch_coverage: 75  # Minimum 75% branch coverage
+  min_function_coverage: 80  # Minimum 80% function coverage
+
+# Unit Test Configuration
+unit_tests:
+  test_files:
+    - "tests/test_unit_comprehensive.py"
+  timeout: 300  # 5 minutes per unit test suite
+  parallel: true
+  max_workers: 4
+
+# Integration Test Configuration
+integration_tests:
+  test_files:
+    - "tests/test_integration_comprehensive.py"
+  timeout: 600  # 10 minutes per integration test suite
+  services_required:
+    - postgres
+    - redis
+  max_workers: 2
+
+# Performance Test Configuration
+performance_tests:
+  test_files:
+    - "tests/test_performance_comprehensive.py"
+  timeout: 1200  # 20 minutes for performance tests
+  load_testing:
+    concurrent_users: 100
+    duration: 300  # 5 minutes
+    ramp_up_time: 60  # 1 minute
+  stress_testing:
+    max_load_factor: 2.0
+    duration: 600  # 10 minutes
+
+# End-to-End Test Configuration
+e2e_tests:
+  test_files:
+    - "tests/test_e2e_comprehensive.py"
+  timeout: 1800  # 30 minutes for E2E tests
+  scenarios:
+    - "trading_day_simulation"
+    - "multi_asset_trading"
+    - "risk_management_scenarios"
+    - "error_recovery"
+    - "regulatory_compliance"
+
+# Market Data Simulation Configuration
+market_simulation:
+  default_symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+    - "ADAUSDT"
+  data_sources:
+    - "binance"
+    - "bybit"
+    - "oanda"
+  simulation_scenarios:
+    normal_volatility:
+      volatility: 0.02
+      correlation: 0.3
+      duration: 1000
+    high_volatility:
+      volatility: 0.08
+      correlation: 0.7
+      duration: 500
+    market_crash:
+      volatility: 0.20
+      correlation: 0.95
+      duration: 200
+    extreme_conditions:
+      volatility: 0.30
+      correlation: 0.98
+      duration: 100
+
+# Risk Management Test Configuration
+risk_management:
+  var_confidence_levels: [0.95, 0.99]
+  max_drawdown_threshold: 0.20  # 20% maximum drawdown
+  position_size_limits:
+    max_position_size: 0.10  # 10% of portfolio maximum
+    max_sector_exposure: 0.30  # 30% sector exposure maximum
+  circuit_breaker:
+    max_daily_loss: 0.05  # 5% daily loss threshold
+    recovery_timeout: 300  # 5 minutes recovery timeout
+
+# Execution Engine Test Configuration
+execution_engine:
+  latency_thresholds:
+    max_order_latency: 50  # 50ms maximum order latency
+    max_cancellation_latency: 25  # 25ms maximum cancellation latency
+  throughput_requirements:
+    min_orders_per_second: 10
+    max_concurrent_orders: 100
+  slippage_tolerance: 0.001  # 0.1% maximum slippage
+
+# Notification Configuration
+notifications:
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#trading-system-tests"
+  email:
+    enabled: true
+    smtp_server: "${SMTP_SERVER}"
+    smtp_port: 587
+    username: "${SMTP_USERNAME}"
+    password: "${SMTP_PASSWORD}"
+    recipients:
+      - "dev-team@example.com"
+      - "qa-team@example.com"
+
+# Reporting Configuration
+reporting:
+  formats:
+    - "html"
+    - "json"
+    - "markdown"
+    - "junit"
+  include_artifacts:
+    - "coverage_reports"
+    - "performance_metrics"
+    - "test_logs"
+    - "screenshots"
+  archive_format: "tar.gz"
+
+# Database Configuration for Testing
+database:
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "smc_trading_test"
+    username: "test_user"
+    password: "test_password"
+  redis:
+    host: "localhost"
+    port: 6379
+    database: 0
+    password: null
+
+# Exchange Configuration for Testing
+exchanges:
+  test_mode: true
+  sandbox_endpoints:
+    binance:
+      api_key: "${BINANCE_TEST_API_KEY}"
+      api_secret: "${BINANCE_TEST_API_SECRET}"
+      base_url: "https://testnet.binance.vision"
+    bybit:
+      api_key: "${BYBIT_TEST_API_KEY}"
+      api_secret: "${BYBIT_TEST_API_SECRET}"
+      base_url: "https://api-testnet.bybit.com"
+    oanda:
+      api_key: "${OANDA_TEST_API_KEY}"
+      api_secret: "${OANDA_TEST_API_SECRET}"
+      base_url: "https://api-fxpractice.oanda.com/v3"
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - "console"
+    - "file"
+  file_config:
+    filename: "test_automation.log"
+    max_size: "10MB"
+    backup_count: 5
+
+# CI/CD Integration Configuration
+cicd:
+  github_actions:
+    enabled: true
+    workflows:
+      - "test.yml"
+    secrets:
+      - "SLACK_WEBHOOK_URL"
+      - "SMTP_SERVER"
+      - "SMTP_USERNAME"
+      - "SMTP_PASSWORD"
+      - "BINANCE_TEST_API_KEY"
+      - "BINANCE_TEST_API_SECRET"
+      - "BYBIT_TEST_API_KEY"
+      - "BYBIT_TEST_API_SECRET"
+      - "OANDA_TEST_API_KEY"
+      - "OANDA_TEST_API_SECRET"
+  gitlab_ci:
+    enabled: false
+    variables:
+      TEST_ENVIRONMENT: "ci"
+  jenkins:
+    enabled: false
+
+# Quality Gates
+quality_gates:
+  must_pass:
+    - "unit_tests"
+    - "integration_tests"
+  warning_threshold:
+    - "performance_tests"
+  optional:
+    - "e2e_tests"
+  fail_conditions:
+    - "coverage_below_threshold"
+    - "performance_regression"
+    - "security_vulnerabilities"
+
+# Environment-Specific Configuration
+environments:
+  development:
+    parallel_execution: true
+    timeout_seconds: 1800
+    performance_thresholds:
+      max_test_duration: 300
+      max_memory_usage: 512
+
+  staging:
+    parallel_execution: false
+    timeout_seconds: 3600
+    performance_thresholds:
+      max_test_duration: 600
+      max_memory_usage: 1024
+
+  production:
+    parallel_execution: false
+    timeout_seconds: 7200
+    performance_thresholds:
+      max_test_duration: 1200
+      max_memory_usage: 2048

@@ -6,3 +6,5 @@
 4 2025-01-27 13:30:00 Removed all mock data from RiskManagement.tsx and connected to real API endpoints (risk metrics, positions, performance)
 5 2025-01-27 13:30:00 Added comprehensive tooltips with explanations for all titles, headers, concepts, and risk management terms in RiskManagement.tsx
 6 2025-01-27 14:00:00 Fixed Total Portfolio Value calculation - now uses real equity from account summary (balance + unrealized P&L) instead of incorrect formula
+7 2025-01-27 15:00:00 Fixed Configuration page - Binance now shows disconnected when no API key is set, added endpoint /exchange-config to get real connection status from backend
+8 2025-11-20 14:51:07 Fixed web-eval-agent MCP server configuration - created Python wrapper to redirect log messages to stderr, fixed nested mcpServers JSON structure issue

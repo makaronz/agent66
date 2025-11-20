@@ -66,11 +66,12 @@ smc_detector:
     order_flow_imbalance: true
     liquidity_analysis: true
 
-# Decision engine settings - SIMPLIFIED (no ML for v1)
+# Decision engine settings - ENHANCED with ML support
 decision_engine:
-  mode: "heuristic"  # "heuristic" or "ml" (v1 uses simple SMC heuristic)
+  mode: "hybrid"  # "heuristic", "ml_ensemble", "hybrid", or "shadow_mode"
   confidence_threshold: 0.70  # Minimum confidence to execute trade
-  use_ml_ensemble: false  # Disabled for faster startup
+  use_ml_ensemble: true  # ENHANCED: Enabled for ML decision support
+  min_ml_confidence: 0.60  # Minimum confidence for ML decisions
 
 # Execution engine settings
 execution_engine:
@@ -138,4 +139,43 @@ backend_api:
   port: 3001  # TypeScript backend (Express)
   python_port: 8000  # Python backend (FastAPI)
   timeout: 10  # seconds
+
+# Multi-Timeframe Confluence Analysis System
+multi_timeframe:
+  enabled: true  # Enable/disable multi-timeframe analysis
+  config_file: "config/multi_timeframe.yaml"
+  symbols: ["BTCUSDT", "ETHUSDT"]  # Symbols to analyze
+  timeframes: ["M5", "M15", "H1", "H4", "D1"]  # Active timeframes
+
+  # Integration with existing components
+  integration:
+    enabled: true  # Enable integration with existing SMC components
+    weights:  # Component weights for signal combination
+      multi_timeframe: 0.4
+      ml_ensemble: 0.3
+      smc_indicators: 0.2
+      risk_management: 0.1
+
+    # Component availability
+    data_ingestion_enabled: true
+    ml_ensemble_enabled: true
+    risk_manager_enabled: true
+    smc_indicators_enabled: true
+
+  # Performance settings
+  performance:
+    analysis_interval_minutes: 5  # How often to analyze symbols
+    max_concurrent_symbols: 10    # Max symbols to analyze concurrently
+    cache_enabled: true           # Enable result caching
+    cache_ttl_minutes: 15        # Cache expiration time
+
+  # Signal settings
+  signals:
+    min_confidence: 0.7         # Minimum confidence to generate signals
+    min_risk_reward: 1.5        # Minimum risk/reward ratio
+    max_signals_per_symbol: 2   # Maximum signals per symbol
+    position_sizing:
+      max_position_size: 0.05   # 5% maximum position
+      base_position_size: 0.02  # 2% base position
+      confluence_multiplier: 2.0
 

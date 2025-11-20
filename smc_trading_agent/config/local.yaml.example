@@ -1,0 +1,36 @@
+# Local configuration template
+# Copy this file to local.yaml and customize for your local development
+# This file is gitignored and should contain your local overrides
+
+# Local development overrides
+debug: true
+log_level: "DEBUG"
+
+# Local database (you might use different credentials)
+database:
+  host: "localhost"
+  port: 5432
+  name: "smc_trading_local"
+  username: "local_trader"
+  password: "your_local_password"
+
+# Local Redis
+redis:
+  host: "localhost"
+  port: 6379
+  db: 2
+
+# Local trading preferences
+trading:
+  symbols: ["BTC/USDT", "ETH/USDT"]
+  timeframe: "15m"
+  max_concurrent_positions: 2
+
+# Local feature toggles (override as needed)
+features:
+  ultra_low_latency_execution: false  # Disable for easier debugging
+  distributed_tracing: true
+
+# Local experimental features
+experimental:
+  neural_network_predictions: true

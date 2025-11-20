@@ -1,0 +1,140 @@
+# Multi-Timeframe Confluence Analysis Configuration
+
+# Main system configuration
+multi_timeframe:
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+
+  timeframes:
+    - "M5"
+    - "M15"
+    - "H1"
+    - "H4"
+    - "D1"
+
+  analysis_interval_minutes: 5
+  max_signals_per_symbol: 2
+
+# Data manager configuration
+data_manager:
+  symbols: ["BTCUSDT", "ETHUSDT"]
+
+  # Timeframe configurations
+  timeframes:
+    - name: "M5"
+      minutes: 5
+      priority: 1
+      max_candles: 2000
+      confluence_weight: 0.1
+    - name: "M15"
+      minutes: 15
+      priority: 2
+      max_candles: 1500
+      confluence_weight: 0.2
+    - name: "H1"
+      minutes: 60
+      priority: 3
+      max_candles: 1000
+      confluence_weight: 0.3
+    - name: "H4"
+      minutes: 240
+      priority: 4
+      max_candles: 500
+      confluence_weight: 0.4
+    - name: "D1"
+      minutes: 1440
+      priority: 5
+      max_candles: 365
+      confluence_weight: 0.5
+
+# Confluence engine configuration
+confluence_engine:
+  # Minimum confluence score to generate signals
+  min_confluence_score: 0.6
+
+  # Signal expiry in minutes
+  signal_expiry_minutes: 30
+
+  # Trend analysis weights
+  trend_weights:
+    moving_average_alignment: 0.4
+    momentum_strength: 0.3
+    volume_confirmation: 0.2
+    volatility_adjustment: 0.1
+
+  # Premium/Discount analysis
+  premium_discount:
+    value_area_percentile: 0.7
+    zone_extension_multiplier: 0.5
+    min_reactions: 2
+
+# Signal generator configuration
+signal_generator:
+  # Validation parameters
+  validation:
+    min_confidence: 0.7
+    min_risk_reward: 1.5
+    max_risk_per_trade: 0.02
+    max_correlation: 0.7
+    max_volatility: 0.05
+    min_volume_ratio: 0.5
+    max_spread: 0.001
+
+  # Position sizing configuration
+  position_sizing:
+    max_position_size: 0.05  # 5% maximum
+    min_position_size: 0.01  # 1% minimum
+    confluence_multiplier: 2.0
+    risk_adjustment_factor: 1.5
+    base_position_size: 0.02
+
+  # Signal generation parameters
+  min_confluence_score: 0.6
+  signal_expiry_minutes: 30
+  max_signals_per_symbol: 2
+
+# Cache configuration
+cache_manager:
+  # Cache sizes
+  confluence_cache_size: 500
+  indicator_cache_size: 1000
+  analysis_cache_size: 200
+
+  # TTL in minutes
+  confluence_ttl_minutes: 10
+  indicator_ttl_minutes: 5
+  analysis_ttl_minutes: 15
+
+  # Memory limits
+  max_memory_mb: 512
+
+# Integration configuration
+integration:
+  # Enable/disable existing components
+  data_ingestion_enabled: true
+  ml_ensemble_enabled: true
+  risk_manager_enabled: true
+  smc_indicators_enabled: true
+
+  # Integration weights (should sum to 1.0)
+  integration_weights:
+    multi_timeframe: 0.4
+    ml_ensemble: 0.3
+    smc_indicators: 0.2
+    risk_management: 0.1
+
+# Performance monitoring
+monitoring:
+  # Metrics collection interval in seconds
+  metrics_interval: 60
+
+  # Performance thresholds
+  max_analysis_time_ms: 1000
+  min_cache_hit_rate: 0.7
+  max_memory_usage_percent: 80
+
+  # Export settings
+  export_signals: true
+  export_path: "signals_history/"
+  max_exported_signals: 10000

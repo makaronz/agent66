@@ -1,0 +1,170 @@
+# Ultra-Low Latency SMC Trading Agent - Optimized Multi-Stage Dockerfile
+# Designed for sub-50ms trading latency with minimal overhead
+
+# Use Python 3.11 slim for better performance
+FROM python:3.11-slim as base
+
+# Set environment variables for optimization
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONOPTIMIZE=2 \
+    UVLOOP_ENABLED=1
+
+# Install system dependencies for high performance
+RUN apt-get update && apt-get install -y \
+    # Build essentials
+    build-essential \
+    cmake \
+    pkg-config \
+    # Performance monitoring
+    htop \
+    iotop \
+    perf \
+    # Networking tools
+    curl \
+    wget \
+    netcat-openbsd \
+    # For TA-Lib
+    && rm -rf /var/lib/apt/lists/*
+
+# Install TA-Lib for technical analysis
+RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
+    tar -xzf ta-lib-0.4.0-src.tar.gz && \
+    cd ta-lib/ && \
+    ./configure --prefix=/usr && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
+
+# Development stage with all dependencies
+FROM base as development
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies with optimizations
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --upgrade setuptools wheel && \
+    # Install with performance optimizations
+    pip install --no-cache-dir --no-compile -r requirements.txt && \
+    # Install additional performance packages
+    pip install --no-cache-dir \
+    uvloop \
+    orjson \
+    pydantic-core \
+    # Clean up
+    pip cache purge
+
+# Copy application code
+COPY . .
+
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash smc && \
+    chown -R smc:smc /app
+USER smc
+
+# Expose monitoring port
+EXPOSE 8000 8008
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8008/api/python/health || exit 1
+
+# Default command for development
+CMD ["python", "-m", "uvicorn", "main_optimized:app", "--host", "0.0.0.0", "--port", "8008"]
+
+# Production stage with optimizations
+FROM base as production
+
+# Set working directory
+WORKDIR /app
+
+# Copy only necessary files for production
+COPY requirements.txt .
+COPY main_optimized.py .
+COPY config_loader.py .
+COPY config_validator.py .
+COPY config.yaml .
+COPY data_pipeline/ ./data_pipeline/
+COPY decision_engine/ ./decision_engine/
+COPY risk_manager/ ./risk_manager/
+COPY execution_engine/ ./execution_engine/
+COPY monitoring/ ./monitoring/
+COPY smc_detector/ ./smc_detector/
+COPY error_handlers.py .
+COPY validators.py .
+COPY service_manager.py .
+COPY health_monitor.py .
+
+# Install only production dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --upgrade setuptools wheel && \
+    # Install with production optimizations
+    pip install --no-cache-dir --compile --no-deps -r requirements.txt && \
+    # Install performance optimizations
+    pip install --no-cache-dir \
+    uvloop \
+    orjson \
+    pydantic-core \
+    # Clean up build artifacts
+    pip cache purge && \
+    rm -rf /root/.cache/pip
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash smc && \
+    chown -R smc:smc /app
+USER smc
+
+# Expose ports
+EXPOSE 8000 8008
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8008/api/python/health || exit 1
+
+# Production command with optimizations
+CMD ["python", "main_optimized.py"]
+
+# Rust execution engine stage
+FROM rust:1.75-slim as rust-build
+
+WORKDIR /app
+COPY src/ ./src/
+COPY Cargo.toml Cargo.lock ./
+
+# Build optimized Rust execution engine
+RUN cargo build --release --target x86_64-unknown-linux-musl
+
+# Final minimal runtime stage
+FROM python:3.11-slim as runtime
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    curl \
+    netcat-openbsd \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+WORKDIR /app
+
+# Copy optimized Rust binary
+COPY --from=rust-build /app/target/x86_64-unknown-linux-musl/release/smc_trading_agent /usr/local/bin/
+
+# Copy Python application
+COPY --from=production /app .
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash smc && \
+    chown -R smc:smc /app
+USER smc
+
+# Expose ports
+EXPOSE 8000 8008
+
+# Runtime command with Rust engine
+CMD ["python", "main_optimized.py"]

@@ -1,0 +1,66 @@
+{
+  "deployment_stage": "shadow",
+  "environment": "development",
+  "fallback_to_heuristic": true,
+  "cache_enabled": true,
+  "cache_ttl_seconds": 30,
+  "max_concurrent_inferences": 10,
+  "target_inference_time_ms": 50.0,
+  "target_accuracy": 0.65,
+  "max_memory_usage_percent": 80.0,
+  "lstm_config": {
+    "enabled": true,
+    "weight": 0.34,
+    "inference_timeout_ms": 100,
+    "max_memory_mb": 512,
+    "batch_size": 32,
+    "sequence_length": 60,
+    "confidence_threshold": 0.6
+  },
+  "transformer_config": {
+    "enabled": true,
+    "weight": 0.33,
+    "inference_timeout_ms": 100,
+    "max_memory_mb": 512,
+    "batch_size": 32,
+    "sequence_length": 60,
+    "confidence_threshold": 0.6
+  },
+  "ppo_config": {
+    "enabled": true,
+    "weight": 0.33,
+    "inference_timeout_ms": 100,
+    "max_memory_mb": 512,
+    "batch_size": 32,
+    "sequence_length": 60,
+    "confidence_threshold": 0.6
+  },
+  "training_config": {
+    "enabled": false,
+    "auto_retrain": false,
+    "retrain_interval_hours": 168,
+    "min_samples": 1000,
+    "validation_split": 0.2,
+    "max_epochs": 100,
+    "early_stopping_patience": 10,
+    "save_best_only": true
+  },
+  "ab_test_config": {
+    "enabled": false,
+    "test_name": "",
+    "variant_a_weight": 0.5,
+    "variant_b_weight": 0.5,
+    "min_sample_size": 100,
+    "test_duration_days": 14,
+    "significance_level": 0.05,
+    "metrics": ["accuracy", "profit_pct", "sharpe_ratio"]
+  },
+  "monitoring_config": {
+    "enabled": true,
+    "inference_time_alert_ms": 50.0,
+    "accuracy_alert_threshold": 0.5,
+    "driftdetection_enabled": true,
+    "performance_window_hours": 24,
+    "alert_recipients": []
+  }
+}

@@ -13,7 +13,9 @@ from config_validator import validate_config
 # Component Imports
 from data_pipeline.live_data_client import LiveDataClient  # CHANGED: Live data instead of mock
 from smc_detector.indicators import SMCIndicators
-from decision_engine.simple_heuristic import SimpleSMCHeuristic as AdaptiveModelSelector
+# ENHANCED: Import ML decision engine with backward compatibility
+from decision_engine import get_adaptive_model_selector, get_ml_config
+from decision_engine.ml_decision_engine import ModelMode
 from risk_manager.smc_risk_manager import SMCRiskManager
 from execution_engine.paper_trading import PaperTradingEngine  # ADDED: Paper trading engine
 
@@ -172,42 +174,42 @@ async def run_trading_agent(config: Dict[str, Any], service_manager: ServiceMana
                 logger.error(f"Failed to detect SMC patterns: {str(e)}", exc_info=True)
                 continue
 
-            # 3. Make a decision - SIMPLIFIED HEURISTIC (no ML for v1)
+            # 3. Make a decision - ENHANCED ML DECISION ENGINE
             trade_signal = None
             if order_blocks:
                 try:
-                    # SIMPLE SMC HEURISTIC: Use latest order block direction
-                    latest_ob = order_blocks[0]
-                    
-                    # Determine direction from order block
-                    ob_direction = latest_ob.get('direction') or latest_ob.get('type')
-                    
-                    if ob_direction in ['bullish', 'BULLISH']:
-                        trade_signal = {
-                            "action": "BUY",
-                            "symbol": "BTC/USDT",
-                            "entry_price": latest_ob['price_level'][0] if isinstance(latest_ob['price_level'], tuple) else latest_ob['price_level'],
-                            "confidence": min(0.75 + latest_ob.get('strength', 0) * 0.2, 0.95)
-                        }
-                    elif ob_direction in ['bearish', 'BEARISH']:
-                        trade_signal = {
-                            "action": "SELL",
-                            "symbol": "BTC/USDT",
-                            "entry_price": latest_ob['price_level'][1] if isinstance(latest_ob['price_level'], tuple) else latest_ob['price_level'],
-                            "confidence": min(0.75 + latest_ob.get('strength', 0) * 0.2, 0.95)
-                        }
-                    
+                    # ENHANCED: Use ML decision engine with async call
+                    trade_signal = await decision_engine.make_decision(
+                        market_data=market_data_df,
+                        order_blocks=order_blocks
+                    )
+
                     if trade_signal:
+                        # Determine decision method for logging
+                        decision_method = trade_signal.get('decision_method', 'unknown')
+
                         # Validate trade signal
                         validated_signal = data_validator.validate_trade_signal(trade_signal)
-                        
+
                         confidence_threshold = config.get('decision_engine', {}).get('confidence_threshold', 0.7)
                         if validated_signal.confidence > confidence_threshold:
                             logger.info(
-                                f"🎯 SIMPLE SMC HEURISTIC: {trade_signal['action']} signal generated "
-                                f"(confidence: {validated_signal.confidence:.2%}, direction: {ob_direction})", 
+                                f"🎯 ENHANCED DECISION ENGINE: {trade_signal['action']} signal generated "
+                                f"(confidence: {validated_signal.confidence:.2%}, method: {decision_method})",
                                 extra={'signal': trade_signal}
                             )
+
+                            # Log ML-specific details if available
+                            if 'ml_details' in trade_signal:
+                                ml_details = trade_signal['ml_details']
+                                logger.info(f"  ML Details: Market Regime={ml_details.get('market_conditions', {}).get('regime', 'unknown')}, "
+                                          f"Ensemble Score={ml_details.get('ensemble_score', 0):.3f}")
+
+                                if 'model_weights' in ml_details:
+                                    weights = ml_details['model_weights']
+                                    logger.info(f"  Model Weights: LSTM={weights.get('lstm', 0):.3f}, "
+                                              f"Transformer={weights.get('transformer', 0):.3f}, "
+                                              f"PPO={weights.get('ppo', 0):.3f}")
                             
                             # 4. Apply risk management with error handling
                             stop_loss = None
@@ -367,8 +369,20 @@ async def main_async():
         # CHANGED: Use LiveDataClient instead of mock MarketDataProcessor
         data_processor = LiveDataClient(base_url="http://localhost:3001")
         smc_detector = SMCIndicators()
-        decision_engine = AdaptiveModelSelector()
-        
+
+        # ENHANCED: Initialize ML decision engine with configuration
+        ml_config = get_ml_config()
+        decision_engine = get_adaptive_model_selector()
+
+        # Log ML configuration status
+        logger.info(f"ML Decision Engine Status:")
+        logger.info(f"  - ML Enabled: {ml_config.is_ml_enabled()}")
+        logger.info(f"  - Deployment Stage: {ml_config.config.deployment_stage.value}")
+        logger.info(f"  - Models Enabled: LSTM={ml_config.config.lstm_config.enabled}, "
+                   f"Transformer={ml_config.config.transformer_config.enabled}, "
+                   f"PPO={ml_config.config.ppo_config.enabled}")
+        logger.info(f"  - Fallback to Heuristic: {ml_config.config.fallback_to_heuristic}")
+
         # Initialize risk manager with config
         risk_config = config.get('risk_manager', {})
         risk_manager = SMCRiskManager(config=risk_config)

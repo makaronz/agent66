@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Settings,
   Shield,
@@ -11,12 +11,15 @@ import {
   EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { apiService } from '@/services/api';
 
-const exchanges = [
-  { id: 'binance', name: 'Binance', status: 'connected', latency: '12ms' },
-  { id: 'bybit', name: 'ByBit', status: 'disconnected', latency: 'N/A' },
-  { id: 'oanda', name: 'OANDA', status: 'connected', latency: '28ms' }
-];
+interface ExchangeConfig {
+  id: string;
+  name: string;
+  connected: boolean;
+  hasApiKey: boolean;
+  latency: string;
+}
 
 const smcParameters = {
   orderBlockMinVolume: 1000000,
@@ -40,6 +43,32 @@ export default function Configuration() {
   const [showApiKeys, setShowApiKeys] = useState<{[key: string]: boolean}>({});
   const [apiKeys, setApiKeys] = useState<{[key: string]: {key: string, secret: string}}>({});
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
+  const [exchanges, setExchanges] = useState<ExchangeConfig[]>([
+    { id: 'binance', name: 'Binance', connected: false, hasApiKey: false, latency: 'N/A' },
+    { id: 'bybit', name: 'ByBit', connected: false, hasApiKey: false, latency: 'N/A' },
+    { id: 'oanda', name: 'OANDA', connected: false, hasApiKey: false, latency: 'N/A' }
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  // Load exchange configuration status
+  useEffect(() => {
+    const loadExchangeConfig = async () => {
+      try {
+        setLoading(true);
+        const config = await apiService.getExchangeConfig();
+        setExchanges(config);
+      } catch (error) {
+        console.error('Failed to load exchange config:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadExchangeConfig();
+    // Refresh every 5 seconds
+    const interval = setInterval(loadExchangeConfig, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleTestConnection = async (exchangeId: string) => {
     setTestingConnection(exchangeId);
@@ -114,27 +143,39 @@ export default function Configuration() {
         {/* Exchange Setup */}
         {activeTab === 'exchanges' && (
           <div className="space-y-6">
-            {exchanges.map((exchange) => (
+            {exchanges.map((exchange) => {
+              // Determine status: connected only if both connected AND has API key
+              // Check if user has entered API key in form OR backend reports it has API key
+              const userHasApiKey = apiKeys[exchange.id]?.key?.trim() !== '';
+              const hasApiKey = userHasApiKey || exchange.hasApiKey;
+              // Only show connected if exchange is connected AND has API key configured
+              const isConnected = exchange.connected && hasApiKey;
+              const status = isConnected ? 'connected' : 'disconnected';
+              
+              return (
               <div key={exchange.id} className="bg-white rounded-lg shadow">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <h3 className="text-lg font-medium text-gray-900">{exchange.name}</h3>
                       <div className="flex items-center space-x-1">
-                        {exchange.status === 'connected' ? (
+                        {status === 'connected' ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
                         ) : (
                           <AlertCircle className="h-5 w-5 text-red-500" />
                         )}
                         <span className={cn(
                           "text-sm font-medium",
-                          exchange.status === 'connected' ? "text-green-600" : "text-red-600"
+                          status === 'connected' ? "text-green-600" : "text-red-600"
                         )}>
-                          {exchange.status === 'connected' ? 'Connected' : 'Disconnected'}
+                          {status === 'connected' ? 'Connected' : 'Disconnected'}
                         </span>
                       </div>
-                      {exchange.status === 'connected' && (
+                      {status === 'connected' && (
                         <span className="text-sm text-gray-500">Latency: {exchange.latency}</span>
+                      )}
+                      {!hasApiKey && (
+                        <span className="text-sm text-yellow-600">API key required</span>
                       )}
                     </div>
                     <button
@@ -244,7 +285,8 @@ export default function Configuration() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
 

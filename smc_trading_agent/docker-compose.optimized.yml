@@ -1,0 +1,302 @@
+version: '3.8'
+
+services:
+  # Redis for caching and ML model results
+  redis:
+    image: redis:7-alpine
+    container_name: smc-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - smc-network
+
+  # PostgreSQL for risk management and trade history
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: smc-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: smc_trading
+      POSTGRES_USER: smc_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smc_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployment/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smc_user -d smc_trading"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - smc-network
+
+  # Kafka for high-throughput data streaming
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: smc-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: smc-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_METRICS_ENABLE: 'true'
+      KAFKA_CONFLUENT_METRICS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      # Performance optimizations
+      KAFKA_NUM_NETWORK_THREADS: 8
+      KAFKA_NUM_IO_THREADS: 16
+      KAFKA_SOCKET_SEND_BUFFER_BYTES: 102400
+      KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 102400
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - smc-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: smc-prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - ./deployment/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: smc-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: smc-node-exporter
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - '/:/host:ro,rslave'
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+  # Main SMC Trading Agent - Optimized
+  smc-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+      target: runtime
+    container_name: smc-trading-agent
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8008:8008"  # FastAPI monitoring
+      - "8000:8000"  # Additional API if needed
+    environment:
+      # Database configuration
+      DATABASE_URL: "postgresql://smc_user:${POSTGRES_PASSWORD:-smc_password}@postgres:5432/smc_trading"
+
+      # Redis configuration
+      REDIS_URL: "redis://redis:6379"
+
+      # Kafka configuration
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+      KAFKA_TOPIC_PREFIX: "smc_market_data"
+
+      # Exchange API keys (set in .env or environment)
+      BINANCE_API_KEY: ${BINANCE_API_KEY}
+      BINANCE_API_SECRET: ${BINANCE_API_SECRET}
+
+      # Trading configuration
+      TRADING_MODE: ${TRADING_MODE:-paper}
+      INITIAL_BALANCE: ${INITIAL_BALANCE:-10000}
+
+      # Performance configuration
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      METRICS_ENABLED: "true"
+      PROMETHEUS_PORT: "9090"
+
+      # Optimization settings
+      UVLOOP_ENABLED: "1"
+      PYTHONOPTIMIZE: "2"
+
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/api/python/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    networks:
+      - smc-network
+
+  # TypeScript Backend for market data
+  ts-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.ts-backend
+    container_name: smc-ts-backend
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      EXCHANGE_API_KEYS: ${EXCHANGE_API_KEYS}
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+  # Frontend React application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: smc-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8008
+      REACT_APP_WS_URL: ws://localhost:8008
+    depends_on:
+      - smc-agent
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+  # Load balancer/Reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: smc-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployment/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - smc-agent
+      - frontend
+      - grafana
+    restart: unless-stopped
+    networks:
+      - smc-network
+
+# Network configuration
+networks:
+  smc-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+# Data volumes
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# Performance and resource limits
+x-common-variables: &common-variables
+  LOG_LEVEL: "INFO"
+  METRICS_INTERVAL: "30"
+  HEALTH_CHECK_INTERVAL: "60"

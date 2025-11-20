@@ -2,62 +2,202 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: smc-trading-agent
-  namespace: trading
+  namespace: smc-trading
+  labels:
+    app: smc-trading-agent
+    tier: application
 spec:
-  replicas: 3
+  replicas: 2  # High availability
   selector:
     matchLabels:
-      app: smc-agent
+      app: smc-trading-agent
   template:
     metadata:
       labels:
-        app: smc-agent
+        app: smc-trading-agent
+        tier: application
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
     spec:
+      serviceAccountName: smc-trading-agent
       containers:
       - name: smc-agent
-        image: smc-agent:latest
+        image: smc-trading-agent:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8008
+          name: http-api
+        - containerPort: 8000
+          name: metrics
+        env:
+        # Database configuration
+        - name: DATABASE_URL
+          value: "postgresql://smc_user:$(POSTGRES_PASSWORD)@postgres-service:5432/smc_trading"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smc-secrets
+              key: postgres-password
+
+        # Redis configuration
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
+
+        # Kafka configuration
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-service:9092"
+
+        # Exchange API configuration
+        - name: BINANCE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: smc-secrets
+              key: binance-api-key
+        - name: BINANCE_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: smc-secrets
+              key: binance-api-secret
+
+        # Application configuration
+        - name: TRADING_MODE
+          value: "paper"
+        - name: INITIAL_BALANCE
+          value: "10000"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: METRICS_ENABLED
+          value: "true"
+
+        # Performance optimization
+        - name: UVLOOP_ENABLED
+          value: "1"
+        - name: PYTHONOPTIMIZE
+          value: "2"
+        - name: WORKERS
+          value: "4"
+
         resources:
           requests:
             memory: "2Gi"
-            cpu: "1"
+            cpu: "1000m"
           limits:
             memory: "4Gi"
-            cpu: "2"
+            cpu: "2000m"
+
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+        - name: logs-volume
+          mountPath: /app/logs
+
+        # Health checks with aggressive timing for trading
         livenessProbe:
           httpGet:
-            path: /health
-            port: 8080
+            path: /api/python/health
+            port: 8008
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+
         readinessProbe:
           httpGet:
-            path: /ready
-            port: 8080
+            path: /api/optimized/health
+            port: 8008
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        startupProbe:
+          httpGet:
+            path: /api/python/health
+            port: 8008
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 12  # 2 minutes startup time
+
+      volumes:
+      - name: config-volume
+        configMap:
+          name: smc-config
+      - name: logs-volume
+        emptyDir: {}
+
+      # Node affinity for low-latency trading
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: trading-node
+                operator: In
+                values: ["true"]
+
+      # Anti-affinity for high availability
+      antiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["smc-trading-agent"]
+            topologyKey: kubernetes.io/hostname
+
+      # Tolerations for trading nodes
+      tolerations:
+      - key: "trading-node"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: smc-agent-service
-  namespace: trading
+  namespace: smc-trading
+  labels:
+    app: smc-trading-agent
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
 spec:
   selector:
-    app: smc-agent
+    app: smc-trading-agent
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-  type: LoadBalancer
+  - name: http-api
+    protocol: TCP
+    port: 8008
+    targetPort: 8008
+  - name: metrics
+    protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP
+
 ---
+# Horizontal Pod Autoscaler
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: smc-agent-hpa
-  namespace: trading
+  namespace: smc-trading
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: smc-trading-agent
   minReplicas: 2
-  maxReplicas: 10
+  maxReplicas: 6
   metrics:
   - type: Resource
     resource:
@@ -65,4 +205,23 @@ spec:
       target:
         type: Utilization
         averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
 

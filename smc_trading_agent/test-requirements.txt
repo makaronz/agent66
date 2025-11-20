@@ -1,0 +1,248 @@
+# Testing Framework Requirements for Enhanced SMC Trading System
+# This file contains all dependencies required for comprehensive testing and validation
+
+# Core Testing Framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-xdist>=3.3.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+pytest-json-report>=1.5.0
+pytest-html>=3.2.0
+pytest-timeout>=2.1.0
+pytest-benchmark>=4.0.0
+
+# Performance Monitoring
+psutil>=5.9.0
+memory-profiler>=0.60.0
+line-profiler>=4.1.0
+py-spy>=0.3.14
+
+# Web and Real-time Monitoring
+aiohttp>=3.8.0
+aiohttp-cors>=0.7.0
+websockets>=11.0.0
+plotly>=5.15.0
+jinja2>=3.1.0
+
+# Metrics and Monitoring
+prometheus-client>=0.17.0
+grafana-api>=1.0.3
+GPUtil>=1.4.0
+
+# Data Processing and Analysis
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-learn>=1.3.0
+
+# Database Testing
+sqlalchemy>=2.0.0
+alembic>=1.11.0
+redis>=4.6.0
+
+# Security Testing
+bandit>=1.7.5
+safety>=2.3.0
+pylint>=2.17.0
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0
+
+# Code Quality
+mypy>=1.4.0
+coverage>=7.2.0
+pre-commit>=3.3.0
+
+# Async and Concurrency
+asyncio-mqtt>=0.13.0
+aiokafka>=0.8.0
+celery>=5.3.0
+
+# API Testing
+requests>=2.31.0
+httpx>=0.24.0
+webtest>=3.0.0
+
+# Mock and Fixtures
+responses>=0.23.0
+factory-boy>=3.2.0
+faker>=19.0.0
+
+# Configuration Management
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Logging and Reporting
+structlog>=23.1.0
+python-json-logger>=2.0.0
+colorlog>=6.7.0
+
+# Time and Date
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Network and Utilities
+netaddr>=0.8.0
+dnspython>=2.3.0
+paramiko>=3.2.0
+
+# Docker and Container Testing
+docker>=6.1.0
+testcontainers>=3.7.0
+
+# Load Testing
+locust>=2.15.0
+boomer>=1.6.0
+
+# Data Validation
+cerberus>=1.3.4
+jsonschema>=4.18.0
+marshmallow>=3.19.0
+
+# File Processing
+openpyxl>=3.1.0
+xlrd>=2.0.0
+pdfplumber>=0.9.0
+
+# Image Processing (for visual testing)
+pillow>=10.0.0
+opencv-python>=4.8.0
+
+# Mathematical Computing
+sympy>=1.12.0
+statsmodels>=0.14.0
+
+# Financial Analysis
+yfinance>=0.2.0
+pandas-ta>=0.3.14b
+TA-Lib>=0.4.25
+
+# Testing Utilities
+pytest-html-reporter>=0.2.1
+pytest-sugar>=0.9.6
+pytest-clarity>=1.0.1
+pytest-env>=0.8.0
+
+# Parallel Processing
+joblib>=1.3.0
+concurrent-futures>=3.1.1
+
+# Database Testing Extensions
+pytest-postgresql>=5.0.0
+pytest-redis>=3.0.0
+
+# Memory and Resource Testing
+pytest-memray>=1.5.0
+heapdict>=1.0.1
+
+# Time Testing
+freezegun>=1.2.0
+time-machine>=2.10.0
+
+# HTTP Testing
+pytest-aiohttp>=1.0.4
+pytest-httpserver>=1.0.6
+
+# Browser Testing (for dashboard)
+playwright>=1.35.0
+selenium>=4.10.0
+
+# Reporting and Documentation
+sphinx>=7.1.0
+sphinx-rtd-theme>=1.2.0
+mkdocs>=1.5.0
+mkdocs-material>=9.1.0
+
+# CI/CD Integration
+pytest-github-actions-annotate-failures>=0.2.0
+pytest-teamcity>=1.9.0
+pytest-jira>=0.3.21
+
+# Environment Management
+tox>=4.6.0
+virtualenv>=20.23.0
+pipenv>=2023.6.0
+
+# Development Tools
+ipython>=8.14.0
+jupyter>=1.0.0
+notebook>=7.0.0
+
+# Debugging Tools
+pdb++>=0.10.3
+ipdb>=0.13.13
+pudb>=2023.1
+
+# Profiling
+py-spy>=0.3.14
+memory-profiler>=0.60.0
+line-profiler>=4.1.0
+
+# Benchmarking
+pytest-benchmark>=4.0.0
+perf>=1.6.1
+
+# Compliance and Auditing
+pytest-compliance>=1.0.1
+audit-log>=0.2.0
+
+# Performance Monitoring
+newrelic>=9.0.0
+datadog>=0.47.0
+
+# Load and Stress Testing
+ artillery>=2.0.0
+ k6>=0.45.0
+
+# Security Testing
+owasp-zap>=2.12.0
+sqlmap>=1.7.0
+
+# API Documentation
+fastapi>=0.100.0
+uvicorn>=0.22.0
+swagger-spec-validator>=3.0.0
+
+# Data Quality Testing
+great-expectations>=0.15.0
+pandera>=0.14.0
+
+# Machine Learning Testing
+mlflow>=2.6.0
+optuna>=3.2.0
+wandb>=0.15.0
+
+# Integration Testing
+testcontainers>=3.7.0
+docker-compose>=1.29.0
+
+# Configuration Management
+hvac>=1.1.0
+aws-secretsmanager-caching>=1.1.0
+
+# Monitoring and Alerting
+alertmanager>=0.25.0
+grafana-api>=1.0.3
+
+# Documentation Testing
+doctest>=0.1.0
+pytest-docs>=0.0.5
+
+# Type Checking
+types-requests>=2.31.0
+types-PyYAML>=6.0.0
+types-redis>=4.6.0
+
+# Utilities
+click>=8.1.0
+rich>=13.4.0
+typer>=0.9.0
+
+# Development Dependencies (for testing the framework itself)
+pytest-cov>=4.1.0
+pytest-xdist>=3.3.0
+pytest-mock>=3.11.0
+coverage>=7.2.0

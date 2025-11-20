@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smc-config
+  namespace: smc-trading
+data:
+  config.yaml: |
+    # SMC Trading Agent Configuration - Production
+    app:
+      name: "SMC Trading Agent"
+      version: "1.0.0"
+      environment: "production"
+      mode: "paper"
+      debug: false
+      log_level: "INFO"
+
+    # Exchange configurations
+    exchanges:
+      binance:
+        enabled: true
+        api_key: ""  # Set via secrets
+        api_secret: ""  # Set via secrets
+        websocket_url: "wss://stream.binance.com:9443/ws/"
+        rest_url: "https://api.binance.com"
+        rate_limit: 1200
+        symbols:
+          - "BTCUSDT"
+        data_types:
+          - "trade"
+          - "kline"
+
+    # Performance optimization settings
+    performance:
+      kafka:
+        bootstrap_servers: ["kafka:9092"]
+        batch_size: 1000
+        linger_ms: 5
+        compression_type: "gzip"
+      ml_ensemble:
+        parallel_execution: true
+        cache_ttl_seconds: 60
+        redis_url: "redis://redis-service:6379"
+      risk_manager:
+        parallel_calculation: true
+        redis_url: "redis://redis-service:6379"
+        database_url: "postgresql://smc_user:smc_password@postgres-service:5432/smc_trading"
+      monitoring:
+        redis_url: "redis://redis-service:6379"
+        prometheus_gateway: "prometheus-service:9091"
+        metrics_collection_interval: 30
+
+    # Risk management
+    risk_manager:
+      max_drawdown: 0.10
+      max_var: 0.02
+      max_position_size: 100000.0
+      stop_loss_percent: 2.0
+      take_profit_ratio: 3.0
+
+    # Decision engine
+    decision_engine:
+      mode: "hybrid"
+      confidence_threshold: 0.70
+      use_ml_ensemble: true
+
+    # Monitoring
+    monitoring:
+      health_check_interval: 60
+      port: 8008
+      metrics_collection: true
+      prometheus_port: 8000

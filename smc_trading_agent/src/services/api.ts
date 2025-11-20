@@ -379,6 +379,19 @@ class ApiService {
     const data = await response.json();
     return data.data;
   }
+
+  // Exchange configuration status
+  async getExchangeConfig(): Promise<Array<{
+    id: string;
+    name: string;
+    connected: boolean;
+    hasApiKey: boolean;
+    latency: string;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/trading/exchange-config`);
+    const data = await response.json();
+    return data.data;
+  }
 }
 
 export const apiService = new ApiService();

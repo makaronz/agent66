@@ -1,0 +1,110 @@
+# Base configuration for SMC Trading Agent
+# This file contains default settings that apply to all environments
+
+# Core application settings
+environment: "${ENVIRONMENT:development}"
+debug: ${DEBUG:false}
+log_level: "${LOG_LEVEL:INFO}"
+
+# Database configuration
+database:
+  host: "${DATABASE_HOST:localhost}"
+  port: ${DATABASE_PORT:5432}
+  name: "${DATABASE_NAME:smc_trading}"
+  username: "${DATABASE_USERNAME:trader}"
+  password: "${DATABASE_PASSWORD:?Database password is required}"
+  ssl_mode: "${DATABASE_SSL_MODE:require}"
+  pool_size: ${DATABASE_POOL_SIZE:10}
+  max_overflow: ${DATABASE_MAX_OVERFLOW:20}
+  pool_timeout: ${DATABASE_POOL_TIMEOUT:30}
+  pool_recycle: ${DATABASE_POOL_RECYCLE:3600}
+
+# Redis configuration
+redis:
+  host: "${REDIS_HOST:localhost}"
+  port: ${REDIS_PORT:6379}
+  db: ${REDIS_DB:0}
+  password: "${REDIS_PASSWORD:}"
+  ssl: ${REDIS_SSL:false}
+  max_connections: ${REDIS_MAX_CONNECTIONS:100}
+  socket_timeout: ${REDIS_SOCKET_TIMEOUT:5}
+  socket_connect_timeout: ${REDIS_SOCKET_CONNECT_TIMEOUT:5}
+
+# Exchange configurations
+exchanges:
+  binance:
+    api_key: "${BINANCE_API_KEY:?Binance API key is required}"
+    api_secret: "${BINANCE_API_SECRET:?Binance API secret is required}"
+    sandbox: ${BINANCE_SANDBOX:true}
+    timeout: ${BINANCE_TIMEOUT:30}
+    rate_limit: ${BINANCE_RATE_LIMIT:1200}
+    testnet: ${BINANCE_TESTNET:true}
+
+  bybit:
+    api_key: "${BYBIT_API_KEY:?Bybit API key is required}"
+    api_secret: "${BYBIT_API_SECRET:?Bybit API secret is required}"
+    sandbox: ${BYBIT_SANDBOX:true}
+    timeout: ${BYBIT_TIMEOUT:30}
+    rate_limit: ${BYBIT_RATE_LIMIT:600}
+    testnet: ${BYBIT_TESTNET:true}
+
+  oanda:
+    api_key: "${OANDA_API_KEY:?OANDA API key is required}"
+    api_secret: "${OANDA_API_SECRET:?OANDA API secret is required}"
+    sandbox: ${OANDA_SANDBOX:true}
+    timeout: ${OANDA_TIMEOUT:30}
+    rate_limit: ${OANDA_RATE_LIMIT:100}
+    testnet: ${OANDA_TESTNET:true}
+
+# Risk management configuration
+risk:
+  max_position_size: ${MAX_POSITION_SIZE:1000.0}
+  max_portfolio_risk: ${MAX_PORTFOLIO_RISK:0.02}
+  max_daily_loss: ${MAX_DAILY_LOSS:500.0}
+  max_drawdown: ${MAX_DRAWDOWN:0.15}
+  min_risk_reward: ${MIN_RISK_REWARD:1.5}
+  max_leverage: ${MAX_LEVERAGE:3.0}
+  var_limit: ${VAR_LIMIT:0.05}
+  stress_test_loss: ${STRESS_TEST_LOSS:0.10}
+  position_sizing_method: "${POSITION_SIZING_METHOD:adaptive}"
+  stop_loss_method: "${STOP_LOSS_METHOD:adaptive}"
+
+# Monitoring configuration
+monitoring:
+  enabled: ${MONITORING_ENABLED:true}
+  prometheus_port: ${PROMETHEUS_PORT:8000}
+  grafana_port: ${GRAFANA_PORT:3000}
+  health_check_interval: ${HEALTH_CHECK_INTERVAL:30}
+  metrics_collection_interval: ${METRICS_COLLECTION_INTERVAL:60}
+  alert_error_rate: ${ALERT_ERROR_RATE:0.1}
+  alert_circuit_breaker_rate: ${ALERT_CIRCUIT_BREAKER_RATE:0.2}
+  alert_avg_response_time: ${ALERT_AVG_RESPONSE_TIME:5000}
+  alert_critical_error_rate: ${ALERT_CRITICAL_ERROR_RATE:0.05}
+  log_level: "${MONITORING_LOG_LEVEL:INFO}"
+
+# Trading configuration
+trading:
+  symbols: ${TRADING_SYMBOLS:["BTC/USDT", "ETH/USDT"]}
+  timeframe: "${TRADING_TIMEFRAME:1h}"
+  max_concurrent_positions: ${MAX_CONCURRENT_POSITIONS:5}
+  order_timeout: ${ORDER_TIMEOUT:30}
+  slippage_tolerance: ${SLIPPAGE_TOLERANCE:0.001}
+  execution_delay_tolerance: ${EXECUTION_DELAY_TOLERANCE:0.05}
+
+# Feature flags
+features:
+  enhanced_smc_detection: ${ENHANCED_SMC_DETECTION:true}
+  advanced_risk_management: ${ADVANCED_RISK_MANAGEMENT:true}
+  ultra_low_latency_execution: ${ULTRA_LOW_LATENCY_EXECUTION:true}
+  circuit_breaker_protection: ${CIRCUIT_BREAKER_PROTECTION:true}
+  distributed_tracing: ${DISTRIBUTED_TRACING:true}
+  auto_scaling: ${AUTO_SCALING:false}
+  machine_learning_integration: ${ML_INTEGRATION:true}
+  portfolio_optimization: ${PORTFOLIO_OPTIMIZATION:true}
+
+# Experimental features
+experimental:
+  neural_network_predictions: ${NEURAL_NETWORK_PREDICTIONS:false}
+  reinforcement_learning: ${REINFORCEMENT_LEARNING:false}
+  multi_agent_coordination: ${MULTI_AGENT_COORDINATION:false}
+  quantum_optimization: ${QUANTUM_OPTIMIZATION:false}

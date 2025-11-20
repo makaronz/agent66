@@ -1,0 +1,81 @@
+# Development environment configuration
+# Overrides base configuration for development environment
+
+environment: "development"
+debug: true
+log_level: "DEBUG"
+
+# Development database settings
+database:
+  host: "localhost"
+  port: 5432
+  name: "smc_trading_dev"
+  username: "dev_trader"
+  pool_size: 5
+  max_overflow: 10
+
+# Development Redis settings
+redis:
+  host: "localhost"
+  port: 6379
+  db: 1
+  max_connections: 20
+
+# Development exchange settings (use testnet/sandbox)
+exchanges:
+  binance:
+    sandbox: true
+    testnet: true
+    rate_limit: 100  # Lower rate limit for development
+
+  bybit:
+    sandbox: true
+    testnet: true
+    rate_limit: 50
+
+  oanda:
+    sandbox: true
+    testnet: true
+    rate_limit: 20
+
+# Development risk settings (more conservative)
+risk:
+  max_position_size: 100.0
+  max_portfolio_risk: 0.01
+  max_daily_loss: 50.0
+  max_drawdown: 0.05
+  max_leverage: 1.0
+
+# Development monitoring settings
+monitoring:
+  enabled: true
+  prometheus_port: 8001
+  grafana_port: 3001
+  health_check_interval: 10
+  metrics_collection_interval: 30
+  log_level: "DEBUG"
+
+# Development trading settings
+trading:
+  symbols: ["BTC/USDT"]
+  timeframe: "5m"  # Shorter timeframe for testing
+  max_concurrent_positions: 1
+  order_timeout: 60  # Longer timeout for development
+
+# Development features
+features:
+  enhanced_smc_detection: true
+  advanced_risk_management: true
+  ultra_low_latency_execution: false  # Disable for easier debugging
+  circuit_breaker_protection: true
+  distributed_tracing: true
+  auto_scaling: false
+  machine_learning_integration: true
+  portfolio_optimization: false
+
+# Development experimental features
+experimental:
+  neural_network_predictions: true  # Enable for testing
+  reinforcement_learning: false
+  multi_agent_coordination: false
+  quantum_optimization: false
