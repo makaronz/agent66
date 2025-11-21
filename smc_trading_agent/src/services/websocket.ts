@@ -57,7 +57,7 @@ export class WebSocketService {
   private reconnectDelay = 1000;
   private isConnected = false;
 
-  constructor(private serverUrl: string = 'http://localhost:3001') {}
+  constructor(private serverUrl: string = 'http://localhost:3002') {}
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {

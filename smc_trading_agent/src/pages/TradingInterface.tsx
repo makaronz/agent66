@@ -8,13 +8,15 @@ import {
   CheckCircle,
   Clock,
   BarChart3,
-  Settings
+  Settings,
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService, type SMCPattern, type Trade, type OHLCVData } from '@/services/api';
 import AdvancedOrderTypes from '@/components/AdvancedOrderTypes';
 import CandlestickChart from '@/components/CandlestickChart';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function TradingInterface() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
@@ -109,7 +111,8 @@ export default function TradingInterface() {
   };
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -117,43 +120,72 @@ export default function TradingInterface() {
           <p className="text-gray-600">Live SMC pattern detection and order management</p>
         </div>
         <div className="flex items-center space-x-4">
-          <Button
-            variant={showAdvancedOrders ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowAdvancedOrders(!showAdvancedOrders)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            {showAdvancedOrders ? 'Basic Orders' : 'Advanced Orders'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showAdvancedOrders ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAdvancedOrders(!showAdvancedOrders)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                {showAdvancedOrders ? 'Basic Orders' : 'Advanced Orders'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle between basic and advanced order types including stop-loss and take-profit</p>
+            </TooltipContent>
+          </Tooltip>
 
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Auto Trading</span>
-            <button
-              onClick={() => setAutoTrading(!autoTrading)}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                autoTrading ? "bg-green-600" : "bg-gray-200"
-              )}
-              aria-label="Toggle auto trading"
-            >
-              <span
-                className={cn(
-                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                  autoTrading ? "translate-x-6" : "translate-x-1"
-                )}
-              />
-            </button>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center space-x-2 cursor-pointer">
+                <span className="text-sm text-gray-600">Auto Trading</span>
+                <button
+                  onClick={() => setAutoTrading(!autoTrading)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                    autoTrading ? "bg-green-600" : "bg-gray-200"
+                  )}
+                  aria-label="Toggle auto trading"
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                      autoTrading ? "translate-x-6" : "translate-x-1"
+                    )}
+                  />
+                </button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Enable automated trading based on SMC pattern detection and AI signals</p>
+            </TooltipContent>
+          </Tooltip>
+
           {autoTrading ? (
-            <div className="flex items-center space-x-1 text-green-600">
-              <Play className="h-4 w-4" />
-              <span className="text-sm font-medium">Active</span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center space-x-1 text-green-600 cursor-pointer">
+                  <Play className="h-4 w-4" />
+                  <span className="text-sm font-medium">Active</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Auto-trading is active and monitoring markets</p>
+              </TooltipContent>
+            </Tooltip>
           ) : (
-            <div className="flex items-center space-x-1 text-gray-500">
-              <Pause className="h-4 w-4" />
-              <span className="text-sm font-medium">Paused</span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center space-x-1 text-gray-500 cursor-pointer">
+                  <Pause className="h-4 w-4" />
+                  <span className="text-sm font-medium">Paused</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Auto-trading is paused - click to enable</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -165,33 +197,59 @@ export default function TradingInterface() {
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Price Chart & SMC Patterns</h3>
-                <select
-                  value={selectedSymbol}
-                  onChange={(e) => setSelectedSymbol(e.target.value)}
-                  className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="BTCUSDT">BTC/USDT</option>
-                  <option value="ETHUSDT">ETH/USDT</option>
-                  <option value="ADAUSDT">ADA/USDT</option>
-                  <option value="SOLUSDT">SOL/USDT</option>
-                </select>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-lg font-medium text-gray-900">Price Chart & SMC Patterns</h3>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Interactive candlestick chart with Smart Money Concepts pattern overlays</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <select
+                      value={selectedSymbol}
+                      onChange={(e) => setSelectedSymbol(e.target.value)}
+                      className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label="Select trading symbol"
+                    >
+                      <option value="BTCUSDT">BTC/USDT</option>
+                      <option value="ETHUSDT">ETH/USDT</option>
+                      <option value="ADAUSDT">ADA/USDT</option>
+                      <option value="SOLUSDT">SOL/USDT</option>
+                    </select>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Select the trading pair to analyze and trade</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
             <div className="p-6">
               <div className="mb-4 flex items-center space-x-2">
-                <select
-                  value={timeframe}
-                  onChange={(e) => setTimeframe(e.target.value)}
-                  className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="1m">1 Minute</option>
-                  <option value="5m">5 Minutes</option>
-                  <option value="15m">15 Minutes</option>
-                  <option value="1h">1 Hour</option>
-                  <option value="4h">4 Hours</option>
-                  <option value="1d">1 Day</option>
-                </select>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <select
+                      value={timeframe}
+                      onChange={(e) => setTimeframe(e.target.value)}
+                      className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label="Select chart timeframe"
+                    >
+                      <option value="1m">1 Minute</option>
+                      <option value="5m">5 Minutes</option>
+                      <option value="15m">15 Minutes</option>
+                      <option value="1h">1 Hour</option>
+                      <option value="4h">4 Hours</option>
+                      <option value="1d">1 Day</option>
+                    </select>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Select the chart timeframe for pattern analysis</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               <CandlestickChart
                 symbol={selectedSymbol}
@@ -208,7 +266,17 @@ export default function TradingInterface() {
           {/* Detected Patterns */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Detected SMC Patterns</h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-medium text-gray-900">Detected SMC Patterns</h3>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Real-time Smart Money Concepts pattern detection using AI algorithms</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
             <div className="p-6">
               {loading ? (
@@ -226,40 +294,53 @@ export default function TradingInterface() {
                       : 'Just now';
 
                     return (
-                      <div
-                        key={pattern.id}
-                        className={cn(
-                          "p-4 rounded-lg border",
-                          direction === 'Bullish'
-                            ? "bg-green-50 border-green-200"
-                            : "bg-red-50 border-red-200"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className={cn(
-                              "w-3 h-3 rounded-full",
-                              direction === 'Bullish' ? "bg-green-500" : "bg-red-500"
-                            )} />
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {pattern.type?.replace('_', ' ') || 'Unknown Pattern'}
+                      <Tooltip key={pattern.id}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "p-4 rounded-lg border cursor-pointer hover:shadow-md transition-shadow",
+                              direction === 'Bullish'
+                                ? "bg-green-50 border-green-200"
+                                : "bg-red-50 border-red-200"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className={cn(
+                                  "w-3 h-3 rounded-full",
+                                  direction === 'Bullish' ? "bg-green-500" : "bg-red-500"
+                                )} />
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {pattern.type?.replace('_', ' ') || 'Unknown Pattern'}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {direction} • ${price.toFixed(2)}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-600">
-                                {direction} • ${price.toFixed(2)}
+                              <div className="text-right">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {confidence.toFixed(1)}% Confidence
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {detectedTime}
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-900">
-                              {confidence.toFixed(1)}% Confidence
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {detectedTime}
-                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-sm">
+                            <p><strong>{pattern.type?.replace('_', ' ') || 'Unknown Pattern'}</strong></p>
+                            <p>Direction: {direction}</p>
+                            <p>Price Level: ${price.toFixed(2)}</p>
+                            <p>Confidence: {confidence.toFixed(1)}%</p>
+                            <p>Detected: {detectedTime}</p>
+                            <p className="text-xs text-gray-500 mt-1">Click to trade this pattern</p>
                           </div>
-                        </div>
-                      </div>
+                        </TooltipContent>
+                      </Tooltip>
                     );
                   })}
                 </div>
@@ -273,7 +354,17 @@ export default function TradingInterface() {
           {/* Order Form */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Place Order</h3>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-lg font-medium text-gray-900">Place Order</h3>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Manual order placement with risk management options</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
             <div className="p-6 space-y-4">
               {/* Order Side */}
@@ -282,28 +373,44 @@ export default function TradingInterface() {
                   Order Type
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setOrderSide('BUY')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-                      orderSide === 'BUY'
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    Buy
-                  </button>
-                  <button
-                    onClick={() => setOrderSide('SELL')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-                      orderSide === 'SELL'
-                        ? "bg-red-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    Sell
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setOrderSide('BUY')}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                          orderSide === 'BUY'
+                            ? "bg-green-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        )}
+                      >
+                        Buy
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Execute a buy order (go long on the asset)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setOrderSide('SELL')}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                          orderSide === 'SELL'
+                            ? "bg-red-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        )}
+                      >
+                        Sell
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Execute a sell order (go short on the asset)</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
 
@@ -313,28 +420,44 @@ export default function TradingInterface() {
                   Execution Type
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setOrderType('MARKET')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-                      orderType === 'MARKET'
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    Market
-                  </button>
-                  <button
-                    onClick={() => setOrderType('LIMIT')}
-                    className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
-                      orderType === 'LIMIT'
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    )}
-                  >
-                    Limit
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setOrderType('MARKET')}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                          orderType === 'MARKET'
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        )}
+                      >
+                        Market
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Execute immediately at the best available market price</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setOrderType('LIMIT')}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                          orderType === 'LIMIT'
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        )}
+                      >
+                        Limit
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Execute only at your specified price or better</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
 
@@ -493,6 +616,7 @@ export default function TradingInterface() {
           onClose={() => setShowAdvancedOrders(false)}
         />
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

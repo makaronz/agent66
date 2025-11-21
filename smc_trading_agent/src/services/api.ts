@@ -2,7 +2,7 @@
  * API service for connecting frontend with SMC Trading Agent
  */
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://localhost:3002/api';
 
 // Agent management interfaces
 export interface AgentConfig {

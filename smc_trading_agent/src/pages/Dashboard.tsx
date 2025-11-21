@@ -7,10 +7,14 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  Info,
+  TrendingUp as TrendUpIcon,
+  TrendingDown as TrendDownIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService, type MarketData, type Position, type SystemHealth, type PerformanceMetrics } from '@/services/api';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -105,7 +109,8 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -167,105 +172,156 @@ export default function Dashboard() {
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <DollarSign className="h-8 w-8 text-green-600" />
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <DollarSign className="h-8 w-8 text-green-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total P&L</dt>
+                    <dd className={cn(
+                      "text-lg font-medium",
+                      positions.totalPnL >= 0 ? "text-green-600" : "text-red-600"
+                    )}>
+                      ${positions.totalPnL.toFixed(2)}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Total P&L</dt>
-                <dd className={cn(
-                  "text-lg font-medium",
-                  positions.totalPnL >= 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  ${positions.totalPnL.toFixed(2)}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Total profit and loss from all active and closed positions</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <TrendingUp className="h-8 w-8 text-blue-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Sharpe Ratio</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {performance && performance.sharpeRatio !== undefined ? performance.sharpeRatio.toFixed(2) : '1.67'}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Sharpe Ratio</dt>
-                <dd className="text-lg font-medium text-gray-900">
-                  {performance && performance.sharpeRatio !== undefined ? performance.sharpeRatio.toFixed(2) : '1.67'}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Risk-adjusted return ratio. Higher values indicate better risk-adjusted performance</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <TrendingDown className="h-8 w-8 text-red-600" />
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <TrendingDown className="h-8 w-8 text-red-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Max Drawdown</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {performance && performance.maxDrawdown !== undefined ? `${performance.maxDrawdown.toFixed(1)}%` : '-3.2%'}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Max Drawdown</dt>
-                <dd className="text-lg font-medium text-gray-900">
-                  {performance && performance.maxDrawdown !== undefined ? `${performance.maxDrawdown.toFixed(1)}%` : '-3.2%'}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Maximum peak-to-trough decline in portfolio value from a previous peak</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <Activity className="h-8 w-8 text-purple-600" />
+        <Tooltip>
+          <TooltipTrigger>
+            <div className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Activity className="h-8 w-8 text-purple-600" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Win Rate</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {performance && performance.winRate !== undefined ? `${performance.winRate.toFixed(1)}%` : '68.5%'}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Win Rate</dt>
-                <dd className="text-lg font-medium text-gray-900">
-                  {performance && performance.winRate !== undefined ? `${performance.winRate.toFixed(1)}%` : '68.5%'}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Percentage of profitable trades vs total trades executed</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Market Overview */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Market Overview</h3>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-lg font-medium text-gray-900">Market Overview</h3>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Real-time market data from multiple exchanges</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div className="p-6">
             <div className="space-y-4">
               {marketData.map((market) => (
-                <div key={market.symbol} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0">
-                      <BarChart3 className="h-5 w-5 text-gray-400" />
+                <Tooltip key={market.symbol}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <BarChart3 className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{market.symbol}</p>
+                          <p className="text-xs text-gray-500">Vol: {market.volume}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          ${market.price.toLocaleString()}
+                        </p>
+                        <p className={cn(
+                          "text-xs",
+                          market.change >= 0 ? "text-green-600" : "text-red-600"
+                        )}>
+                          {market.change >= 0 ? '+' : ''}{market.change}%
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{market.symbol}</p>
-                      <p className="text-xs text-gray-500">Vol: {market.volume}</p>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-sm">
+                      <p><strong>{market.symbol}</strong></p>
+                      <p>Current Price: ${market.price.toLocaleString()}</p>
+                      <p>24h Change: {market.change >= 0 ? '+' : ''}{market.change}%</p>
+                      <p>Volume: {market.volume}</p>
+                      <p className="text-xs text-gray-500 mt-1">Click for detailed chart</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      ${market.price.toLocaleString()}
-                    </p>
-                    <p className={cn(
-                      "text-xs",
-                      market.change >= 0 ? "text-green-600" : "text-red-600"
-                    )}>
-                      {market.change >= 0 ? '+' : ''}{market.change}%
-                    </p>
-                  </div>
-                </div>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
@@ -274,46 +330,74 @@ export default function Dashboard() {
         {/* Active Positions */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Active Positions</h3>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-lg font-medium text-gray-900">Active Positions</h3>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Current open positions with real-time P&L tracking</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
           <div className="p-6">
             <div className="space-y-4">
               {positions.positions.map((position, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-900">{position.symbol}</span>
-                      <span className={cn(
-                        "px-2 py-1 text-xs font-medium rounded",
-                        position.side === 'LONG' 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-red-100 text-red-800"
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <div className="border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-900">{position.symbol}</span>
+                          <span className={cn(
+                            "px-2 py-1 text-xs font-medium rounded",
+                            position.side === 'LONG'
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          )}>
+                            {position.side}
+                          </span>
+                        </div>
+                        <div className={cn(
+                          "text-sm font-medium",
+                          position.pnl >= 0 ? "text-green-600" : "text-red-600"
+                        )}>
+                          ${position.pnl.toFixed(2)} ({position.pnlPercent.toFixed(2)}%)
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-xs text-gray-500">
+                        <div>
+                          <span className="block">Size</span>
+                          <span className="text-gray-900">{position.size}</span>
+                        </div>
+                        <div>
+                          <span className="block">Entry</span>
+                          <span className="text-gray-900">${position.entryPrice.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="block">Current</span>
+                          <span className="text-gray-900">${position.currentPrice.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-sm">
+                      <p><strong>{position.symbol} - {position.side}</strong></p>
+                      <p>Position Size: {position.size}</p>
+                      <p>Entry Price: ${position.entryPrice.toLocaleString()}</p>
+                      <p>Current Price: ${position.currentPrice.toLocaleString()}</p>
+                      <p className={cn(
+                        position.pnl >= 0 ? "text-green-600" : "text-red-600"
                       )}>
-                        {position.side}
-                      </span>
+                        P&L: ${position.pnl.toFixed(2)} ({position.pnlPercent.toFixed(2)}%)
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Click for position details</p>
                     </div>
-                    <div className={cn(
-                      "text-sm font-medium",
-                      position.pnl >= 0 ? "text-green-600" : "text-red-600"
-                    )}>
-                      ${position.pnl.toFixed(2)} ({position.pnlPercent.toFixed(2)}%)
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-xs text-gray-500">
-                    <div>
-                      <span className="block">Size</span>
-                      <span className="text-gray-900">{position.size}</span>
-                    </div>
-                    <div>
-                      <span className="block">Entry</span>
-                      <span className="text-gray-900">${position.entryPrice.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="block">Current</span>
-                      <span className="text-gray-900">${position.currentPrice.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
@@ -323,32 +407,51 @@ export default function Dashboard() {
       {/* System Health */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">System Health</h3>
+          <div className="flex items-center space-x-2">
+            <h3 className="text-lg font-medium text-gray-900">System Health</h3>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Real-time status of all trading system components</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {systemHealth.components.map((service) => (
-              <div key={service.name} className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  {service.status === 'healthy' ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {service.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {service.latency}
-                  </p>
-                </div>
-              </div>
+              <Tooltip key={service.name}>
+                <TooltipTrigger>
+                  <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors">
+                    <div className="flex-shrink-0">
+                      {service.status === 'healthy' ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {service.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {service.latency}
+                      </p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p><strong>{service.name}</strong></p>
+                  <p>Status: {service.status === 'healthy' ? 'Operating normally' : 'Requires attention'}</p>
+                  <p>Response time: {service.latency}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
