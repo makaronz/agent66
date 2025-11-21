@@ -31,8 +31,8 @@ import pandas as pd
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Import our models and components
-from smc_training_pipeline import LSTMModel, TransformerModel, PPOAgent
-from smc_feature_engineer import SMCFeatureEngineer, FeatureConfig
+from training.smc_training_pipeline import LSTMModel, TransformerModel, PPOAgent
+from training.smc_feature_engineer import SMCFeatureEngineer, FeatureConfig
 
 logger = logging.getLogger(__name__)
 
@@ -623,10 +623,12 @@ class ModelDeployer:
             model_dir_exists = self.model_dir.exists()
             config_file_exists = self.config_file.exists()
 
+            pth_files = len(list(self.model_dir.glob("*.pth")))
+            pkl_files = len(list(self.model_dir.glob("*.pkl")))
             health['checks']['files'] = {
                 'model_directory_exists': model_dir_exists,
                 'config_file_exists': config_file_exists,
-                'model_files_found': len(list(self.model_dir.glob("*.pth"))) + len(list(self.model_dir.glob("*.pkl"))))
+                'model_files_found': pth_files + pkl_files
             }
 
             # Overall health determination

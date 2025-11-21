@@ -7,6 +7,7 @@ import Configuration from "@/pages/Configuration";
 import Monitoring from "@/pages/Monitoring";
 import RiskManagement from "@/pages/RiskManagement";
 import Reports from "@/pages/Reports";
+import AgentManagement from "@/pages/AgentManagement";
 import Login from "@/pages/Login";
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="config" element={<Configuration />} />
           <Route path="monitoring" element={<Monitoring />} />
           <Route path="risk" element={<RiskManagement />} />
+          <Route path="agents" element={<AgentManagement />} />
           <Route path="reports" element={<Reports />} />
         </Route>
       </Routes>

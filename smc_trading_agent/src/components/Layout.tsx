@@ -11,7 +11,8 @@ import {
   X,
   Bell,
   User,
-  LogOut
+  LogOut,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
   { name: 'Trading', href: '/trading', icon: TrendingUp },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Agent Management', href: '/agents', icon: Users },
   { name: 'Configuration', href: '/config', icon: Settings },
   { name: 'Monitoring', href: '/monitoring', icon: Activity },
   { name: 'Risk Management', href: '/risk', icon: Shield },

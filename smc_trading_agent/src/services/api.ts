@@ -4,6 +4,56 @@
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
+// Agent management interfaces
+export interface AgentConfig {
+  id: string;
+  name: string;
+  type: 'smc_detector' | 'decision_engine' | 'execution_engine' | 'risk_manager';
+  symbol: string;
+  timeframe: string;
+  capital: number;
+  leverage: number;
+  strategies: string[];
+  riskLevel: 'conservative' | 'moderate' | 'aggressive';
+  paperTrading: boolean;
+  maxDrawdown: number;
+  dailyLossLimit: number;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  type: 'smc_detector' | 'decision_engine' | 'execution_engine' | 'risk_manager';
+  status: 'running' | 'stopped' | 'error' | 'starting' | 'stopping';
+  symbol: string;
+  timeframe: string;
+  capital: number;
+  currentPnL: number;
+  totalTrades: number;
+  winRate: number;
+  uptime: string;
+  lastActivity: string;
+  latency: string;
+  memoryUsage: number;
+  cpuUsage: number;
+  networkUsage: number;
+  errorCount: number;
+  paperTrading: boolean;
+  strategies: string[];
+  startTime: string;
+}
+
+export interface LogEntry {
+  id: string;
+  agentId: string;
+  agentName: string;
+  timestamp: string;
+  level: 'info' | 'warning' | 'error' | 'debug' | 'trade';
+  message: string;
+  details?: Record<string, any>;
+  category: 'system' | 'trading' | 'performance' | 'risk' | 'network';
+}
+
 export interface MarketData {
   symbol: string;
   price: number;
@@ -369,7 +419,7 @@ class ApiService {
     return data.data;
   }
 
-  async getPerformanceMetrics(timeframe: string = '24h'): Promise<{
+  async getSystemPerformanceMetrics(timeframe: string = '24h'): Promise<{
     orders24h: number;
     avgLatency: number;
     systemUptime: string;
@@ -391,6 +441,355 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/trading/exchange-config`);
     const data = await response.json();
     return data.data;
+  }
+
+  // Agent Management Methods
+
+  // Spawn a new trading agent
+  async spawnAgent(config: AgentConfig): Promise<Agent> {
+    const response = await fetch(`${API_BASE_URL}/agents/spawn`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to spawn agent');
+    }
+
+    const data = await response.json();
+    return data.data;
+  }
+
+  // Get all agents
+  async getAgents(): Promise<Agent[]> {
+    const response = await fetch(`${API_BASE_URL}/agents`);
+    const data = await response.json();
+    return data.data || [];
+  }
+
+  // Get a specific agent
+  async getAgent(agentId: string): Promise<Agent> {
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}`);
+    const data = await response.json();
+    return data.data;
+  }
+
+  // Control agent (start, stop, pause, restart)
+  async controlAgent(agentId: string, action: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}/control`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || `Failed to ${action} agent`);
+    }
+  }
+
+  // Update agent configuration
+  async updateAgentConfig(agentId: string, config: Partial<AgentConfig>): Promise<Agent> {
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}/config`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update agent configuration');
+    }
+
+    const data = await response.json();
+    return data.data;
+  }
+
+  // Delete/terminate an agent
+  async deleteAgent(agentId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete agent');
+    }
+  }
+
+  // Get agent logs
+  async getAgentLogs(agentId?: string, limit: number = 100): Promise<LogEntry[]> {
+    const url = agentId
+      ? `${API_BASE_URL}/agents/${agentId}/logs?limit=${limit}`
+      : `${API_BASE_URL}/agents/logs?limit=${limit}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.data || [];
+  }
+
+  // Get agent performance metrics
+  async getAgentPerformance(agentId: string, timeframe: string = '24h'): Promise<{
+    totalPnL: number;
+    winRate: number;
+    totalTrades: number;
+    profitFactor: number;
+    sharpeRatio: number;
+    maxDrawdown: number;
+    averageWin: number;
+    averageLoss: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}/performance?timeframe=${timeframe}`);
+    const data = await response.json();
+    return data.data;
+  }
+
+  // Get agent resource usage
+  async getAgentResources(agentId: string): Promise<{
+    cpu: number;
+    memory: number;
+    network: number;
+    latency: string;
+    uptime: string;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}/resources`);
+    const data = await response.json();
+    return data.data;
+  }
+
+  // Get available agent templates
+  async getAgentTemplates(): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    type: string;
+    defaultConfig: Partial<AgentConfig>;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/agents/templates`);
+    const data = await response.json();
+    return data.data || [];
+  }
+
+  // Validate agent configuration before spawning
+  async validateAgentConfig(config: Partial<AgentConfig>): Promise<{
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    resourceEstimate: {
+      cpu: string;
+      memory: string;
+      network: string;
+      latency: string;
+    };
+  }> {
+    const response = await fetch(`${API_BASE_URL}/agents/validate-config`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+
+    const data = await response.json();
+    return data.data;
+  }
+
+  // Advanced Analytics Methods
+
+  // Get strategy attribution data
+  async getStrategyAttribution(timeframe: string = '30d'): Promise<Array<{
+    strategy: string;
+    totalReturn: number;
+    sharpeRatio: number;
+    maxDrawdown: number;
+    winRate: number;
+    totalTrades: number;
+    profitFactor: number;
+    contribution: number;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/analytics/strategy-attribution?timeframe=${timeframe}`);
+    const data = await response.json();
+    return data.data || this.generateMockStrategyAttribution();
+  }
+
+  // Get market impact analysis
+  async getMarketImpact(timeframe: string = '30d'): Promise<Array<{
+    symbol: string;
+    tradeSize: number;
+    priceImpact: number;
+    executionCost: number;
+    timingCost: number;
+    totalCost: number;
+    efficiency: number;
+    benchmark: string;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/analytics/market-impact?timeframe=${timeframe}`);
+    const data = await response.json();
+    return data.data || this.generateMockMarketImpact();
+  }
+
+  // Get slippage analysis
+  async getSlippageAnalysis(symbol?: string, limit: number = 50): Promise<Array<{
+    symbol: string;
+    expectedPrice: number;
+    executionPrice: number;
+    slippage: number;
+    slippagePercent: number;
+    volume: number;
+    side: 'BUY' | 'SELL';
+    timestamp: string;
+    marketCondition: 'normal' | 'volatile' | 'thin';
+  }>> {
+    const params = new URLSearchParams();
+    if (symbol) params.append('symbol', symbol);
+    params.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/analytics/slippage-analysis?${params}`);
+    const data = await response.json();
+    return data.data || this.generateMockSlippageAnalysis();
+  }
+
+  // Get performance forecast
+  async getPerformanceForecast(): Promise<Array<{
+    period: string;
+    expectedReturn: number;
+    confidence: number;
+    volatility: number;
+    sharpeRatio: number;
+    maxDrawdown: number;
+    winProbability: number;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/analytics/performance-forecast`);
+    const data = await response.json();
+    return data.data || this.generateMockPerformanceForecast();
+  }
+
+  // Get revenue metrics
+  async getRevenueMetrics(timeframe: string = '6M'): Promise<Array<{
+    month: string;
+    tradingRevenue: number;
+    fees: number;
+    netRevenue: number;
+    activeStrategies: number;
+    totalVolume: number;
+    avgDailyReturn: number;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/analytics/revenue-metrics?timeframe=${timeframe}`);
+    const data = await response.json();
+    return data.data || this.generateMockRevenueMetrics();
+  }
+
+  // Mock data generators (fallback when API is not available)
+  private generateMockStrategyAttribution() {
+    const strategies = [
+      'Order Block Trading',
+      'Liquidity Sweep',
+      'Breakout Trading',
+      'Mean Reversion',
+      'Volatility Trading',
+      'Market Making'
+    ];
+
+    return strategies.map((strategy, index) => ({
+      strategy,
+      totalReturn: (Math.random() - 0.2) * 5000,
+      sharpeRatio: 0.5 + Math.random() * 2,
+      maxDrawdown: Math.random() * 15,
+      winRate: 60 + Math.random() * 20,
+      totalTrades: Math.floor(Math.random() * 100),
+      profitFactor: 1 + Math.random() * 2,
+      contribution: Math.random() * 100
+    }));
+  }
+
+  private generateMockMarketImpact() {
+    const symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT', 'SOLUSDT', 'DOTUSDT'];
+
+    return symbols.map(symbol => ({
+      symbol,
+      tradeSize: Math.random() * 1000000,
+      priceImpact: Math.random() * 0.005,
+      executionCost: Math.random() * 500,
+      timingCost: Math.random() * 200,
+      totalCost: Math.random() * 700,
+      efficiency: 0.7 + Math.random() * 0.3,
+      benchmark: 'VWAP'
+    }));
+  }
+
+  private generateMockSlippageAnalysis() {
+    const data = [];
+    const now = new Date();
+
+    for (let i = 0; i < 50; i++) {
+      const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
+      const expectedPrice = 40000 + Math.random() * 5000;
+      const actualPrice = expectedPrice * (1 + (Math.random() - 0.5) * 0.001);
+
+      data.push({
+        symbol: 'BTCUSDT',
+        tradeSize: Math.random() * 50000,
+        expectedPrice,
+        executionPrice: actualPrice,
+        slippage: side === 'BUY' ? actualPrice - expectedPrice : expectedPrice - actualPrice,
+        slippagePercent: Math.abs((actualPrice - expectedPrice) / expectedPrice) * 100,
+        volume: Math.random() * 1000000,
+        side,
+        timestamp: timestamp.toISOString(),
+        marketCondition: Math.random() > 0.7 ? 'volatile' : Math.random() > 0.5 ? 'thin' : 'normal'
+      });
+    }
+
+    return data;
+  }
+
+  private generateMockPerformanceForecast() {
+    const periods = ['Next Week', 'Next Month', 'Next Quarter', 'Next 6 Months'];
+
+    return periods.map(period => ({
+      period,
+      expectedReturn: (Math.random() - 0.3) * 10,
+      confidence: 0.6 + Math.random() * 0.3,
+      volatility: 5 + Math.random() * 10,
+      sharpeRatio: 0.5 + Math.random() * 2,
+      maxDrawdown: Math.random() * 20,
+      winProbability: 0.5 + Math.random() * 0.3
+    }));
+  }
+
+  private generateMockRevenueMetrics() {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const data = [];
+    let cumulativeRevenue = 10000;
+
+    months.forEach(month => {
+      const tradingRevenue = (Math.random() - 0.2) * 5000;
+      const fees = Math.abs(tradingRevenue) * 0.001;
+      const netRevenue = tradingRevenue - fees;
+
+      cumulativeRevenue += netRevenue;
+
+      data.push({
+        month,
+        tradingRevenue,
+        fees,
+        netRevenue,
+        activeStrategies: Math.floor(Math.random() * 5) + 2,
+        totalVolume: Math.random() * 10000000,
+        avgDailyReturn: (Math.random() - 0.3) * 2
+      });
+    });
+
+    return data;
   }
 }
 

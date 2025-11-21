@@ -91,13 +91,17 @@ const HistoricalAnalysis: React.FC = () => {
       const trend = i * 0.0003; // Upward trend
       const value = baseValue * (1 + trend + Math.sin(i * 0.1) * 0.05) * (1 + dailyReturn);
 
+      const maxValues = Array.from({ length: i + 1 }, (_, j) =>
+        baseValue * (1 + j * 0.0003 + Math.sin(j * 0.1) * 0.05)
+      );
+
+      const drawdownValue = Math.max(0, (Math.max(...maxValues) - value) / value * 100);
+
       return {
         date: baseDate.toISOString().split('T')[0],
         portfolio_value: value,
         returns: dailyReturn * 100,
-        drawdown: Math.max(0, (Math.max(...Array.from({ length: i + 1 }, (_, j) =>
-          baseValue * (1 + j * 0.0003 + Math.sin(j * 0.1) * 0.05)
-        ) - value) / value * 100),
+        drawdown: drawdownValue,
         sharpe_ratio: 1.2 + Math.random() * 0.8,
         volatility: 12 + Math.random() * 8,
         var_95: -1.5 - Math.random() * 2,

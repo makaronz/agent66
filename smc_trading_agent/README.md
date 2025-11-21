@@ -183,11 +183,23 @@ npm run test:all
 
 ## 🤝 Contributing
 
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Code of conduct
+- Development setup
+- Coding standards
+- Commit guidelines
+- Pull request process
+
+**Quick Start for Contributors**:
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+3. Make your changes following our [coding standards](CONTRIBUTING.md#coding-standards)
+4. Write tests for new features
+5. Commit with conventional commit format
+6. Open a Pull Request
+
+For detailed developer information, see the [Developer Guide](docs/DEVELOPER_GUIDE.md).
 
 ## 📝 Development Notes
 

@@ -7,21 +7,14 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService, type SMCPattern, type Trade, type OHLCVData } from '@/services/api';
-import {
-  Line,
-  ComposedChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine
-} from 'recharts';
+import AdvancedOrderTypes from '@/components/AdvancedOrderTypes';
+import CandlestickChart from '@/components/CandlestickChart';
+import { Button } from '@/components/ui/button';
 
 export default function TradingInterface() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
@@ -32,88 +25,52 @@ export default function TradingInterface() {
   const [stopLoss, setStopLoss] = useState('');
   const [takeProfit, setTakeProfit] = useState('');
   const [autoTrading, setAutoTrading] = useState(false);
-  
+  const [showAdvancedOrders, setShowAdvancedOrders] = useState(false);
+
   // Real data from API
   const [smcPatterns, setSmcPatterns] = useState<SMCPattern[]>([]);
   const [recentOrders, setRecentOrders] = useState<Trade[]>([]);
-  const [ohlcvData, setOhlcvData] = useState<OHLCVData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chartLoading, setChartLoading] = useState(true);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState('1h');
 
-  // Calculate appropriate limit based on timeframe
-  const getLimitForTimeframe = (tf: string): number => {
-    switch (tf) {
-      case '1m': return 60;      // 1 hour of data (60 candles)
-      case '5m': return 144;    // 12 hours of data (144 candles)
-      case '15m': return 96;    // 24 hours of data (96 candles)
-      case '1h': return 48;     // 2 days of data (48 candles)
-      case '4h': return 168;    // 28 days of data (168 candles)
-      case '1d': return 90;     // 3 months of data (90 candles)
-      default: return 100;
-    }
-  };
-
-  // Fetch SMC patterns, recent orders, and OHLCV data
+  // Fetch SMC patterns and recent orders
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setChartLoading(true);
-        const limit = getLimitForTimeframe(timeframe);
-        const [patterns, orders, ohlcv] = await Promise.all([
+        const [patterns, orders] = await Promise.all([
           apiService.getSMCPatterns(),
-          apiService.getTradingHistory(10, selectedSymbol),
-          apiService.getOHLCVData(selectedSymbol, timeframe, limit)
+          apiService.getTradingHistory(10, selectedSymbol)
         ]);
         setSmcPatterns(patterns);
         setRecentOrders(orders);
-        setOhlcvData(ohlcv);
       } catch (error) {
         console.error('Error fetching trading data:', error);
       } finally {
         setLoading(false);
-        setChartLoading(false);
       }
     };
 
     fetchData();
     // Refresh patterns every 30 seconds, orders every 10 seconds
-    // Chart refreshes automatically when timeframe or symbol changes via useEffect
     const patternsInterval = setInterval(() => {
       apiService.getSMCPatterns().then(setSmcPatterns).catch(console.error);
     }, 30000);
-    
+
     const ordersInterval = setInterval(() => {
       apiService.getTradingHistory(10, selectedSymbol).then(setRecentOrders).catch(console.error);
     }, 10000);
 
-    // Optional: Auto-refresh chart data every 60 seconds (only if timeframe/symbol haven't changed)
-    const chartInterval = setInterval(() => {
-      setChartLoading(true);
-      const limit = getLimitForTimeframe(timeframe);
-      apiService.getOHLCVData(selectedSymbol, timeframe, limit)
-        .then((data) => {
-          setOhlcvData(data);
-          setChartLoading(false);
-        })
-        .catch((error) => {
-          console.error('Error refreshing chart:', error);
-          setChartLoading(false);
-        });
-    }, 60000);
-
     return () => {
       clearInterval(patternsInterval);
       clearInterval(ordersInterval);
-      clearInterval(chartInterval);
     };
-  }, [selectedSymbol, timeframe]);
+  }, [selectedSymbol]);
 
   const handlePlaceOrder = async () => {
-    if (!quantity || !price) {
+    if (!quantity || (orderType === 'LIMIT' && !price)) {
       setOrderError('Please fill in quantity and price');
       return;
     }
@@ -125,7 +82,7 @@ export default function TradingInterface() {
       const trade = await apiService.executeTrade({
         symbol: selectedSymbol,
         action: orderSide,
-        price: parseFloat(price),
+        price: orderType === 'MARKET' ? 0 : parseFloat(price),
         size: parseFloat(quantity),
         reason: `Manual ${orderSide} order`,
         stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
@@ -160,6 +117,15 @@ export default function TradingInterface() {
           <p className="text-gray-600">Live SMC pattern detection and order management</p>
         </div>
         <div className="flex items-center space-x-4">
+          <Button
+            variant={showAdvancedOrders ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowAdvancedOrders(!showAdvancedOrders)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            {showAdvancedOrders ? 'Basic Orders' : 'Advanced Orders'}
+          </Button>
+
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Auto Trading</span>
             <button
@@ -168,6 +134,7 @@ export default function TradingInterface() {
                 "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
                 autoTrading ? "bg-green-600" : "bg-gray-200"
               )}
+              aria-label="Toggle auto trading"
             >
               <span
                 className={cn(
@@ -194,7 +161,7 @@ export default function TradingInterface() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* SMC Pattern Detection */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Chart Placeholder */}
+          {/* Chart */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex justify-between items-center">
@@ -226,146 +193,15 @@ export default function TradingInterface() {
                   <option value="1d">1 Day</option>
                 </select>
               </div>
-              {chartLoading ? (
-                <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4 animate-pulse" />
-                    <p className="text-gray-500">Loading chart data...</p>
-                  </div>
-                </div>
-              ) : ohlcvData.length === 0 ? (
-                <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No chart data available</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-96" key={`chart-${selectedSymbol}-${timeframe}`}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={ohlcvData
-                      .map(d => {
-                        const isUp = d.close >= d.open;
-                        const date = new Date(d.timestamp);
-                        let timeLabel: string;
-                        
-                        // Format time label based on timeframe
-                        if (timeframe === '1d') {
-                          timeLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        } else if (timeframe === '4h' || timeframe === '1h') {
-                          // For hourly timeframes, show date and time
-                          timeLabel = date.toLocaleString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          });
-                        } else {
-                          // For minute timeframes, show time only
-                          timeLabel = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        }
-                        
-                        return {
-                          time: timeLabel,
-                          timestamp: d.timestamp,
-                          fullTime: date.getTime(),
-                          open: d.open,
-                          high: d.high,
-                          low: d.low,
-                          close: d.close,
-                          volume: d.volume,
-                          isUp
-                        };
-                      })
-                      .sort((a, b) => a.fullTime - b.fullTime)}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="time" 
-                      stroke="#6b7280"
-                      fontSize={12}
-                      tick={{ fill: '#6b7280' }}
-                      interval="preserveStartEnd"
-                    />
-                      <YAxis 
-                        yAxisId="left"
-                        stroke="#6b7280"
-                        fontSize={12}
-                        tick={{ fill: '#6b7280' }}
-                        domain={['auto', 'auto']}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#1f2937',
-                          border: '1px solid #374151',
-                          borderRadius: '8px',
-                          color: '#f3f4f6'
-                        }}
-                        formatter={(value: any, name: string) => {
-                          if (['open', 'high', 'low', 'close'].includes(name)) {
-                            return [`$${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, name.toUpperCase()];
-                          }
-                          return [value, name];
-                        }}
-                      />
-                      {/* Candlestick visualization using Area and Line */}
-                      <Area
-                        dataKey="high"
-                        stroke="none"
-                        fill="none"
-                        yAxisId="left"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="high"
-                        stroke="#6b7280"
-                        strokeWidth={1}
-                        dot={false}
-                        yAxisId="left"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="low"
-                        stroke="#6b7280"
-                        strokeWidth={1}
-                        dot={false}
-                        yAxisId="left"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="close"
-                        stroke="#10b981"
-                        strokeWidth={2}
-                        dot={false}
-                        yAxisId="left"
-                        name="Close"
-                      />
-                      {/* SMC Pattern overlays */}
-                      {smcPatterns
-                        .filter(p => p.symbol === selectedSymbol)
-                        .map((pattern) => {
-                          const patternPrice = pattern.price || pattern.priceLevel || 0;
-                          const isBullish = pattern.direction?.toLowerCase() === 'bullish';
-                          return (
-                            <ReferenceLine
-                              key={pattern.id}
-                              y={patternPrice}
-                              yAxisId="left"
-                              stroke={isBullish ? '#10b981' : '#ef4444'}
-                              strokeDasharray="5 5"
-                              strokeWidth={2}
-                              label={{
-                                value: `${pattern.type?.replace('_', ' ') || 'Pattern'}`,
-                                position: 'right',
-                                fill: isBullish ? '#10b981' : '#ef4444',
-                                fontSize: 10
-                              }}
-                            />
-                          );
-                        })}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <CandlestickChart
+                symbol={selectedSymbol}
+                timeframe={timeframe}
+                height={384}
+                showVolume={true}
+                showGrid={true}
+                autoRefresh={true}
+                className="mt-4"
+              />
             </div>
           </div>
 
@@ -382,54 +218,46 @@ export default function TradingInterface() {
               ) : (
                 <div className="space-y-4">
                   {smcPatterns.map((pattern) => {
-                    // Normalize direction for display
                     const direction = pattern.direction?.toLowerCase() === 'bullish' ? 'Bullish' : 'Bearish';
-                    const price = pattern.price || pattern.priceLevel || 0;
+                    const price = pattern.price || 0;
                     const confidence = pattern.confidence || pattern.strength || 0;
-                    const detectedTime = pattern.timestamp 
-                      ? new Date(pattern.timestamp).toLocaleString() 
+                    const detectedTime = pattern.timestamp
+                      ? new Date(pattern.timestamp).toLocaleString()
                       : 'Just now';
-                    
+
                     return (
-                      <div key={pattern.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
+                      <div
+                        key={pattern.id}
+                        className={cn(
+                          "p-4 rounded-lg border",
+                          direction === 'Bullish'
+                            ? "bg-green-50 border-green-200"
+                            : "bg-red-50 border-red-200"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className={cn(
                               "w-3 h-3 rounded-full",
-                              direction === 'Bullish' ? "bg-green-500" : "bg-yellow-500"
+                              direction === 'Bullish' ? "bg-green-500" : "bg-red-500"
                             )} />
-                            <span className="font-medium text-gray-900">{pattern.symbol}</span>
-                            <span className="text-sm text-gray-500 capitalize">{pattern.type?.replace('_', ' ') || 'order_block'}</span>
-                            <span className={cn(
-                              "px-2 py-1 text-xs font-medium rounded",
-                              direction === 'Bullish' 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-red-100 text-red-800"
-                            )}>
-                              {direction}
-                            </span>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {pattern.type?.replace('_', ' ') || 'Unknown Pattern'}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {direction} • ${price.toFixed(2)}
+                              </div>
+                            </div>
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-medium text-gray-900">
-                              ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {confidence.toFixed(1)}% Confidence
                             </div>
-                            <div className="text-xs text-gray-500">1H</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center space-x-4">
-                            <span className="text-gray-500">Confidence:</span>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-20 bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
-                                  style={{ width: `${confidence * 100}%` }}
-                                />
-                              </div>
-                              <span className="text-gray-900">{(confidence * 100).toFixed(0)}%</span>
+                            <div className="text-xs text-gray-500">
+                              {detectedTime}
                             </div>
                           </div>
-                          <span className="text-gray-500">{detectedTime}</span>
                         </div>
                       </div>
                     );
@@ -440,71 +268,95 @@ export default function TradingInterface() {
           </div>
         </div>
 
-        {/* Order Management Panel */}
+        {/* Trading Panel */}
         <div className="space-y-6">
-          {/* Place Order */}
+          {/* Order Form */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Place Order</h3>
             </div>
             <div className="p-6 space-y-4">
               {/* Order Side */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setOrderSide('BUY')}
-                  className={cn(
-                    "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
-                    orderSide === 'BUY'
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  )}
-                >
-                  <TrendingUp className="h-4 w-4 inline mr-1" />
-                  BUY
-                </button>
-                <button
-                  onClick={() => setOrderSide('SELL')}
-                  className={cn(
-                    "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
-                    orderSide === 'SELL'
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  )}
-                >
-                  <TrendingDown className="h-4 w-4 inline mr-1" />
-                  SELL
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Order Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setOrderSide('BUY')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                      orderSide === 'BUY'
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => setOrderSide('SELL')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                      orderSide === 'SELL'
+                        ? "bg-red-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    Sell
+                  </button>
+                </div>
               </div>
 
-              {/* Order Type */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setOrderType('MARKET')}
-                  className={cn(
-                    "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
-                    orderType === 'MARKET'
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  )}
-                >
-                  Market
-                </button>
-                <button
-                  onClick={() => setOrderType('LIMIT')}
-                  className={cn(
-                    "flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors",
-                    orderType === 'LIMIT'
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  )}
-                >
-                  Limit
-                </button>
+              {/* Order Execution Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Execution Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setOrderType('MARKET')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                      orderType === 'MARKET'
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    Market
+                  </button>
+                  <button
+                    onClick={() => setOrderType('LIMIT')}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                      orderType === 'LIMIT'
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    Limit
+                  </button>
+                </div>
               </div>
+
+              {/* Price (only for limit orders) */}
+              {orderType === 'LIMIT' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price (USDT)
+                  </label>
+                  <input
+                    type="number"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter price"
+                  />
+                </div>
+              )}
 
               {/* Quantity */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Quantity
                 </label>
                 <input
@@ -512,75 +364,68 @@ export default function TradingInterface() {
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
+                  placeholder="Enter quantity"
                 />
               </div>
 
-              {/* Price (for limit orders) */}
-              {orderType === 'LIMIT' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price
-                  </label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0.00"
-                  />
+              {/* Stop Loss and Take Profit */}
+              {showAdvancedOrders && (
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Stop Loss (optional)
+                    </label>
+                    <input
+                      type="number"
+                      value={stopLoss}
+                      onChange={(e) => setStopLoss(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Stop loss price"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Take Profit (optional)
+                    </label>
+                    <input
+                      type="number"
+                      value={takeProfit}
+                      onChange={(e) => setTakeProfit(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Take profit price"
+                    />
+                  </div>
                 </div>
               )}
 
-              {/* Stop Loss */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Stop Loss
-                </label>
-                <input
-                  type="number"
-                  value={stopLoss}
-                  onChange={(e) => setStopLoss(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Optional"
-                />
-              </div>
-
-              {/* Take Profit */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Take Profit
-                </label>
-                <input
-                  type="number"
-                  value={takeProfit}
-                  onChange={(e) => setTakeProfit(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Optional"
-                />
-              </div>
-
-              {/* Error message */}
+              {/* Error Display */}
               {orderError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
-                  {orderError}
+                <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                  <p className="text-sm text-red-600">{orderError}</p>
                 </div>
               )}
 
-              {/* Place Order Button */}
+              {/* Submit Button */}
               <button
                 onClick={handlePlaceOrder}
-                disabled={orderLoading || !quantity || !price}
+                disabled={orderLoading}
                 className={cn(
-                  "w-full py-3 px-4 text-sm font-medium rounded-md transition-colors",
-                  orderLoading || !quantity || !price
-                    ? "bg-gray-400 cursor-not-allowed text-white"
+                  "w-full flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                  orderLoading
+                    ? "bg-gray-400 text-white cursor-not-allowed"
                     : orderSide === 'BUY'
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "bg-red-600 hover:bg-red-700 text-white"
                 )}
               >
-                {orderLoading ? 'Placing Order...' : `Place ${orderSide} Order`}
+                {orderLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Placing Order...
+                  </>
+                ) : (
+                  `${orderSide} ${selectedSymbol.replace('USDT', '/USDT')}`
+                )}
               </button>
             </div>
           </div>
@@ -597,53 +442,57 @@ export default function TradingInterface() {
                 <div className="text-center py-8 text-gray-500">No recent orders</div>
               ) : (
                 <div className="space-y-3">
-                  {recentOrders.map((order) => (
-                  <div key={order.id} className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{order.symbol}</span>
-                        <span className={cn(
-                          "px-2 py-1 text-xs font-medium rounded",
-                          order.side === 'BUY' 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-red-100 text-red-800"
-                        )}>
-                          {order.side}
-                        </span>
-                        <span className="text-xs text-gray-500">{order.type}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        {order.status === 'FILLED' ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : order.status === 'PENDING' ? (
-                          <Clock className="h-4 w-4 text-yellow-500" />
-                        ) : (
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                  {recentOrders.map((order) => {
+                    const isProfit = order.pnl && order.pnl > 0;
+                    return (
+                      <div
+                        key={order.id}
+                        className={cn(
+                          "p-3 rounded-lg border",
+                          order.action === 'BUY'
+                            ? "bg-green-50 border-green-200"
+                            : "bg-red-50 border-red-200"
                         )}
-                        <span className="text-xs text-gray-500">{order.status}</span>
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-500 space-y-1">
-                      <div>Qty: {order.size}</div>
-                      {order.price && <div>Price: ${order.price.toLocaleString()}</div>}
-                      {order.pnl !== undefined && (
-                        <div className={cn(
-                          order.pnl >= 0 ? "text-green-600" : "text-red-600"
-                        )}>
-                          P&L: ${order.pnl.toFixed(2)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {order.action} {order.symbol}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {order.size} @ ${order.price}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {order.pnl !== undefined && (
+                              <div className={cn(
+                                "text-sm font-medium",
+                                isProfit ? "text-green-600" : "text-red-600"
+                              )}>
+                                {isProfit ? '+' : ''}{order.pnl.toFixed(2)}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500">
+                              {new Date(order.timestamp).toLocaleTimeString()}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      <div>Time: {new Date(order.timestamp).toLocaleTimeString()}</div>
-                      {order.reason && <div className="text-gray-400 italic">{order.reason}</div>}
-                    </div>
-                  </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Advanced Orders Modal */}
+      {showAdvancedOrders && (
+        <AdvancedOrderTypes
+          onClose={() => setShowAdvancedOrders(false)}
+        />
+      )}
     </div>
   );
 }

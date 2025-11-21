@@ -20,11 +20,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
  * Import trading routes
  */
 import tradingRoutes from './routes/trading';
+import spawnRoutes from './routes/spawn';
+import serenaSpawnRoutes from './routes/serenaSpawn';
 
 /**
  * API Routes
  */
 app.use('/api/trading', tradingRoutes);
+app.use('/api/spawn', spawnRoutes);
+app.use('/api/serena-spawn', serenaSpawnRoutes);
 
 app.use('/api/auth', (req, res) => {
   console.log('Auth route accessed');

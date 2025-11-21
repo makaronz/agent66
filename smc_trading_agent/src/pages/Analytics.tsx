@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiService, type EquityPoint } from '@/services/api';
+import AdvancedAnalytics from '@/components/AdvancedAnalytics';
 import {
   Area,
   AreaChart,
@@ -144,9 +145,12 @@ const definitions = {
 export default function Analytics() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('1Y');
   const [,] = useState('All Strategies');
+  const [showAdvancedAnalytics, setShowAdvancedAnalytics] = useState(false);
   const [backtestRunning, setBacktestRunning] = useState(false);
   const [equityCurve, setEquityCurve] = useState<EquityPoint[]>([]);
   const [equityLoading, setEquityLoading] = useState(true);
+  const [performanceMetrics, setPerformanceMetrics] = useState<any>(null);
+  const [metricsLoading, setMetricsLoading] = useState(true);
 
   // Fetch equity curve data
   useEffect(() => {
@@ -167,6 +171,26 @@ export default function Analytics() {
     const interval = setInterval(fetchEquityCurve, 30000);
     return () => clearInterval(interval);
   }, [selectedTimeframe]);
+
+  // Fetch performance metrics
+  useEffect(() => {
+    const fetchPerformanceMetrics = async () => {
+      try {
+        setMetricsLoading(true);
+        const data = await apiService.getPerformanceMetrics();
+        setPerformanceMetrics(data);
+      } catch (error) {
+        console.error('Error fetching performance metrics:', error);
+      } finally {
+        setMetricsLoading(false);
+      }
+    };
+
+    fetchPerformanceMetrics();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchPerformanceMetrics, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRunBacktest = () => {
     setBacktestRunning(true);
@@ -195,6 +219,19 @@ export default function Analytics() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowAdvancedAnalytics(!showAdvancedAnalytics)}
+            className={cn(
+              "flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-colors",
+              showAdvancedAnalytics
+                ? "bg-green-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            )}
+          >
+            <BarChart3 className="h-4 w-4" />
+            <span>{showAdvancedAnalytics ? 'Basic Analytics' : 'Advanced Analytics'}</span>
+          </button>
+
           <select
             value={selectedTimeframe}
             onChange={(e) => setSelectedTimeframe(e.target.value)}
@@ -238,7 +275,13 @@ export default function Analytics() {
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-green-600">
-                  +{mockBacktestResults.totalReturn}%
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    <span>+{performanceMetrics.dailyReturn?.toFixed(2) || '0.00'}%</span>
+                  ) : (
+                    <span>+0.00%</span>
+                  )}
                 </dd>
               </dl>
             </div>
@@ -259,7 +302,13 @@ export default function Analytics() {
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {mockBacktestResults.sharpeRatio}
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    <span>{performanceMetrics.sharpeRatio?.toFixed(2) || '0.00'}</span>
+                  ) : (
+                    <span>0.00</span>
+                  )}
                 </dd>
               </dl>
             </div>
@@ -280,7 +329,13 @@ export default function Analytics() {
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-red-600">
-                  {mockBacktestResults.maxDrawdown}%
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    <span>{performanceMetrics.maxDrawdown?.toFixed(2) || '0.00'}%</span>
+                  ) : (
+                    <span>0.00%</span>
+                  )}
                 </dd>
               </dl>
             </div>
@@ -301,7 +356,13 @@ export default function Analytics() {
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-gray-900">
-                  {mockBacktestResults.winRate}%
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    <span>{performanceMetrics.winRate?.toFixed(1) || '0.0'}%</span>
+                  ) : (
+                    <span>0.0%</span>
+                  )}
                 </dd>
               </dl>
             </div>
@@ -485,7 +546,15 @@ export default function Analytics() {
           <div className="p-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{mockBacktestResults.totalTrades}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    performanceMetrics.totalTrades || 0
+                  ) : (
+                    0
+                  )}
+                </div>
                 <InfoTooltip content={definitions['Total Trades']}>
                   <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
                     Total Trades
@@ -494,7 +563,15 @@ export default function Analytics() {
                 </InfoTooltip>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">+{mockBacktestResults.avgTrade}%</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    <span>+{((performanceMetrics.totalPnL / (performanceMetrics.totalTrades || 1)) * 100)?.toFixed(2) || '0.00'}%</span>
+                  ) : (
+                    <span>+0.00%</span>
+                  )}
+                </div>
                 <InfoTooltip content={definitions['Avg Trade']}>
                   <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
                     Avg Trade
@@ -503,7 +580,15 @@ export default function Analytics() {
                 </InfoTooltip>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{mockBacktestResults.profitFactor}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {metricsLoading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : performanceMetrics ? (
+                    <span>{performanceMetrics.profitFactor?.toFixed(2) || '0.00'}</span>
+                  ) : (
+                    <span>0.00</span>
+                  )}
+                </div>
                 <InfoTooltip content={definitions['Profit Factor']}>
                   <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
                     Profit Factor
@@ -647,6 +732,13 @@ export default function Analytics() {
           </div>
         </div>
       </div>
+
+      {/* Advanced Analytics Section */}
+      {showAdvancedAnalytics && (
+        <div className="mt-6">
+          <AdvancedAnalytics />
+        </div>
+      )}
     </div>
   );
 }

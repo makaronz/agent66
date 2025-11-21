@@ -15,6 +15,8 @@ This comprehensive documentation suite provides complete coverage for the SMC Tr
 | **[USER_GUIDE.md](./USER_GUIDE.md)** | Comprehensive user manual and best practices | Traders, System Users | Comprehensive |
 | **[SECURITY_GUIDE.md](./SECURITY_GUIDE.md)** | Security implementation and best practices | Security Teams, Developers | Comprehensive |
 | **[QUICK_START.md](./QUICK_START.md)** | Fast setup guide for new users | New Users, Beginners | Quick Reference |
+| **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** | Comprehensive developer guide and codebase documentation | Developers, Contributors | Comprehensive |
+| **[../CONTRIBUTING.md](../CONTRIBUTING.md)** | Contribution guidelines and development standards | Contributors, Developers | Comprehensive |
 
 ## 🚀 Getting Started
 
@@ -26,9 +28,10 @@ This comprehensive documentation suite provides complete coverage for the SMC Tr
 
 ### For Developers
 
-1. **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Complete API reference and integration examples
-2. **[USER_GUIDE.md](./USER_GUIDE.md)** - Understanding system architecture and features
-3. **[SECURITY_GUIDE.md](./SECURITY_GUIDE.md)** - Secure development practices
+1. **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** - Comprehensive developer guide and codebase documentation
+2. **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Complete API reference and integration examples
+3. **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines and coding standards
+4. **[SECURITY_GUIDE.md](./SECURITY_GUIDE.md)** - Secure development practices
 
 ### For Operations Teams
 
@@ -47,7 +50,11 @@ docs/
 ├── USER_GUIDE.md               # Comprehensive user guide
 ├── SECURITY_GUIDE.md           # Security implementation guide
 ├── QUICK_START.md              # Quick setup guide
+├── DEVELOPER_GUIDE.md          # Developer guide and codebase documentation
 └── DOCUMENTATION_INDEX.md      # This file
+
+../
+└── CONTRIBUTING.md             # Contribution guidelines
 ```
 
 ## 🎯 Key Topics Covered
@@ -226,12 +233,13 @@ docs/
 
 ## 📊 Documentation Metrics
 
-- **Total Documents**: 7 core files
-- **Total Content**: ~50,000 words
-- **Code Examples**: 200+ examples
+- **Total Documents**: 9 core files
+- **Total Content**: ~65,000 words
+- **Code Examples**: 250+ examples
 - **Configuration Samples**: 50+ configurations
 - **Security Procedures**: 30+ procedures
 - **Troubleshooting Guides**: 100+ solutions
+- **Developer Guides**: 2 comprehensive guides
 
 ## 🔄 Maintenance Schedule
 

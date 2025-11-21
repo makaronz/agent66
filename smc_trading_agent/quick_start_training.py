@@ -191,25 +191,25 @@ Examples:
 
 def create_demo_config(args):
     """Create configuration for demo mode."""
-    config = {
-        'symbols': ['BTCUSDT'],
-        'exchanges': ['binance'],
-        'timeframes': ['5m', '15m'],
-        'start_date': (datetime.now() - timedelta(days=args.days)).isoformat(),
-        'end_date': datetime.now().isoformat(),
-        'data_dir': './demo_data',
-        'test_size': 0.2,
-        'validation_size': 0.2,
-        'batch_size': args.batch_size,
-        'learning_rate': args.learning_rate,
-        'epochs': min(args.epochs, 20),  # Reduce epochs for demo
-        'early_stopping_patience': 5,
-        'min_accuracy': max(args.min_accuracy, 0.4),  # Lower threshold for demo
-        'device': args.device,
-        'model_dir': args.output_dir,
-        'random_seed': 42,
-        'demo_mode': True
-    }
+    config = create_training_config(
+        symbols=['BTCUSDT'],
+        exchanges=['binance'],
+        timeframes=['5m', '15m'],
+        start_date=datetime.now() - timedelta(days=args.days),
+        end_date=datetime.now(),
+        data_dir='./demo_data',
+        test_size=0.2,
+        validation_size=0.2,
+        batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
+        epochs=min(args.epochs, 20),  # Reduce epochs for demo
+        early_stopping_patience=5,
+        min_accuracy=max(args.min_accuracy, 0.4),  # Lower threshold for demo
+        device=args.device,
+        model_dir=args.output_dir,
+        random_seed=42,
+        num_workers=args.workers
+    )
 
     return config
 
@@ -218,32 +218,32 @@ def create_real_config(args):
     """Create configuration for real training."""
     # Calculate date range
     if args.months:
-        start_date = (datetime.now() - timedelta(days=args.months * 30))
+        start_date = datetime.now() - timedelta(days=args.months * 30)
     else:
-        start_date = (datetime.now() - timedelta(days=args.days))
+        start_date = datetime.now() - timedelta(days=args.days)
 
     # Clean symbol names
     symbols = [s.replace('/', '') for s in args.symbols]
 
-    config = {
-        'symbols': symbols,
-        'exchanges': args.exchanges,
-        'timeframes': args.timeframes,
-        'start_date': start_date.isoformat(),
-        'end_date': datetime.now().isoformat(),
-        'data_dir': './historical_data',
-        'test_size': 0.2,
-        'validation_size': 0.2,
-        'batch_size': args.batch_size,
-        'learning_rate': args.learning_rate,
-        'epochs': args.epochs,
-        'early_stopping_patience': 15,
-        'min_accuracy': args.min_accuracy,
-        'device': args.device,
-        'model_dir': args.output_dir,
-        'random_seed': 42,
-        'demo_mode': False
-    }
+    config = create_training_config(
+        symbols=symbols,
+        exchanges=args.exchanges,
+        timeframes=args.timeframes,
+        start_date=start_date,
+        end_date=datetime.now(),
+        data_dir='./historical_data',
+        test_size=0.2,
+        validation_size=0.2,
+        batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
+        epochs=args.epochs,
+        early_stopping_patience=15,
+        min_accuracy=args.min_accuracy,
+        device=args.device,
+        model_dir=args.output_dir,
+        random_seed=42,
+        num_workers=args.workers
+    )
 
     return config
 
@@ -252,7 +252,16 @@ def load_custom_config(config_path):
     """Load configuration from JSON file."""
     try:
         with open(config_path, 'r') as f:
-            config = json.load(f)
+            config_dict = json.load(f)
+        
+        # Convert ISO date strings to datetime objects if present
+        if 'start_date' in config_dict and isinstance(config_dict['start_date'], str):
+            config_dict['start_date'] = datetime.fromisoformat(config_dict['start_date'].replace('Z', '+00:00'))
+        if 'end_date' in config_dict and isinstance(config_dict['end_date'], str):
+            config_dict['end_date'] = datetime.fromisoformat(config_dict['end_date'].replace('Z', '+00:00'))
+        
+        # Create TrainingConfig object
+        config = create_training_config(**config_dict)
         logger.info(f"Loaded configuration from {config_path}")
         return config
     except Exception as e:
@@ -280,14 +289,14 @@ def create_training_pipeline(args):
             logging.getLogger().setLevel(logging.DEBUG)
 
         logger.info(f"Training configuration:")
-        logger.info(f"  Symbols: {config['symbols']}")
-        logger.info(f"  Exchanges: {config['exchanges']}")
-        logger.info(f"  Timeframes: {config['timeframes']}")
-        logger.info(f"  Data period: {config['start_date']} to {config['end_date']}")
-        logger.info(f"  Epochs: {config['epochs']}")
-        logger.info(f"  Batch size: {config['batch_size']}")
-        logger.info(f"  Device: {config['device']}")
-        logger.info(f"  Output dir: {config['model_dir']}")
+        logger.info(f"  Symbols: {config.symbols}")
+        logger.info(f"  Exchanges: {config.exchanges}")
+        logger.info(f"  Timeframes: {config.timeframes}")
+        logger.info(f"  Data period: {config.start_date} to {config.end_date}")
+        logger.info(f"  Epochs: {config.epochs}")
+        logger.info(f"  Batch size: {config.batch_size}")
+        logger.info(f"  Device: {config.device}")
+        logger.info(f"  Output dir: {config.model_dir}")
 
         # Create pipeline
         pipeline = SMCTrainingPipeline(config)
