@@ -1,0 +1,213 @@
+{
+  "deployment_stage": "production",
+  "environment": "production",
+  "fallback_to_heuristic": true,
+  "cache_enabled": true,
+  "cache_ttl_seconds": 30,
+  "max_concurrent_inferences": 10,
+  "target_inference_time_ms": 20.0,
+  "target_accuracy": 0.65,
+  "max_memory_usage_percent": 80.0,
+
+  "lstm_config": {
+    "enabled": true,
+    "weight": 0.35,
+    "model_path": "models/trained/lstm_model.pth",
+    "inference_timeout_ms": 50,
+    "max_memory_mb": 1024,
+    "batch_size": 32,
+    "sequence_length": 60,
+    "confidence_threshold": 0.65,
+    "input_features": ["price", "volume", "rsi", "macd", "bb_position"],
+    "output_features": ["signal_strength", "confidence", "direction"],
+    "normalization": "z_score",
+    "device": "cuda"
+  },
+
+  "transformer_config": {
+    "enabled": true,
+    "weight": 0.40,
+    "model_path": "models/trained/transformer_model.pth",
+    "inference_timeout_ms": 50,
+    "max_memory_mb": 1024,
+    "batch_size": 32,
+    "sequence_length": 60,
+    "confidence_threshold": 0.65,
+    "num_heads": 8,
+    "num_layers": 6,
+    "hidden_size": 512,
+    "dropout": 0.1,
+    "attention_dropout": 0.1,
+    "device": "cuda"
+  },
+
+  "ppo_config": {
+    "enabled": true,
+    "weight": 0.25,
+    "model_path": "models/trained/ppo_model.pth",
+    "inference_timeout_ms": 50,
+    "max_memory_mb": 1024,
+    "batch_size": 32,
+    "sequence_length": 60,
+    "confidence_threshold": 0.65,
+    "learning_rate": 0.0001,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip_ratio": 0.2,
+    "value_loss_coef": 0.5,
+    "entropy_coef": 0.01,
+    "max_grad_norm": 0.5,
+    "device": "cuda"
+  },
+
+  "training_config": {
+    "enabled": false,
+    "auto_retrain": true,
+    "retrain_interval_hours": 24,
+    "min_samples": 1000,
+    "validation_split": 0.2,
+    "max_epochs": 100,
+    "early_stopping_patience": 10,
+    "save_best_only": true,
+    "performance_threshold": 0.60,
+    "drift_threshold": 0.10,
+    "data_retention_days": 30,
+    "backup_models": true,
+    "model_validation": true
+  },
+
+  "ab_test_config": {
+    "enabled": false,
+    "test_name": "",
+    "variant_a_weight": 0.5,
+    "variant_b_weight": 0.5,
+    "min_sample_size": 100,
+    "test_duration_days": 14,
+    "significance_level": 0.05,
+    "metrics": ["accuracy", "profit_pct", "sharpe_ratio", "max_drawdown"],
+    "statistical_tests": ["t_test", "mann_whitney", "bootstrap"]
+  },
+
+  "monitoring_config": {
+    "enabled": true,
+    "inference_time_alert_ms": 25.0,
+    "accuracy_alert_threshold": 0.55,
+    "drift_detection_enabled": true,
+    "performance_window_hours": 24,
+    "alert_recipients": ["trader@example.com"],
+    "metrics_collection_interval": 60,
+    "prometheus_metrics": true,
+    "detailed_logging": true,
+    "model_explainability": true,
+    "fairness_monitoring": true
+  },
+
+  "ensemble_config": {
+    "voting_method": "weighted_average",
+    "confidence_combination": "weighted_product",
+    "conflict_resolution": "highest_confidence",
+    "min_voter_agreement": 0.6,
+    "outlier_detection": true,
+    "outlier_threshold": 2.0,
+    "calibration_enabled": true,
+    "calibration_method": "isotonic_regression",
+    "calibration_update_interval": 168
+  },
+
+  "data_config": {
+    "feature_engineering": {
+      "technical_indicators": ["rsi", "macd", "bb", "sto", "adx", "cci"],
+      "volume_indicators": ["obv", "vwap", "volume_profile"],
+      "market_features": ["volatility", "trend", "momentum", "mean_reversion"],
+      "time_features": ["hour_of_day", "day_of_week", "month", "quarter"],
+      "price_features": ["returns", "log_returns", "price_ratios"]
+    },
+    "preprocessing": {
+      "missing_value_strategy": "interpolation",
+      "outlier_detection": true,
+      "outlier_method": "iqr",
+      "normalization": "z_score",
+      "feature_selection": true,
+      "feature_selection_method": "mutual_info",
+      "dimensionality_reduction": false
+    },
+    "data_quality": {
+      "validation_enabled": true,
+      "min_data_quality_score": 0.8,
+      "price_change_limit": 0.20,
+      "volume_anomaly_detection": true,
+      "gap_detection": true,
+      "duplicate_detection": true
+    }
+  },
+
+  "performance_config": {
+    "optimization": {
+      "model_quantization": true,
+      "model_pruning": false,
+      "knowledge_distillation": false,
+      "tensorrt_optimization": true,
+      "batch_inference": true,
+      "parallel_execution": true,
+      "gpu_optimization": true
+    },
+    "caching": {
+      "model_cache": true,
+      "prediction_cache": true,
+      "feature_cache": true,
+      "cache_ttl_seconds": 300,
+      "max_cache_size_mb": 512
+    },
+    "resource_management": {
+      "auto_scaling": true,
+      "memory_monitoring": true,
+      "cpu_monitoring": true,
+      "gpu_monitoring": true,
+      "load_balancing": true
+    }
+  },
+
+  "security_config": {
+    "model_encryption": true,
+    "data_encryption": true,
+    "access_control": true,
+    "audit_logging": true,
+    "model_versioning": true,
+    "rollback_enabled": true,
+    "security_scan": true,
+    "vulnerability_check": true
+  },
+
+  "compliance_config": {
+    "model_explainability": true,
+    "regulatory_compliance": true,
+    "audit_trail": true,
+    "documentation": true,
+    "model_risk_assessment": true,
+    "fairness_assessment": true,
+    "bias_detection": true,
+    "transparency_reporting": true
+  },
+
+  "backup_config": {
+    "model_backup": true,
+    "config_backup": true,
+    "data_backup": true,
+    "backup_frequency": "daily",
+    "backup_retention": 30,
+    "backup_encryption": true,
+    "backup_validation": true,
+    "disaster_recovery": true
+  },
+
+  "testing_config": {
+    "unit_tests": true,
+    "integration_tests": true,
+    "performance_tests": true,
+    "load_tests": true,
+    "stress_tests": true,
+    "regression_tests": true,
+    "a_b_testing": false,
+    "canary_deployment": true
+  }
+}

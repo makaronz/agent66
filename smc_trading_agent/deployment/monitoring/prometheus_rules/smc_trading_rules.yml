@@ -1,0 +1,374 @@
+# =============================================================================
+# Prometheus Alert Rules for SMC Trading Agent
+# =============================================================================
+
+groups:
+  # =============================================================================
+  # SYSTEM HEALTH ALERTS
+  # =============================================================================
+  - name: smc_system_health
+    rules:
+      - alert: SystemDown
+        expr: up{job="smc-trading-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: smc-trading-agent
+        annotations:
+          summary: "SMC Trading Agent is down"
+          description: "SMC Trading Agent has been down for more than 1 minute"
+
+      - alert: HighCPUUsage
+        expr: rate(cpu_usage_total[5m]) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          service: smc-trading-agent
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes"
+
+      - alert: HighMemoryUsage
+        expr: (memory_usage_bytes / memory_total_bytes) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: smc-trading-agent
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 5 minutes"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.10
+        for: 5m
+        labels:
+          severity: warning
+          service: smc-trading-agent
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10%"
+
+  # =============================================================================
+  # APPLICATION PERFORMANCE ALERTS
+  # =============================================================================
+  - name: smc_application_performance
+    rules:
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: smc-trading-agent
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile latency is above 50ms for more than 2 minutes"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: smc-trading-agent
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for more than 2 minutes"
+
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          service: smc-trading-agent
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "Circuit breaker has opened for {{ $labels.service }}"
+
+  # =============================================================================
+  # DATABASE PERFORMANCE ALERTS
+  # =============================================================================
+  - name: smc_database_health
+    rules:
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgres
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL database has been down for more than 1 minute"
+
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: "High database connection count"
+          description: "Database has more than 80 active connections"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is above 100ms"
+
+  # =============================================================================
+  # REDIS PERFORMANCE ALERTS
+  # =============================================================================
+  - name: smc_redis_health
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis cache has been down for more than 1 minute"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage is above 90%"
+
+      - alert: RedisConnectionErrors
+        expr: rate(redis_connections_failed_total[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis connection errors"
+          description: "Redis connection error rate is above 1%"
+
+  # =============================================================================
+  # TRADING PERFORMANCE ALERTS
+  # =============================================================================
+  - name: smc_trading_performance
+    rules:
+      - alert: TradingHalted
+        expr: trading_status{status="halted"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          service: trading-engine
+        annotations:
+          summary: "Trading has been halted"
+          description: "Trading system has been halted due to {{ $labels.reason }}"
+
+      - alert: OrderExecutionDelay
+        expr: histogram_quantile(0.95, rate(order_execution_duration_seconds_bucket[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: trading-engine
+        annotations:
+          summary: "Order execution delay"
+          description: "95th percentile order execution time is above 50ms"
+
+      - alert: HighOrderFailureRate
+        expr: rate(orders_failed_total[5m]) / rate(orders_total[5m]) > 0.02
+        for: 2m
+        labels:
+          severity: warning
+          service: trading-engine
+        annotations:
+          summary: "High order failure rate"
+          description: "Order failure rate is above 2%"
+
+  # =============================================================================
+  # RISK MANAGEMENT ALERTS
+  # =============================================================================
+  - name: smc_risk_management
+    rules:
+      - alert: DailyLossLimitExceeded
+        expr: daily_loss_percent > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          service: risk-management
+        annotations:
+          summary: "Daily loss limit exceeded"
+          description: "Daily loss has exceeded 5% limit"
+
+      - alert: MaxDrawdownExceeded
+        expr: max_drawdown_percent > 0.20
+        for: 1m
+        labels:
+          severity: critical
+          service: risk-management
+        annotations:
+          summary: "Maximum drawdown exceeded"
+          description: "Maximum drawdown has exceeded 20% limit"
+
+      - alert: PositionSizeLimitExceeded
+        expr: position_size_percent > 0.05
+        for: 1m
+        labels:
+          severity: warning
+          service: risk-management
+        annotations:
+          summary: "Position size limit exceeded"
+          description: "Position size has exceeded 5% limit"
+
+      - alert: ConsecutiveLossesHigh
+        expr: consecutive_losses > 5
+        for: 1m
+        labels:
+          severity: warning
+          service: risk-management
+        annotations:
+          summary: "High consecutive losses"
+          description: "More than 5 consecutive losses detected"
+
+  # =============================================================================
+  # ML MODEL PERFORMANCE ALERTS
+  # =============================================================================
+  - name: smc_ml_performance
+    rules:
+      - alert: MLModelDrift
+        expr: ml_model_accuracy < 0.60
+        for: 5m
+        labels:
+          severity: warning
+          service: ml-models
+        annotations:
+          summary: "ML model performance drift detected"
+          description: "ML model accuracy has dropped below 60%"
+
+      - alert: MLInferenceSlow
+        expr: histogram_quantile(0.95, rate(ml_inference_duration_seconds_bucket[5m])) > 0.025
+        for: 2m
+        labels:
+          severity: warning
+          service: ml-models
+        annotations:
+          summary: "ML inference is slow"
+          description: "95th percentile ML inference time is above 25ms"
+
+      - alert: MLModelUnavailable
+        expr: ml_model_available{model=~".*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ml-models
+        annotations:
+          summary: "ML model unavailable"
+          description: "ML model {{ $labels.model }} is unavailable"
+
+  # =============================================================================
+  # EXCHANGE API ALERTS
+  # =============================================================================
+  - name: smc_exchange_apis
+    rules:
+      - alert: ExchangeAPIError
+        expr: rate(exchange_api_errors_total[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          service: exchange-api
+        annotations:
+          summary: "Exchange API errors"
+          description: "Exchange API error rate is above 1% for {{ $labels.exchange }}"
+
+      - alert: ExchangeRateLimitExceeded
+        expr: exchange_rate_limit_exceeded_total > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: exchange-api
+        annotations:
+          summary: "Exchange rate limit exceeded"
+          description: "Rate limit has been exceeded for {{ $labels.exchange }}"
+
+      - alert: ExchangeConnectionFailed
+        expr: exchange_connection_status{status="failed"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          service: exchange-api
+        annotations:
+          summary: "Exchange connection failed"
+          description: "Connection to {{ $labels.exchange }} has failed"
+
+  # =============================================================================
+  # BUSINESS METRICS ALERTS
+  # =============================================================================
+  - name: smc_business_metrics
+    rules:
+      - alert: NoNewTrades
+        expr: increase(trades_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+          service: trading-business
+        annotations:
+          summary: "No new trades in the last hour"
+          description: "No new trades have been executed in the last hour"
+
+      - alert: LowTradingVolume
+        expr: rate(trading_volume_usd[1h]) < 1000
+        for: 2h
+        labels:
+          severity: warning
+          service: trading-business
+        annotations:
+          summary: "Low trading volume"
+          description: "Trading volume is below $1000/hour"
+
+      - alert: NegativeProfitTrend
+        expr: rate(profit_loss_usd[4h]) < 0
+        for: 4h
+        labels:
+          severity: warning
+          service: trading-business
+        annotations:
+          summary: "Negative profit trend"
+          description: "Negative profit trend detected over the last 4 hours"
+
+  # =============================================================================
+  # SECURITY ALERTS
+  # =============================================================================
+  - name: smc_security
+    rules:
+      - alert: UnauthorizedAccess
+        expr: increase(unauthorized_access_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Unauthorized access detected"
+          description: "Unauthorized access attempts detected"
+
+      - alert: BruteForceAttack
+        expr: rate(failed_login_attempts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Brute force attack detected"
+          description: "High rate of failed login attempts detected"
+
+      - alert: SuspiciousActivity
+        expr: increase(suspicious_activity_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Suspicious activity has been detected"

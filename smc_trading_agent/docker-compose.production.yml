@@ -1,0 +1,516 @@
+# =============================================================================
+# SMC Trading Agent - Production Docker Compose Configuration
+# =============================================================================
+version: '3.8'
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  smc-production:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/postgresql/data
+
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/redis/data
+
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/prometheus/data
+
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/grafana/data
+
+  logs_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs
+
+  models_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./models
+
+# =============================================================================
+# SERVICES
+# =============================================================================
+services:
+  # =============================================================================
+  # MAIN TRADING APPLICATION
+  # =============================================================================
+  smc-trading-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: smc-trading-agent-prod
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+    # Environment variables
+    environment:
+      # Application settings
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      - TRADING_MODE=real
+
+      # Exchange API keys
+      - BINANCE_API_KEY=${BINANCE_API_KEY}
+      - BINANCE_API_SECRET=${BINANCE_API_SECRET}
+      - BYBIT_API_KEY=${BYBIT_API_KEY}
+      - BYBIT_API_SECRET=${BYBIT_API_SECRET}
+      - OANDA_API_KEY=${OANDA_API_KEY}
+      - OANDA_ACCOUNT_ID=${OANDA_ACCOUNT_ID}
+
+      # Database configuration
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=smc_trading_production
+      - DB_USER=smc_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_POOL_SIZE=20
+      - DB_MAX_OVERFLOW=50
+
+      # Redis configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=0
+      - REDIS_POOL_SIZE=10
+
+      # Security
+      - JWT_SECRET=${JWT_SECRET}
+
+      # Monitoring
+      - GRAFANA_USER=${GRAFANA_USER}
+      - GRAFANA_PASSWORD=${GRAFANA_PASSWORD}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+
+      # Performance
+      - TARGET_LATENCY_MS=50
+      - THREAD_POOL_SIZE=8
+      - ASYNC_TIMEOUT_SECONDS=30
+
+      # Risk management
+      - MAX_POSITION_SIZE_PERCENT=5.0
+      - MAX_DAILY_LOSS_PERCENT=5.0
+      - MAX_DRAWDOWN_PERCENT=20.0
+      - CIRCUIT_BREAKER_ENABLED=true
+
+      # ML Configuration
+      - MODEL_DIRECTORY=/app/models
+      - DEPLOYMENT_STAGE=production
+      - MAX_CONCURRENT_INFERENCES=10
+      - CONFIDENCE_THRESHOLD=0.65
+      - DRIFT_DETECTION_ENABLED=true
+
+    # Port mapping
+    ports:
+      - "8000:8000"  # Main API port
+      - "8080:8080"  # Health check port
+
+    # Volume mounts
+    volumes:
+      - logs_volume:/app/logs
+      - models_volume:/app/models
+      - ./config.production.yaml:/app/config.yaml:ro
+      - ./config/ml_config.json:/app/config/ml_config.json:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Service dependencies
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    # Network
+    networks:
+      - smc-production
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  # =============================================================================
+  # POSTGRESQL WITH TIMESCALEDB
+  # =============================================================================
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: smc-postgres-prod
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+    # Environment variables
+    environment:
+      - POSTGRES_DB=smc_trading_production
+      - POSTGRES_USER=smc_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+
+    # Port mapping
+    ports:
+      - "5432:5432"
+
+    # Volume mounts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployment/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+      - ./deployment/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smc_user -d smc_trading_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Network
+    networks:
+      - smc-production
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    user: "999:999"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # =============================================================================
+  # REDIS CACHE
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: smc-redis-prod
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+    # Command with security settings
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --tcp-keepalive 300
+
+    # Port mapping
+    ports:
+      - "6379:6379"
+
+    # Volume mounts
+    volumes:
+      - redis_data:/data
+      - ./deployment/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+    # Network
+    networks:
+      - smc-production
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    user: "999:999"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # =============================================================================
+  # PROMETHEUS METRICS
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: smc-prometheus-prod
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+    # Port mapping
+    ports:
+      - "9090:9090"
+
+    # Volume mounts
+    volumes:
+      - prometheus_data:/prometheus
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deployment/prometheus_rules:/etc/prometheus/rules:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # Network
+    networks:
+      - smc-production
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    user: "65534:65534"
+
+    # Command line arguments
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.external-url=http://localhost:9090'
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # =============================================================================
+  # GRAFANA DASHBOARD
+  # =============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: smc-grafana-prod
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    # Environment variables
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SERVER_HTTP_PORT=3000
+      - GF_LOG_MODE=console
+      - GF_LOG_LEVEL=info
+
+    # Port mapping
+    ports:
+      - "3000:3000"
+
+    # Volume mounts
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # Network
+    networks:
+      - smc-production
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    user: "472:0"
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # =============================================================================
+  # NGINX REVERSE PROXY (OPTIONAL)
+  # =============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: smc-nginx-prod
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    # Port mapping
+    ports:
+      - "80:80"
+      - "443:443"
+
+    # Volume mounts
+    volumes:
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployment/nginx/ssl:/etc/nginx/ssl:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # Service dependencies
+    depends_on:
+      - smc-trading-agent
+      - grafana
+      - prometheus
+
+    # Network
+    networks:
+      - smc-production
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+# =============================================================================
+# SECRETS MANAGEMENT (OPTIONAL - FOR PRODUCTION)
+# =============================================================================
+# Uncomment this section if using external secrets management
+# secrets:
+#   db_password:
+#     external: true
+#   redis_password:
+#     external: true
+#   jwt_secret:
+#     external: true
+#   binance_api_key:
+#     external: true
+#   binance_api_secret:
+#     external: true
+
+# =============================================================================
+# DEPLOYMENT CONFIGURATION
+# =============================================================================
+# Use this for swarm mode deployment:
+# docker stack deploy -c docker-compose.production.yml smc-trading
+
+# Use this for regular deployment:
+# docker-compose -f docker-compose.production.yml up -d
+
+# Environment variables must be provided via:
+# 1. .env file
+# 2. External secrets manager
+# 3. Docker secrets (in swarm mode)
+# 4. Runtime environment variables

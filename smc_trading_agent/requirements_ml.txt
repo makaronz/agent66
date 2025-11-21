@@ -1,0 +1,56 @@
+# SMC ML Training System Requirements
+# Smart Money Concepts Trading Agent - Machine Learning Dependencies
+
+# Core ML Frameworks
+torch>=2.0.0
+torchvision>=0.15.0
+scikit-learn>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Financial Analysis
+TA-Lib>=0.4.25
+yfinance>=0.2.18
+talib-binary>=0.4.19
+
+# Data Processing & Storage
+pyarrow>=12.0.0
+aiofiles>=23.1.0
+aiohttp>=3.8.0
+requests>=2.31.0
+
+# Async & Concurrency
+asyncio
+
+# Visualization & Analysis
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# Utilities & Development
+tqdm>=4.65.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Optional GPU Support (uncomment if needed)
+# torch-audio>=2.0.0
+# torchaudio>=2.0.0
+
+# System Requirements Installation Instructions:
+#
+# For TA-Lib (macOS):
+#   brew install ta-lib
+#
+# For TA-Lib (Ubuntu/Debian):
+#   sudo apt-get install -y build-essential
+#   wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+#   tar -xzf ta-lib-0.4.0-src.tar.gz
+#   cd ta-lib/
+#   ./configure --prefix=/usr
+#   make
+#   sudo make install
+#
+# For TA-Lib (Windows):
+#   Download and install from: https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib

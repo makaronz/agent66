@@ -35,7 +35,19 @@ __all__ = [
     'get_training_pipeline',
     'get_rl_environment',
     '__version__',
-    '__description__'
+    '__description__',
+    # SMC ML Training Components
+    'HistoricalDataCollector',
+    'DataCollectionConfig',
+    'create_data_collection_config',
+    'SMCPatternLabeler',
+    'LabelingConfig',
+    'create_labeling_config',
+    'SMCFeatureEngineer',
+    'FeatureConfig',
+    'create_feature_config',
+    'SMCTrainingPipeline',
+    'create_training_config'
 ]
 
 def get_training_pipeline():

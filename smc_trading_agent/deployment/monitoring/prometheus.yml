@@ -1,0 +1,194 @@
+# =============================================================================
+# Prometheus Configuration for SMC Trading Agent
+# =============================================================================
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    service: 'smc-trading-agent'
+
+# =============================================================================
+# RULE FILES
+# =============================================================================
+rule_files:
+  - "rules/*.yml"
+
+# =============================================================================
+# ALERTMANAGER CONFIGURATION
+# =============================================================================
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# =============================================================================
+# SCRAPE CONFIGURATIONS
+# =============================================================================
+scrape_configs:
+  # =============================================================================
+  # PROMETHEUS SELF-MONITORING
+  # =============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # =============================================================================
+  # SMC TRADING AGENT MAIN APPLICATION
+  # =============================================================================
+  - job_name: 'smc-trading-agent'
+    static_configs:
+      - targets: ['smc-trading-agent:8000']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    scrape_timeout: 10s
+
+    # Relabeling for better metric organization
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'smc-trading-agent'
+
+  # =============================================================================
+  # POSTGRESQL DATABASE METRICS
+  # =============================================================================
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+    # Use postgres_exporter if available
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-database'
+
+  # =============================================================================
+  # REDIS CACHE METRICS
+  # =============================================================================
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis-cache'
+
+  # =============================================================================
+  # GRAFANA MONITORING
+  # =============================================================================
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'grafana-dashboard'
+
+  # =============================================================================
+  # NODE EXPORTER (SYSTEM METRICS)
+  # =============================================================================
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'system-metrics'
+
+  # =============================================================================
+  # EXCHANGE API MONITORING
+  # =============================================================================
+  - job_name: 'exchange-apis'
+    static_configs:
+      - targets: ['smc-trading-agent:8000']
+    scrape_interval: 60s
+    metrics_path: '/api/v1/metrics/exchanges'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'exchange-monitor'
+
+  # =============================================================================
+  # ML MODEL PERFORMANCE METRICS
+  # =============================================================================
+  - job_name: 'ml-models'
+    static_configs:
+      - targets: ['smc-trading-agent:8000']
+    scrape_interval: 30s
+    metrics_path: '/api/v1/metrics/ml'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'ml-models'
+
+  # =============================================================================
+  # RISK MANAGEMENT METRICS
+  # =============================================================================
+  - job_name: 'risk-management'
+    static_configs:
+      - targets: ['smc-trading-agent:8000']
+    scrape_interval: 15s
+    metrics_path: '/api/v1/metrics/risk'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'risk-management'
+
+  # =============================================================================
+  # TRADING PERFORMANCE METRICS
+  # =============================================================================
+  - job_name: 'trading-performance'
+    static_configs:
+      - targets: ['smc-trading-agent:8000']
+    scrape_interval: 60s
+    metrics_path: '/api/v1/metrics/trading'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'trading-performance'
+
+  # =============================================================================
+  # NETWORK PERFORMANCE METRICS
+  # =============================================================================
+  - job_name: 'network-performance'
+    static_configs:
+      - targets: ['smc-trading-agent:8000']
+    scrape_interval: 30s
+    metrics_path: '/api/v1/metrics/network'
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'network-performance'
+
+# =============================================================================
+# REMOTE WRITE CONFIGURATION (Optional)
+# =============================================================================
+# Uncomment for long-term storage in remote systems
+# remote_write:
+#   - url: "https://your-remote-storage/api/v1/write"
+#     basic_auth:
+#       username: "your-username"
+#       password: "your-password"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500

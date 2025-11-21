@@ -1,0 +1,464 @@
+# SMC Trading Agent - Production Configuration
+# Version 2.0.0 - Production Ready Deployment
+
+# =============================================================================
+# APPLICATION SETTINGS
+# =============================================================================
+app:
+  name: "SMC Trading Agent"
+  version: "2.0.0"
+  environment: "production"
+  mode: "real"  # Trading mode: "paper" or "real"
+  debug: false
+  log_level: "INFO"
+
+# =============================================================================
+# TRADING CONFIGURATION
+# =============================================================================
+trading:
+  enabled: true
+  max_positions: 5
+  max_risk_per_trade: 0.02  # 2% risk per trade
+  max_portfolio_risk: 0.10   # 10% total portfolio risk
+  min_risk_reward: 2.0       # Minimum 1:2 risk/reward ratio
+  trading_hours:
+    forex: "24/7"
+    crypto: "24/7"
+
+  # Position sizing configuration
+  position_sizing:
+    method: "kelly_criterion"  # fixed, kelly_criterion, volatility_based
+    max_position_size: 0.05
+    min_position_size: 0.01
+    base_size_usd: 1000.0
+
+  # Risk management integration
+  risk_integration:
+    enable_circuit_breakers: true
+    enable_drawdown_limits: true
+    enable_correlation_checks: true
+    max_correlation: 0.7
+
+# =============================================================================
+# EXCHANGE CONFIGURATION
+# =============================================================================
+exchanges:
+  binance:
+    enabled: true
+    api_key: "${BINANCE_API_KEY}"
+    api_secret: "${BINANCE_API_SECRET}"
+    testnet: false
+    base_url: "https://api.binance.com"
+    ws_url: "wss://stream.binance.com:9443"
+    rate_limits:
+      requests_per_second: 10
+      orders_per_second: 10
+    timeout: 30
+    retry_attempts: 3
+    symbols:
+      - "BTCUSDT"
+      - "ETHUSDT"
+      - "ADAUSDT"
+
+  bybit:
+    enabled: true
+    api_key: "${BYBIT_API_KEY}"
+    api_secret: "${BYBIT_API_SECRET}"
+    testnet: false
+    base_url: "https://api.bybit.com"
+    ws_url: "wss://stream.bybit.com/v5/public"
+    rate_limits:
+      requests_per_second: 10
+      orders_per_second: 5
+    timeout: 30
+    retry_attempts: 3
+    symbols:
+      - "BTCUSDT"
+      - "ETHUSDT"
+
+  oanda:
+    enabled: true
+    api_key: "${OANDA_API_KEY}"
+    account_id: "${OANDA_ACCOUNT_ID}"
+    environment: "live"
+    base_url: "https://api-fxpractice.oanda.com"
+    rate_limits:
+      requests_per_second: 30
+    timeout: 30
+    retry_attempts: 3
+    symbols:
+      - "EUR_USD"
+      - "GBP_USD"
+      - "USD_JPY"
+
+# =============================================================================
+# MARKET DATA CONFIGURATION
+# =============================================================================
+market_data:
+  symbols:
+    crypto: ["BTCUSDT", "ETHUSDT", "ADAUSDT"]
+    forex: ["EUR_USD", "GBP_USD", "USD_JPY"]
+  timeframes: ["1m", "5m", "15m", "1h", "4h", "1d"]
+  data_sources:
+    primary: "binance"
+    backup: ["bybit", "oanda"]
+
+  # Cache configuration
+  cache:
+    enabled: true
+    ttl_seconds: 60
+    max_size_mb: 512
+    redis_enabled: true
+
+  # Data validation
+  validation:
+    enable_price_checks: true
+    max_price_change_percent: 20.0
+    volume_validation: true
+    min_volume_threshold: 1000000
+
+# =============================================================================
+# ML MODEL CONFIGURATION
+# =============================================================================
+ml_models:
+  enabled: true
+  deployment_stage: "production"  # development, staging, production
+  model_directory: "models/trained/"
+  fallback_to_heuristic: true
+
+  # Ensemble configuration
+  ensemble:
+    lstm:
+      model_path: "models/trained/lstm_model.pth"
+      weight: 0.35
+      enabled: true
+      confidence_threshold: 0.65
+      inference_timeout_ms: 50
+      max_memory_mb: 1024
+
+    transformer:
+      model_path: "models/trained/transformer_model.pth"
+      weight: 0.40
+      enabled: true
+      confidence_threshold: 0.65
+      inference_timeout_ms: 50
+      max_memory_mb: 1024
+
+    ppo:
+      model_path: "models/trained/ppo_model.pth"
+      weight: 0.25
+      enabled: true
+      confidence_threshold: 0.65
+      inference_timeout_ms: 50
+      max_memory_mb: 1024
+
+  # Inference configuration
+  inference:
+    batch_size: 32
+    max_latency_ms: 20
+    confidence_threshold: 0.65
+    fallback_to_rules: true
+    max_concurrent_inferences: 10
+
+  # Performance monitoring
+  monitoring:
+    drift_detection: true
+    performance_window_hours: 24
+    retraining_threshold: 0.60
+    accuracy_alert_threshold: 0.55
+    inference_time_alert_ms: 25.0
+
+# =============================================================================
+# RISK MANAGEMENT CONFIGURATION
+# =============================================================================
+risk_management:
+  # Position sizing
+  position_sizing:
+    method: "kelly_criterion"
+    max_position_size: 0.05
+    min_position_size: 0.01
+
+  # Stop loss configuration
+  stop_loss:
+    method: "order_block_based"
+    default_percent: 0.02
+    max_percent: 0.05
+    trailing_enabled: true
+    trailing_distance: 0.01
+
+  # Circuit breakers
+  circuit_breakers:
+    daily_loss_limit: 0.05
+    weekly_loss_limit: 0.10
+    monthly_loss_limit: 0.15
+    consecutive_losses: 5
+    max_drawdown: 0.20
+    enabled: true
+
+  # Compliance and reporting
+  compliance:
+    mifid_report: true
+    trade_logging: true
+    data_retention_days: 2555  # 7 years
+    audit_logging: true
+
+  # Portfolio risk
+  portfolio_risk:
+    max_correlation: 0.7
+    var_limit: 0.05
+    stress_test_enabled: true
+    leverage_limit: 3.0
+
+# =============================================================================
+# PERFORMANCE CONFIGURATION
+# =============================================================================
+performance:
+  # Latency targets
+  target_latency_ms: 50
+  max_price_updates_per_second: 1000
+  thread_pool_size: 8
+  async_timeout_seconds: 30
+
+  # Database configuration
+  database:
+    host: "${DB_HOST}"
+    port: 5432
+    database: "${DB_NAME}"
+    username: "${DB_USER}"
+    password: "${DB_PASSWORD}"
+    ssl_mode: "require"
+    connection_pool_size: 20
+    max_overflow: 50
+    pool_timeout: 30
+    pool_recycle: 3600
+
+  # Redis configuration
+  redis:
+    host: "${REDIS_HOST}"
+    port: 6379
+    password: "${REDIS_PASSWORD}"
+    db: 0
+    connection_pool_size: 10
+    ssl_enabled: true
+    socket_timeout: 5
+
+  # Caching strategy
+  caching:
+    levels: ["memory", "redis"]
+    memory_max_size_mb: 512
+    redis_ttl_seconds: 300
+    cache_hit_ratio_target: 0.90
+
+# =============================================================================
+# MONITORING AND ALERTING
+# =============================================================================
+monitoring:
+  # Health checks
+  health_check:
+    enabled: true
+    interval_seconds: 30
+    timeout_seconds: 10
+    components: ["database", "redis", "exchanges", "ml_models"]
+
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9090
+    metrics_path: "/metrics"
+    retention_days: 30
+
+  # Grafana configuration
+  grafana:
+    enabled: true
+    port: 3000
+    admin_user: "${GRAFANA_USER}"
+    admin_password: "${GRAFANA_PASSWORD}"
+
+  # Alerting configuration
+  alerting:
+    slack_webhook: "${SLACK_WEBHOOK_URL}"
+    email_recipients: ["trader@example.com"]
+    pagerduty_key: "${PAGERDUTY_KEY}"
+    alert_rules:
+      high_latency: true
+      trading_halt: true
+      model_drift: true
+      risk_breach: true
+      system_failure: true
+      api_error_rate: 0.05
+
+  # Performance metrics
+  metrics:
+    collection_interval: 60
+    retention_hours: 720  # 30 days
+    export_to_cloud: false
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+logging:
+  level: "INFO"
+  format: "json"
+  outputs: ["console", "file"]
+
+  # File logging
+  file:
+    path: "logs/smc_trading.log"
+    max_size_mb: 100
+    backup_count: 10
+    rotation: "daily"
+
+  # Structured logging fields
+  structured_fields:
+    timestamp: true
+    level: true
+    component: true
+    correlation_id: true
+    user_id: true
+    request_id: true
+
+  # Audit logging
+  audit:
+    enabled: true
+    log_trades: true
+    log_risk_events: true
+    log_configuration_changes: true
+    retention_days: 2555
+
+# =============================================================================
+# SECURITY CONFIGURATION
+# =============================================================================
+security:
+  # Authentication
+  authentication:
+    enabled: true
+    method: "jwt"
+    jwt_secret: "${JWT_SECRET}"
+    jwt_expiration: 3600  # 1 hour
+    refresh_token_expiration: 86400  # 24 hours
+
+  # API security
+  api:
+    rate_limit:
+      requests_per_minute: 100
+      burst_size: 20
+    cors_origins:
+      - "https://yourdomain.com"
+    ip_whitelist_enabled: true
+    allowed_ips: ["${OFFICE_IP}"]
+
+  # Data encryption
+  encryption:
+    enabled: true
+    algorithm: "AES-256-GCM"
+    key_rotation_days: 90
+
+  # Secrets management
+  secrets:
+    rotation_enabled: true
+    rotation_interval_days: 30
+    audit_access: true
+
+# =============================================================================
+# API CONFIGURATION
+# =============================================================================
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+
+  # API endpoints
+  endpoints:
+    health: "/health"
+    metrics: "/metrics"
+    trades: "/api/v1/trades"
+    positions: "/api/v1/positions"
+    risk: "/api/v1/risk"
+
+  # CORS configuration
+  cors:
+    enabled: true
+    origins: ["https://yourdomain.com"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    headers: ["Content-Type", "Authorization"]
+
+# =============================================================================
+# COMPLIANCE CONFIGURATION
+# =============================================================================
+compliance:
+  # Regulatory requirements
+  mifid_ii:
+    enabled: true
+    reporting_enabled: true
+    transaction_reporting: true
+    best_execution: true
+
+  # Data protection
+  gdpr:
+    enabled: true
+    data_anonymization: true
+    consent_management: true
+    data_retention_policy: true
+
+  # Audit trails
+  audit:
+    enabled: true
+    immutable_logs: true
+    digital_signatures: true
+    tamper_detection: true
+
+# =============================================================================
+# BACKUP AND DISASTER RECOVERY
+# =============================================================================
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+
+  # Database backup
+  database:
+    enabled: true
+    compression: true
+    encryption: true
+    storage_location: "${BACKUP_STORAGE_URL}"
+
+  # Configuration backup
+  configuration:
+    enabled: true
+    include_secrets: false
+    storage_location: "${CONFIG_BACKUP_URL}"
+
+# =============================================================================
+# MULTI-TIMEFRAME ANALYSIS
+# =============================================================================
+multi_timeframe:
+  enabled: true
+  config_file: "config/multi_timeframe.yaml"
+  symbols: ["BTCUSDT", "ETHUSDT"]
+  timeframes: ["M5", "M15", "H1", "H4", "D1"]
+
+  # Integration with existing components
+  integration:
+    enabled: true
+    weights:
+      multi_timeframe: 0.4
+      ml_ensemble: 0.3
+      smc_indicators: 0.2
+      risk_management: 0.1
+
+  # Performance settings
+  performance:
+    analysis_interval_minutes: 5
+    max_concurrent_symbols: 10
+    cache_enabled: true
+    cache_ttl_minutes: 15
+
+  # Signal settings
+  signals:
+    min_confidence: 0.7
+    min_risk_reward: 1.5
+    max_signals_per_symbol: 2
+    position_sizing:
+      max_position_size: 0.05
+      base_position_size: 0.02
+      confluence_multiplier: 2.0
