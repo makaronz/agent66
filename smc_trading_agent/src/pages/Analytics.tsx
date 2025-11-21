@@ -266,12 +266,12 @@ export default function Analytics() {
             <div className="flex-shrink-0">
               <TrendingUp className="h-8 w-8 text-green-600" />
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-5 flex-1 min-w-0">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                <dt className="text-sm font-medium text-gray-500 flex items-center gap-1 overflow-hidden">
+                  <span className="truncate">Total Return</span>
                   <InfoTooltip content={definitions['Total Return']}>
-                    <span>Total Return</span>
-                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help flex-shrink-0" />
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-green-600">
@@ -293,12 +293,12 @@ export default function Analytics() {
             <div className="flex-shrink-0">
               <Target className="h-8 w-8 text-blue-600" />
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-5 flex-1 min-w-0">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                <dt className="text-sm font-medium text-gray-500 flex items-center gap-1 overflow-hidden">
+                  <span className="truncate">Sharpe Ratio</span>
                   <InfoTooltip content={definitions['Sharpe Ratio']}>
-                    <span>Sharpe Ratio</span>
-                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help flex-shrink-0" />
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-gray-900">
@@ -320,12 +320,12 @@ export default function Analytics() {
             <div className="flex-shrink-0">
               <TrendingDown className="h-8 w-8 text-red-600" />
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-5 flex-1 min-w-0">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                <dt className="text-sm font-medium text-gray-500 flex items-center gap-1 overflow-hidden">
+                  <span className="truncate">Max Drawdown</span>
                   <InfoTooltip content={definitions['Max Drawdown']}>
-                    <span>Max Drawdown</span>
-                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help flex-shrink-0" />
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-red-600">
@@ -347,12 +347,12 @@ export default function Analytics() {
             <div className="flex-shrink-0">
               <BarChart3 className="h-8 w-8 text-purple-600" />
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-5 flex-1 min-w-0">
               <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate flex items-center gap-1">
+                <dt className="text-sm font-medium text-gray-500 flex items-center gap-1 overflow-hidden">
+                  <span className="truncate">Win Rate</span>
                   <InfoTooltip content={definitions['Win Rate']}>
-                    <span>Win Rate</span>
-                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help" />
+                    <Info className="h-3 w-3 text-gray-400 hover:text-gray-600 cursor-help flex-shrink-0" />
                   </InfoTooltip>
                 </dt>
                 <dd className="text-lg font-medium text-gray-900">
