@@ -30,44 +30,44 @@ cp env.example .env
 pip install -r requirements.txt
 
 # Build Rust components
-cd smc_trading_agent && cargo build --release
+cargo build --release
 ```
 
 ### Running the Application
 ```bash
 # Run main Python application
-python smc_trading_agent/main.py
+python main.py
 
 # Run with Docker Compose (recommended for development)
-docker-compose -f smc_trading_agent/deployment/docker-compose.yml up -d
+docker-compose -f deployment/docker-compose.yml up -d
 ```
 
 ### Testing
 ```bash
 # Run all tests
-pytest smc_trading_agent/tests/ -v
+pytest tests/ -v
 
 # Run specific test modules
-pytest smc_trading_agent/tests/test_risk_manager.py -v
-pytest smc_trading_agent/tests/test_smc_indicators.py -v
-pytest smc_trading_agent/tests/test_error_handling.py -v
+pytest tests/test_risk_manager.py -v
+pytest tests/test_smc_indicators.py -v
+pytest tests/test_error_handling.py -v
 
 # Run comprehensive test suite
-python smc_trading_agent/run_comprehensive_tests.py
+python run_comprehensive_tests.py
 
 # Test Rust components
-cd smc_trading_agent && cargo test
+cargo test
 ```
 
 ### Development Tools
 ```bash
 # Code formatting and linting
-black smc_trading_agent/
-flake8 smc_trading_agent/
+black .
+flake8 .
 
 # Rust formatting
-cd smc_trading_agent && cargo fmt
-cd smc_trading_agent && cargo clippy
+cargo fmt
+cargo clippy
 ```
 
 ### Monitoring
@@ -82,7 +82,7 @@ open http://localhost:9090
 
 ## Configuration
 
-The main configuration is in `smc_trading_agent/config.yaml` with environment variable substitution support:
+The main configuration is in `config.yaml` with environment variable substitution support:
 
 - **API Keys**: Use `${BINANCE_API_KEY}`, `${BINANCE_API_SECRET}` format
 - **Database**: PostgreSQL with TimescaleDB for time-series data
@@ -153,7 +153,7 @@ Standard format across all components:
 
 ### File Structure Conventions
 ```
-smc_trading_agent/
+.
 ├── data_pipeline/          # Market data ingestion
 ├── smc_detector/          # SMC pattern detection
 ├── decision_engine/       # ML models and decision logic
