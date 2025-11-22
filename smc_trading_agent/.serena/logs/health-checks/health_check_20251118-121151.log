@@ -1,0 +1,88 @@
+INFO  2025-11-18 12:11:51,291 serena.cli:health_check:634 - Starting health check for project: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+INFO  2025-11-18 12:11:51,291 serena.cli:health_check:638 - Creating SerenaAgent with disabled dashboard...
+INFO  2025-11-18 12:11:51,293 serena.agent:__init__:130 - Will record tool usage statistics with token count estimator: CHAR_COUNT.
+INFO  2025-11-18 12:11:51,341 serena.agent:__init__:134 - Starting Serena server (version=0.1.4-448e53ce-dirty, process id=62094, parent process id=62092)
+INFO  2025-11-18 12:11:51,341 serena.agent:__init__:135 - Configuration file: None
+INFO  2025-11-18 12:11:51,342 serena.agent:__init__:136 - Available projects: 
+INFO  2025-11-18 12:11:51,342 serena.agent:__init__:137 - Loaded tools (38): read_file, create_text_file, list_dir, find_file, replace_regex, delete_lines, replace_lines, insert_at_line, search_for_pattern, restart_language_server, get_symbols_overview, find_symbol, find_referencing_symbols, replace_symbol_body, insert_after_symbol, insert_before_symbol, rename_symbol, write_memory, read_memory, list_memories, delete_memory, edit_memory, execute_shell_command, activate_project, remove_project, switch_modes, get_current_config, check_onboarding_performed, onboarding, think_about_collected_information, think_about_task_adherence, think_about_whether_you_are_done, summarize_changes, prepare_for_new_conversation, initial_instructions, jet_brains_find_symbol, jet_brains_find_referencing_symbols, jet_brains_get_symbols_overview
+INFO  2025-11-18 12:11:51,342 serena.config.serena_config:apply:110 - SerenaAgentContext[name='desktop-app'] included 1 tools: switch_modes
+INFO  2025-11-18 12:11:51,343 serena.agent:__init__:151 - Number of exposed tools: 29
+INFO  2025-11-18 12:11:51,355 serena.agent:_update_active_tools:382 - Active tools (29): activate_project, check_onboarding_performed, create_text_file, delete_memory, edit_memory, execute_shell_command, find_file, find_referencing_symbols, find_symbol, get_current_config, get_symbols_overview, initial_instructions, insert_after_symbol, insert_before_symbol, list_dir, list_memories, onboarding, prepare_for_new_conversation, read_file, read_memory, rename_symbol, replace_regex, replace_symbol_body, search_for_pattern, switch_modes, think_about_collected_information, think_about_task_adherence, think_about_whether_you_are_done, write_memory
+INFO  2025-11-18 12:11:51,360 serena.util.file_system:start:360 - Loading of .gitignore files starting ...
+INFO  2025-11-18 12:11:51,360 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/.gitignore
+INFO  2025-11-18 12:11:51,360 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/.serena/.gitignore
+INFO  2025-11-18 12:11:51,361 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/.gitignore
+INFO  2025-11-18 12:11:51,363 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/.serena/.gitignore
+INFO  2025-11-18 12:11:51,363 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/docs/.gitignore
+INFO  2025-11-18 12:11:51,363 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/public/.gitignore
+INFO  2025-11-18 12:11:51,366 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/src/solidlsp/.gitignore
+INFO  2025-11-18 12:11:51,377 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/zig/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,377 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/nix/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,377 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/python/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,378 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/elixir/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,378 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/dart/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,379 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/kotlin/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,380 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/lua/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,381 serena.util.file_system:_load_gitignore_files:148 - Processing .gitignore file: /Users/arkadiuszfudali/Git/agent66/smc_trading_agent/serena/test/resources/repos/csharp/test_repo/.gitignore
+INFO  2025-11-18 12:11:51,389 serena.util.file_system:stop:367 - Loading of .gitignore files completed in 0.029 seconds
+INFO  2025-11-18 12:11:51,390 serena.agent:load_project_from_path_or_name:449 - Added new project smc_trading_agent for path /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+INFO  2025-11-18 12:11:51,390 serena.agent:_activate_project:419 - Activating smc_trading_agent at /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+INFO  2025-11-18 12:11:51,390 serena.agent:_update_active_tools:382 - Active tools (29): activate_project, check_onboarding_performed, create_text_file, delete_memory, edit_memory, execute_shell_command, find_file, find_referencing_symbols, find_symbol, get_current_config, get_symbols_overview, initial_instructions, insert_after_symbol, insert_before_symbol, list_dir, list_memories, onboarding, prepare_for_new_conversation, read_file, read_memory, rename_symbol, replace_regex, replace_symbol_body, search_for_pattern, switch_modes, think_about_collected_information, think_about_task_adherence, think_about_whether_you_are_done, write_memory
+INFO  2025-11-18 12:11:51,390 serena.task_executor:issue_task:192 - Scheduling Task-1:init_language_server_manager
+INFO  2025-11-18 12:11:51,391 serena.cli:health_check:641 - SerenaAgent created successfully
+INFO  2025-11-18 12:11:51,391 serena.cli:health_check:644 - Searching for analyzable files...
+INFO  2025-11-18 12:11:51,448 serena.task_executor:_process_task_queue:123 - Starting execution of Task-1:init_language_server_manager
+INFO  2025-11-18 12:11:51,449 serena.task_executor:start:360 - Task-1:init_language_server_manager starting ...
+INFO  2025-11-18 12:11:51,449 serena.agent:start:360 - Language server initialization starting ...
+INFO  2025-11-18 12:11:51,449 serena.project:create_language_server_manager:384 - Creating language server manager for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+INFO  2025-11-18 12:11:51,450 sensai.util.logging:start:360 - Language server startup (language=python) starting ...
+INFO  2025-11-18 12:11:51,450 serena.ls_manager:create_language_server:44 - Creating language server instance for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent, language=python.
+INFO  2025-11-18 12:11:51,480 serena.cli:health_check:653 - Found analyzable file: run_smc_simple.py
+INFO  2025-11-18 12:11:51,480 serena.cli:health_check:671 - Testing GetSymbolsOverviewTool on file: run_smc_simple.py
+INFO  2025-11-18 12:11:51,480 serena.task_executor:issue_task:192 - Scheduling Task-2:<lambda>
+INFO  2025-11-18 12:11:51,511 solidlsp:start:1689 - Starting language server with language python for /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+INFO  2025-11-18 12:11:51,511 solidlsp:_start_server:172 - Starting pyright-langserver server process
+INFO  2025-11-18 12:11:51,511 solidlsp.ls_handler:start:193 - Starting language server process via command: python -m pyright.langserver --stdio
+INFO  2025-11-18 12:11:51,515 solidlsp:_start_server:178 - Sending initialize request from LSP client to pyright server and awaiting response
+INFO  2025-11-18 12:11:51,692 solidlsp:window_log_message:142 - LSP: window/logMessage: Pyright language server 1.1.407 starting
+INFO  2025-11-18 12:11:51,692 solidlsp:window_log_message:142 - LSP: window/logMessage: Server root directory: file:///Users/arkadiuszfudali/.cache/uv/archive-v0/UetNHXnytdw_GpsuKu01U/lib/python3.13/site-packages/pyright/dist/dist
+INFO  2025-11-18 12:11:51,694 solidlsp:window_log_message:142 - LSP: window/logMessage: Starting service instance "smc_trading_agent"
+INFO  2025-11-18 12:11:51,694 solidlsp:_start_server:183 - Received initialize response from pyright server: {"capabilities": {"textDocumentSync": 2, "definitionProvider": {"workDoneProgress": True}, "declarationProvider": {"workDoneProgress": True}, "typeDefinitionProvider": {"workDoneProgress": True}, "referencesProvider": {"workDoneProgress": True}, "documentSymbolProvider": {"workDoneProgress": True}, "workspaceSymbolProvider": {"workDoneProgress": True}, "hoverProvider": {"workDoneProgress": True}, "documentHighlightProvider": {"workDoneProgress": True}, "renameProvider": {"prepareProvider": True, "workDoneProgress": True}, "completionProvider": {"triggerCharacters": [".", "[", """, """], "resolveProvider": True, "workDoneProgress": True, "completionItem": {"labelDetailsSupport": True}}, "signatureHelpProvider": {"triggerCharacters": ["(", ",", ")"], "workDoneProgress": True}, "codeActionProvider": {"codeActionKinds": ["quickfix", "source.organizeImports"], "workDoneProgress": True}, "executeCommandProvider": {"commands": [], "workDoneProgress": True}, "callHierarchyProvider": True, "workspace": {"workspaceFolders": {"supported": True, "changeNotifications": True}}}}
+INFO  2025-11-18 12:11:51,694 solidlsp:_start_server:195 - Waiting for Pyright to complete initial workspace analysis...
+INFO  2025-11-18 12:11:51,778 solidlsp:window_log_message:142 - LSP: window/logMessage: No include entries specified; assuming /Users/arkadiuszfudali/Git/agent66/smc_trading_agent
+INFO  2025-11-18 12:11:51,778 solidlsp:window_log_message:142 - LSP: window/logMessage: Auto-excluding **/node_modules
+INFO  2025-11-18 12:11:51,778 solidlsp:window_log_message:142 - LSP: window/logMessage: Auto-excluding **/__pycache__
+INFO  2025-11-18 12:11:51,778 solidlsp:window_log_message:142 - LSP: window/logMessage: Auto-excluding **/.*
+INFO  2025-11-18 12:11:51,779 solidlsp:window_log_message:142 - LSP: window/logMessage: Assuming Python version 3.13.5.final.0
+INFO  2025-11-18 12:11:51,814 solidlsp:window_log_message:142 - LSP: window/logMessage: Found 267 source files
+INFO  2025-11-18 12:11:51,814 solidlsp:window_log_message:147 - Pyright workspace scanning complete
+INFO  2025-11-18 12:11:51,815 solidlsp:_start_server:197 - Pyright initial analysis complete, server ready
+INFO  2025-11-18 12:11:51,815 sensai.util.logging:stop:367 - Language server startup (language=python) completed in 0.365 seconds
+INFO  2025-11-18 12:11:51,815 serena.agent:stop:367 - Language server initialization completed in 0.366 seconds
+INFO  2025-11-18 12:11:51,815 serena.task_executor:stop:367 - Task-1:init_language_server_manager completed in 0.366 seconds
+INFO  2025-11-18 12:11:51,815 serena.task_executor:_process_task_queue:123 - Starting execution of Task-2:<lambda>
+INFO  2025-11-18 12:11:51,815 serena.task_executor:start:360 - Task-2:<lambda> starting ...
+INFO  2025-11-18 12:11:51,903 serena.task_executor:stop:367 - Task-2:<lambda> completed in 0.088 seconds
+INFO  2025-11-18 12:11:51,904 serena.cli:health_check:674 - GetSymbolsOverviewTool returned 12 symbols
+INFO  2025-11-18 12:11:51,905 serena.cli:health_check:699 - Using symbol for testing: MarketDataProcessor (kind: 5)
+INFO  2025-11-18 12:11:51,905 serena.cli:health_check:702 - Testing FindSymbolTool for symbol: MarketDataProcessor
+INFO  2025-11-18 12:11:51,905 serena.task_executor:issue_task:192 - Scheduling Task-3:<lambda>
+INFO  2025-11-18 12:11:52,009 serena.task_executor:_process_task_queue:123 - Starting execution of Task-3:<lambda>
+INFO  2025-11-18 12:11:52,010 serena.task_executor:start:360 - Task-3:<lambda> starting ...
+INFO  2025-11-18 12:11:52,045 serena.task_executor:stop:367 - Task-3:<lambda> completed in 0.036 seconds
+INFO  2025-11-18 12:11:52,046 serena.cli:health_check:707 - FindSymbolTool found 1 matches for symbol MarketDataProcessor
+INFO  2025-11-18 12:11:52,046 serena.cli:health_check:710 - Testing FindReferencingSymbolsTool for symbol: MarketDataProcessor
+INFO  2025-11-18 12:11:52,046 serena.task_executor:issue_task:192 - Scheduling Task-4:<lambda>
+INFO  2025-11-18 12:11:52,147 serena.task_executor:_process_task_queue:123 - Starting execution of Task-4:<lambda>
+INFO  2025-11-18 12:11:52,147 serena.task_executor:start:360 - Task-4:<lambda> starting ...
+INFO  2025-11-18 12:11:54,548 serena.task_executor:stop:367 - Task-4:<lambda> completed in 2.401 seconds
+INFO  2025-11-18 12:11:54,548 serena.cli:health_check:714 - FindReferencingSymbolsTool found 1 references for symbol MarketDataProcessor
+INFO  2025-11-18 12:11:54,549 serena.cli:health_check:720 - Testing SearchForPatternTool for pattern: MarketDataProcessor
+INFO  2025-11-18 12:11:54,549 serena.task_executor:issue_task:192 - Scheduling Task-5:<lambda>
+INFO  2025-11-18 12:11:54,650 serena.task_executor:_process_task_queue:123 - Starting execution of Task-5:<lambda>
+INFO  2025-11-18 12:11:54,650 serena.task_executor:start:360 - Task-5:<lambda> starting ...
+INFO  2025-11-18 12:11:54,728 serena.text_utils:search_files:365 - Processing 266 files.
+INFO  2025-11-18 12:11:54,786 serena.text_utils:search_files:406 - Found 24 total matches across 266 files
+INFO  2025-11-18 12:11:54,786 serena.task_executor:stop:367 - Task-5:<lambda> completed in 0.137 seconds
+INFO  2025-11-18 12:11:54,787 serena.cli:health_check:727 - SearchForPatternTool found 24 pattern matches for MarketDataProcessor
+INFO  2025-11-18 12:11:54,787 serena.cli:health_check:741 - Health check completed successfully

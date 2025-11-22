@@ -41,3 +41,4 @@ trivy-cache/
 .env.test
 .env.development
 .env.production
+.vercel

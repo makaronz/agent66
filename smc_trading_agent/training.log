@@ -1,0 +1,229 @@
+2025-11-21 01:50:49,127 - __main__ - INFO - 🚀 Starting SMC ML Training
+2025-11-21 01:50:49,127 - __main__ - INFO - Mode: Real
+2025-11-21 01:50:49,127 - __main__ - INFO - Arguments: {'demo': False, 'symbols': ['BTCUSDT'], 'exchanges': ['binance', 'bybit'], 'timeframes': ['5m', '15m', '1h', '4h'], 'days': 30, 'months': None, 'epochs': 50, 'batch_size': 256, 'learning_rate': 0.001, 'min_accuracy': 0.55, 'output_dir': './smc_models', 'config': None, 'deploy': False, 'skip_validation': False, 'device': 'auto', 'verbose': False, 'workers': 4}
+2025-11-21 01:50:49,127 - __main__ - INFO - Training configuration:
+2025-11-21 01:50:49,127 - __main__ - INFO -   Symbols: ['BTCUSDT']
+2025-11-21 01:50:49,127 - __main__ - INFO -   Exchanges: ['binance', 'bybit']
+2025-11-21 01:50:49,127 - __main__ - INFO -   Timeframes: ['5m', '15m', '1h', '4h']
+2025-11-21 01:50:49,127 - __main__ - INFO -   Data period: 2025-10-22T01:50:49.127223 to 2025-11-21T01:50:49.127231
+2025-11-21 01:50:49,127 - __main__ - INFO -   Epochs: 50
+2025-11-21 01:50:49,127 - __main__ - INFO -   Batch size: 256
+2025-11-21 01:50:49,127 - __main__ - INFO -   Device: auto
+2025-11-21 01:50:49,127 - __main__ - INFO -   Output dir: ./smc_models
+2025-11-21 01:50:49,127 - __main__ - ERROR - Failed to create training pipeline: 'dict' object has no attribute 'device'
+2025-11-21 02:01:19,913 - __main__ - INFO - 🚀 Starting SMC ML Training
+2025-11-21 02:01:19,914 - __main__ - INFO - Mode: Real
+2025-11-21 02:01:19,914 - __main__ - INFO - Arguments: {'demo': False, 'symbols': ['BTCUSDT'], 'exchanges': ['binance', 'bybit'], 'timeframes': ['5m', '15m', '1h', '4h'], 'days': 30, 'months': None, 'epochs': 50, 'batch_size': 256, 'learning_rate': 0.001, 'min_accuracy': 0.55, 'output_dir': './smc_models', 'config': None, 'deploy': False, 'skip_validation': False, 'device': 'auto', 'verbose': False, 'workers': 4}
+2025-11-21 02:01:19,914 - __main__ - INFO - Training configuration:
+2025-11-21 02:01:19,914 - __main__ - INFO -   Symbols: ['BTCUSDT']
+2025-11-21 02:01:19,914 - __main__ - INFO -   Exchanges: ['binance', 'bybit']
+2025-11-21 02:01:19,914 - __main__ - INFO -   Timeframes: ['5m', '15m', '1h', '4h']
+2025-11-21 02:01:19,914 - __main__ - INFO -   Data period: 2025-10-22 02:01:19.914084 to 2025-11-21 02:01:19.914091
+2025-11-21 02:01:19,914 - __main__ - INFO -   Epochs: 50
+2025-11-21 02:01:19,914 - __main__ - INFO -   Batch size: 256
+2025-11-21 02:01:19,914 - __main__ - INFO -   Device: auto
+2025-11-21 02:01:19,914 - __main__ - INFO -   Output dir: ./smc_models
+2025-11-21 02:01:19,914 - training.smc_training_pipeline - INFO - CUDA not available, using CPU
+2025-11-21 02:01:19,917 - training.smc_training_pipeline - INFO - SMC Training Pipeline initialized (device: cpu)
+2025-11-21 02:01:19,917 - __main__ - INFO - 
+🔄 Starting training pipeline...
+2025-11-21 02:01:19,917 - training.smc_training_pipeline - INFO - Starting complete SMC ML training pipeline
+2025-11-21 02:01:19,917 - training.smc_training_pipeline - INFO - Phase 1: Data Collection
+2025-11-21 02:01:19,918 - training.historical_data_collector - INFO - Collection metadata database initialized
+2025-11-21 02:01:19,918 - training.historical_data_collector - INFO - Historical data collector initialized for 2 exchanges
+2025-11-21 02:01:19,918 - training.historical_data_collector - INFO - Starting comprehensive historical data collection
+2025-11-21 02:01:19,918 - training.historical_data_collector - INFO - Total collection tasks: 8
+2025-11-21 02:01:19,918 - training.historical_data_collector - INFO - Processing batch 1/1
+2025-11-21 02:01:26,341 - training.historical_data_collector - INFO - Data validation for bybit/BTCUSDT/1h: quality_score=0.719, removed=1 invalid records
+2025-11-21 02:01:26,482 - training.historical_data_collector - INFO - Collected 720 records for bybit/BTCUSDT/1h (quality: 0.719)
+2025-11-21 02:01:27,267 - training.historical_data_collector - INFO - Data validation for bybit/BTCUSDT/4h: quality_score=0.178, removed=1 invalid records
+2025-11-21 02:01:27,269 - training.historical_data_collector - INFO - Collected 179 records for bybit/BTCUSDT/4h (quality: 0.178)
+2025-11-21 02:01:30,350 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/1h: quality_score=0.719, removed=1 invalid records
+2025-11-21 02:01:30,353 - training.historical_data_collector - INFO - Collected 720 records for binance/BTCUSDT/1h (quality: 0.719)
+2025-11-21 02:01:30,696 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/4h: quality_score=0.178, removed=1 invalid records
+2025-11-21 02:01:30,698 - training.historical_data_collector - INFO - Collected 179 records for binance/BTCUSDT/4h (quality: 0.178)
+2025-11-21 02:01:38,098 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/15m: quality_score=1.000, removed=1 invalid records
+2025-11-21 02:01:38,102 - training.historical_data_collector - INFO - Collected 2883 records for binance/BTCUSDT/15m (quality: 1.000)
+2025-11-21 02:01:52,557 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/5m: quality_score=1.000, removed=1 invalid records
+2025-11-21 02:01:52,571 - training.historical_data_collector - INFO - Collected 8651 records for binance/BTCUSDT/5m (quality: 1.000)
+2025-11-21 04:00:43,778 - training.historical_data_collector - ERROR - Failed to collect data for bybit/BTCUSDT/5m: indices are out-of-bounds
+2025-11-21 06:57:05,105 - training.historical_data_collector - WARNING - Request attempt 1 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Read timed out. (read timeout=30)
+2025-11-21 07:47:16,609 - training.historical_data_collector - WARNING - Request attempt 2 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762787700001&end=1763686879914&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x671fdec10>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 08:51:09,675 - training.historical_data_collector - WARNING - Request attempt 3 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762787700001&end=1763686879914&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x67206d350>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 09:09:12,625 - training.historical_data_collector - WARNING - Request attempt 4 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762787700001&end=1763686879914&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x67206ed50>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 09:09:12,626 - training.historical_data_collector - ERROR - Failed to fetch ByBit data for BTCUSDT 15m: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762787700001&end=1763686879914&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x67206ed50>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 09:09:15,402 - training.historical_data_collector - WARNING - No data received for bybit/BTCUSDT/15m
+2025-11-21 09:09:15,404 - training.historical_data_collector - INFO - Progress: 100.0% (8/8)
+2025-11-21 09:09:15,405 - training.historical_data_collector - INFO - Historical data collection completed in 25675.49s
+2025-11-21 09:09:15,405 - training.historical_data_collector - INFO - Success rate: 100.0%
+2025-11-21 09:09:15,405 - training.smc_training_pipeline - INFO - Phase 2: Pattern Detection & Labeling
+2025-11-21 09:09:15,405 - training.smc_pattern_labeler - INFO - SMC Pattern Labeler initialized
+2025-11-21 09:09:15,677 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 5m (8651 records)
+2025-11-21 09:10:03,556 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=403, CHOCH=292, BOS=8665, Sweeps=232, FVG=0
+2025-11-21 09:42:28,399 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 9592 patterns labeled
+2025-11-21 09:42:28,404 - training.smc_training_pipeline - INFO - Labeled 9592 patterns for binance/BTCUSDT/5m
+2025-11-21 09:42:28,407 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 15m (2883 records)
+2025-11-21 09:51:57,096 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=133, CHOCH=130, BOS=2894, Sweeps=168, FVG=0
+2025-11-21 09:52:04,070 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 3325 patterns labeled
+2025-11-21 09:52:04,092 - training.smc_training_pipeline - INFO - Labeled 3325 patterns for binance/BTCUSDT/15m
+2025-11-21 09:52:04,106 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 1h (720 records)
+2025-11-21 09:52:06,038 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=33, CHOCH=39, BOS=721, Sweeps=76, FVG=0
+2025-11-21 09:52:07,102 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 869 patterns labeled
+2025-11-21 09:52:07,106 - training.smc_training_pipeline - INFO - Labeled 869 patterns for binance/BTCUSDT/1h
+2025-11-21 09:52:07,148 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 4h (179 records)
+2025-11-21 09:52:07,433 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=5, CHOCH=11, BOS=190, Sweeps=22, FVG=0
+2025-11-21 09:52:07,504 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 228 patterns labeled
+2025-11-21 09:52:07,505 - training.smc_training_pipeline - INFO - Labeled 228 patterns for binance/BTCUSDT/4h
+2025-11-21 09:52:07,508 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 1h (720 records)
+2025-11-21 09:52:08,474 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=36, CHOCH=36, BOS=721, Sweeps=75, FVG=0
+2025-11-21 09:52:09,299 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 868 patterns labeled
+2025-11-21 09:52:09,301 - training.smc_training_pipeline - INFO - Labeled 868 patterns for bybit/BTCUSDT/1h
+2025-11-21 09:52:09,304 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 4h (179 records)
+2025-11-21 09:52:09,544 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=4, CHOCH=11, BOS=190, Sweeps=22, FVG=0
+2025-11-21 09:52:09,610 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 227 patterns labeled
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - INFO - Labeled 227 patterns for bybit/BTCUSDT/4h
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - INFO - Phase 3: Feature Engineering
+2025-11-21 09:52:09,611 - training.smc_feature_engineer - INFO - SMC Feature Engineer initialized with 5 timeframes
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_5m: list index out of range
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_15m: list index out of range
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_1h: list index out of range
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_4h: list index out of range
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - ERROR - Failed to engineer features for bybit_BTCUSDT_1h: list index out of range
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - ERROR - Failed to engineer features for bybit_BTCUSDT_4h: list index out of range
+2025-11-21 09:52:09,611 - training.smc_training_pipeline - INFO - Phase 4: Model Training
+2025-11-21 09:52:09,612 - training.smc_training_pipeline - ERROR - Training pipeline failed: No features available for training
+2025-11-21 09:52:09,616 - __main__ - ERROR - 
+💥 Unexpected error: [Errno 2] No such file or directory: 'smc_models/training_results.json'
+Traceback (most recent call last):
+  File "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/quick_start_training.py", line 423, in main
+    with open(results_file, 'w') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'smc_models/training_results.json'
+2025-11-21 13:32:08,957 - __main__ - INFO - 🚀 Starting SMC ML Training
+2025-11-21 13:32:08,958 - __main__ - INFO - Mode: Real
+2025-11-21 13:32:08,958 - __main__ - INFO - Arguments: {'demo': False, 'symbols': ['BTCUSDT'], 'exchanges': ['binance', 'bybit'], 'timeframes': ['5m', '15m', '1h', '4h'], 'days': 30, 'months': None, 'epochs': 50, 'batch_size': 256, 'learning_rate': 0.001, 'min_accuracy': 0.55, 'output_dir': './smc_models', 'config': None, 'deploy': False, 'skip_validation': False, 'device': 'auto', 'verbose': False, 'workers': 4}
+2025-11-21 13:32:08,958 - __main__ - INFO - Training configuration:
+2025-11-21 13:32:08,958 - __main__ - INFO -   Symbols: ['BTCUSDT']
+2025-11-21 13:32:08,958 - __main__ - INFO -   Exchanges: ['binance', 'bybit']
+2025-11-21 13:32:08,958 - __main__ - INFO -   Timeframes: ['5m', '15m', '1h', '4h']
+2025-11-21 13:32:08,958 - __main__ - INFO -   Data period: 2025-10-22 13:32:08.958217 to 2025-11-21 13:32:08.958224
+2025-11-21 13:32:08,958 - __main__ - INFO -   Epochs: 50
+2025-11-21 13:32:08,958 - __main__ - INFO -   Batch size: 256
+2025-11-21 13:32:08,958 - __main__ - INFO -   Device: auto
+2025-11-21 13:32:08,958 - __main__ - INFO -   Output dir: ./smc_models
+2025-11-21 13:32:08,958 - training.smc_training_pipeline - INFO - CUDA not available, using CPU
+2025-11-21 13:32:08,960 - training.smc_training_pipeline - INFO - SMC Training Pipeline initialized (device: cpu)
+2025-11-21 13:32:08,960 - __main__ - INFO - 
+🔄 Starting training pipeline...
+2025-11-21 13:32:08,960 - training.smc_training_pipeline - INFO - Starting complete SMC ML training pipeline
+2025-11-21 13:32:08,960 - training.smc_training_pipeline - INFO - Phase 1: Data Collection
+2025-11-21 13:32:08,961 - training.historical_data_collector - INFO - Collection metadata database initialized
+2025-11-21 13:32:08,961 - training.historical_data_collector - INFO - Historical data collector initialized for 2 exchanges
+2025-11-21 13:32:08,961 - training.historical_data_collector - INFO - Starting comprehensive historical data collection
+2025-11-21 13:32:08,961 - training.historical_data_collector - INFO - Total collection tasks: 8
+2025-11-21 13:32:08,961 - training.historical_data_collector - INFO - Processing batch 1/1
+2025-11-21 13:32:12,552 - training.historical_data_collector - INFO - Data validation for bybit/BTCUSDT/1h: quality_score=0.719, removed=1 invalid records
+2025-11-21 13:32:12,561 - training.historical_data_collector - INFO - Collected 720 records for bybit/BTCUSDT/1h (quality: 0.719)
+2025-11-21 13:32:13,052 - training.historical_data_collector - INFO - Data validation for bybit/BTCUSDT/4h: quality_score=0.179, removed=1 invalid records
+2025-11-21 13:32:13,057 - training.historical_data_collector - INFO - Collected 180 records for bybit/BTCUSDT/4h (quality: 0.179)
+2025-11-21 13:32:14,694 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/1h: quality_score=0.719, removed=1 invalid records
+2025-11-21 13:32:14,701 - training.historical_data_collector - INFO - Collected 720 records for binance/BTCUSDT/1h (quality: 0.719)
+2025-11-21 13:32:15,081 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/4h: quality_score=0.179, removed=1 invalid records
+2025-11-21 13:32:15,107 - training.historical_data_collector - INFO - Collected 180 records for binance/BTCUSDT/4h (quality: 0.179)
+2025-11-21 13:32:18,445 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/15m: quality_score=1.000, removed=1 invalid records
+2025-11-21 13:32:18,452 - training.historical_data_collector - INFO - Collected 2883 records for binance/BTCUSDT/15m (quality: 1.000)
+2025-11-21 13:32:25,176 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/5m: quality_score=1.000, removed=1 invalid records
+2025-11-21 13:32:25,185 - training.historical_data_collector - INFO - Collected 8651 records for binance/BTCUSDT/5m (quality: 1.000)
+2025-11-21 13:41:39,194 - training.historical_data_collector - WARNING - Request attempt 1 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Read timed out.
+2025-11-21 13:41:39,199 - training.historical_data_collector - WARNING - Request attempt 1 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=5&start=1763428500001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x177977210>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:40,201 - training.historical_data_collector - WARNING - Request attempt 2 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762829100001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x177975210>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:40,204 - training.historical_data_collector - WARNING - Request attempt 2 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=5&start=1763428500001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x17797c450>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:42,209 - training.historical_data_collector - WARNING - Request attempt 3 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762829100001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x17797e150>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:42,212 - training.historical_data_collector - WARNING - Request attempt 3 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=5&start=1763428500001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x17797ffd0>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:46,216 - training.historical_data_collector - WARNING - Request attempt 4 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762829100001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x177981f10>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:46,216 - training.historical_data_collector - ERROR - Failed to fetch ByBit data for BTCUSDT 15m: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&start=1762829100001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x177981f10>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:46,240 - training.historical_data_collector - WARNING - No data received for bybit/BTCUSDT/15m
+2025-11-21 13:41:46,243 - training.historical_data_collector - WARNING - Request attempt 4 failed: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=5&start=1763428500001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x1778e4d50>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:46,243 - training.historical_data_collector - ERROR - Failed to fetch ByBit data for BTCUSDT 5m: HTTPSConnectionPool(host='api.bybit.com', port=443): Max retries exceeded with url: /v5/market/kline?category=linear&symbol=BTCUSDT&interval=5&start=1763428500001&end=1763728328958&limit=1000 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x1778e4d50>: Failed to resolve 'api.bybit.com' ([Errno 8] nodename nor servname provided, or not known)"))
+2025-11-21 13:41:46,262 - training.historical_data_collector - WARNING - No data received for bybit/BTCUSDT/5m
+2025-11-21 13:41:46,262 - training.historical_data_collector - INFO - Progress: 100.0% (8/8)
+2025-11-21 13:41:46,262 - training.historical_data_collector - INFO - Historical data collection completed in 577.30s
+2025-11-21 13:41:46,262 - training.historical_data_collector - INFO - Success rate: 100.0%
+2025-11-21 13:41:46,262 - training.smc_training_pipeline - INFO - Phase 2: Pattern Detection & Labeling
+2025-11-21 13:41:46,262 - training.smc_pattern_labeler - INFO - SMC Pattern Labeler initialized
+2025-11-21 13:41:46,263 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 5m (8651 records)
+2025-11-21 13:41:50,871 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=388, CHOCH=299, BOS=8682, Sweeps=236, FVG=0
+2025-11-21 14:06:24,170 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 9605 patterns labeled
+2025-11-21 14:06:24,175 - training.smc_training_pipeline - INFO - Labeled 9605 patterns for binance/BTCUSDT/5m
+2025-11-21 14:06:24,177 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 15m (2883 records)
+2025-11-21 14:06:25,787 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=132, CHOCH=132, BOS=2888, Sweeps=165, FVG=0
+2025-11-21 14:06:30,203 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 3317 patterns labeled
+2025-11-21 14:06:30,206 - training.smc_training_pipeline - INFO - Labeled 3317 patterns for binance/BTCUSDT/15m
+2025-11-21 14:06:30,207 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 1h (720 records)
+2025-11-21 14:06:30,598 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=34, CHOCH=39, BOS=722, Sweeps=76, FVG=0
+2025-11-21 14:06:30,950 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 871 patterns labeled
+2025-11-21 14:06:30,951 - training.smc_training_pipeline - INFO - Labeled 871 patterns for binance/BTCUSDT/1h
+2025-11-21 14:06:30,952 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 4h (180 records)
+2025-11-21 14:06:31,049 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=3, CHOCH=11, BOS=194, Sweeps=22, FVG=0
+2025-11-21 14:06:31,076 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 230 patterns labeled
+2025-11-21 14:06:31,076 - training.smc_training_pipeline - INFO - Labeled 230 patterns for binance/BTCUSDT/4h
+2025-11-21 14:06:31,077 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 1h (720 records)
+2025-11-21 14:06:31,458 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=34, CHOCH=36, BOS=722, Sweeps=76, FVG=0
+2025-11-21 14:06:31,786 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 868 patterns labeled
+2025-11-21 14:06:31,787 - training.smc_training_pipeline - INFO - Labeled 868 patterns for bybit/BTCUSDT/1h
+2025-11-21 14:06:31,788 - training.smc_pattern_labeler - INFO - Starting pattern labeling for BTCUSDT 4h (180 records)
+2025-11-21 14:06:31,904 - training.smc_pattern_labeler - INFO - Detected patterns: Order Blocks=2, CHOCH=11, BOS=194, Sweeps=22, FVG=0
+2025-11-21 14:06:31,932 - training.smc_pattern_labeler - INFO - Pattern labeling completed: 229 patterns labeled
+2025-11-21 14:06:31,932 - training.smc_training_pipeline - INFO - Labeled 229 patterns for bybit/BTCUSDT/4h
+2025-11-21 14:06:31,932 - training.smc_training_pipeline - INFO - Phase 3: Feature Engineering
+2025-11-21 14:06:31,932 - training.smc_feature_engineer - INFO - SMC Feature Engineer initialized with 5 timeframes
+2025-11-21 14:06:31,932 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_5m: list index out of range
+2025-11-21 14:06:31,932 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_15m: list index out of range
+2025-11-21 14:06:31,932 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_1h: list index out of range
+2025-11-21 14:06:31,932 - training.smc_training_pipeline - ERROR - Failed to engineer features for binance_BTCUSDT_4h: list index out of range
+2025-11-21 14:06:31,933 - training.smc_training_pipeline - ERROR - Failed to engineer features for bybit_BTCUSDT_1h: list index out of range
+2025-11-21 14:06:31,933 - training.smc_training_pipeline - ERROR - Failed to engineer features for bybit_BTCUSDT_4h: list index out of range
+2025-11-21 14:06:31,933 - training.smc_training_pipeline - INFO - Phase 4: Model Training
+2025-11-21 14:06:31,933 - training.smc_training_pipeline - ERROR - Training pipeline failed: No features available for training
+2025-11-21 14:06:31,935 - __main__ - ERROR - 
+💥 Unexpected error: [Errno 2] No such file or directory: 'smc_models/training_results.json'
+Traceback (most recent call last):
+  File "/Users/arkadiuszfudali/Git/agent66/smc_trading_agent/quick_start_training.py", line 423, in main
+    with open(results_file, 'w') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'smc_models/training_results.json'
+2025-11-21 14:06:45,342 - __main__ - INFO - 🚀 Starting SMC ML Training
+2025-11-21 14:06:45,342 - __main__ - INFO - Mode: Real
+2025-11-21 14:06:45,342 - __main__ - INFO - Arguments: {'demo': False, 'symbols': ['BTCUSDT'], 'exchanges': ['binance', 'bybit'], 'timeframes': ['5m', '15m', '1h', '4h'], 'days': 30, 'months': None, 'epochs': 50, 'batch_size': 256, 'learning_rate': 0.001, 'min_accuracy': 0.55, 'output_dir': './smc_models', 'config': None, 'deploy': False, 'skip_validation': False, 'device': 'auto', 'verbose': False, 'workers': 4}
+2025-11-21 14:06:45,342 - __main__ - INFO - Training configuration:
+2025-11-21 14:06:45,342 - __main__ - INFO -   Symbols: ['BTCUSDT']
+2025-11-21 14:06:45,342 - __main__ - INFO -   Exchanges: ['binance', 'bybit']
+2025-11-21 14:06:45,342 - __main__ - INFO -   Timeframes: ['5m', '15m', '1h', '4h']
+2025-11-21 14:06:45,342 - __main__ - INFO -   Data period: 2025-10-22 14:06:45.342455 to 2025-11-21 14:06:45.342461
+2025-11-21 14:06:45,342 - __main__ - INFO -   Epochs: 50
+2025-11-21 14:06:45,342 - __main__ - INFO -   Batch size: 256
+2025-11-21 14:06:45,342 - __main__ - INFO -   Device: auto
+2025-11-21 14:06:45,342 - __main__ - INFO -   Output dir: ./smc_models
+2025-11-21 14:06:45,342 - training.smc_training_pipeline - INFO - CUDA not available, using CPU
+2025-11-21 14:06:45,343 - training.smc_training_pipeline - INFO - SMC Training Pipeline initialized (device: cpu)
+2025-11-21 14:06:45,343 - __main__ - INFO - 
+🔄 Starting training pipeline...
+2025-11-21 14:06:45,343 - training.smc_training_pipeline - INFO - Starting complete SMC ML training pipeline
+2025-11-21 14:06:45,343 - training.smc_training_pipeline - INFO - Phase 1: Data Collection
+2025-11-21 14:06:45,344 - training.historical_data_collector - INFO - Collection metadata database initialized
+2025-11-21 14:06:45,344 - training.historical_data_collector - INFO - Historical data collector initialized for 2 exchanges
+2025-11-21 14:06:45,344 - training.historical_data_collector - INFO - Starting comprehensive historical data collection
+2025-11-21 14:06:45,344 - training.historical_data_collector - INFO - Total collection tasks: 8
+2025-11-21 14:06:45,344 - training.historical_data_collector - INFO - Processing batch 1/1
+2025-11-21 14:06:48,347 - training.historical_data_collector - INFO - Data validation for bybit/BTCUSDT/1h: quality_score=0.719, removed=1 invalid records
+2025-11-21 14:06:48,353 - training.historical_data_collector - INFO - Collected 720 records for bybit/BTCUSDT/1h (quality: 0.719)
+2025-11-21 14:06:48,688 - training.historical_data_collector - INFO - Data validation for bybit/BTCUSDT/4h: quality_score=0.178, removed=1 invalid records
+2025-11-21 14:06:48,692 - training.historical_data_collector - INFO - Collected 179 records for bybit/BTCUSDT/4h (quality: 0.178)
+2025-11-21 14:06:50,114 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/1h: quality_score=0.719, removed=1 invalid records
+2025-11-21 14:06:50,121 - training.historical_data_collector - INFO - Collected 720 records for binance/BTCUSDT/1h (quality: 0.719)
+2025-11-21 14:06:50,513 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/4h: quality_score=0.178, removed=1 invalid records
+2025-11-21 14:06:50,518 - training.historical_data_collector - INFO - Collected 179 records for binance/BTCUSDT/4h (quality: 0.178)
+2025-11-21 14:06:53,325 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/15m: quality_score=1.000, removed=1 invalid records
+2025-11-21 14:06:53,331 - training.historical_data_collector - INFO - Collected 2883 records for binance/BTCUSDT/15m (quality: 1.000)
+2025-11-21 14:07:01,371 - training.historical_data_collector - INFO - Data validation for binance/BTCUSDT/5m: quality_score=1.000, removed=1 invalid records
+2025-11-21 14:07:01,379 - training.historical_data_collector - INFO - Collected 8651 records for binance/BTCUSDT/5m (quality: 1.000)
