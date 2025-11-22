@@ -1,0 +1,541 @@
+name: 🎬 Film Industry Time Tracking - Test Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'chore/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run comprehensive tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+          - mobile
+          - performance
+          - compliance
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20'
+  NODE_OPTIONS: '--max-old-space-size=4096'
+  CI: 'true'
+  TEST_TIMEOUT: 30000
+
+jobs:
+  # Backend Unit Tests
+  backend-unit:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'unit' || github.event.inputs.test_type == ''
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm install --save-dev @types/supertest
+
+      - name: 🔧 Setup test environment
+        run: |
+          cp backend/.env.example backend/.env.test
+          echo "MONGO_URI=mongodb://localhost:27017/testdb" >> backend/.env.test
+          echo "JWT_SECRET=test-jwt-secret-for-testing" >> backend/.env.test
+          echo "NODE_ENV=test" >> backend/.env.test
+
+      - name: 🏗️ Build application
+        working-directory: ./backend
+        run: npm run build
+
+      - name: 🧪 Run unit tests
+        working-directory: ./backend
+        run: npm test -- --coverage --verbose
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+  # Frontend Unit Tests
+  frontend-unit:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'unit' || github.event.inputs.test_type == ''
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🧪 Run unit tests
+        working-directory: ./frontend
+        run: npm test -- --coverage --watchAll=false
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+
+  # Integration Tests
+  integration:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'integration' || github.event.inputs.test_type == ''
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm install --save-dev @types/supertest
+
+      - name: 🔧 Setup test environment
+        run: |
+          cp backend/.env.example backend/.env.test
+          echo "MONGO_URI=mongodb://localhost:27017/testdb" >> backend/.env.test
+          echo "JWT_SECRET=test-jwt-secret-for-testing" >> backend/.env.test
+          echo "NODE_ENV=test" >> backend/.env.test
+
+      - name: 🏗️ Build application
+        working-directory: ./backend
+        run: npm run build
+
+      - name: 🧪 Run integration tests
+        working-directory: ./backend
+        run: npm run test:integration
+        timeout-minutes: 10
+
+      - name: 📊 Generate integration test report
+        if: always()
+        working-directory: ./backend
+        run: npm run test:integration:report
+
+      - name: 📤 Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-results
+          path: backend/test-results/
+
+  # E2E Tests
+  e2e:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'e2e' || github.event.inputs.test_type == ''
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: 📦 Install Playwright
+        working-directory: .
+        run: npm install --save-dev @playwright/test
+
+      - name: 🏗️ Build applications
+        run: |
+          cd backend && npm run build
+          cd ../frontend && npm run build
+
+      - name: 🧪 Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: 🚀 Start services
+        run: |
+          npm run docker:up -d
+          sleep 10
+
+      - name: 🧪 Run E2E tests
+        run: npx playwright test --reporter=html
+        timeout-minutes: 15
+
+      - name: 📤 Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-results
+          path: playwright-report/
+
+      - name: 🛑 Stop services
+        if: always()
+        run: npm run docker:down
+
+  # Mobile Tests
+  mobile:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'mobile' || github.event.inputs.test_type == ''
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: 📦 Install Playwright
+        working-directory: .
+        run: npm install --save-dev @playwright/test
+
+      - name: 🏗️ Build applications
+        run: |
+          cd backend && npm run build
+          cd ../frontend && npm run build
+
+      - name: 🧪 Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: 🚀 Start services
+        run: |
+          npm run docker:up -d
+          sleep 10
+
+      - name: 📱 Run mobile tests
+        run: npx playwright test mobile-responsive.spec.ts --reporter=html
+        timeout-minutes: 20
+
+      - name: 📤 Upload mobile test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: mobile-test-results
+          path: playwright-report/
+
+      - name: 🛑 Stop services
+        if: always()
+        run: npm run docker:down
+
+  # Performance Tests
+  performance:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'performance'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: 📦 Install Playwright
+        working-directory: .
+        run: npm install --save-dev @playwright/test
+
+      - name: 🏗️ Build applications
+        run: |
+          cd backend && npm run build
+          cd ../frontend && npm run build
+
+      - name: 🧪 Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: 🚀 Start services
+        run: |
+          npm run docker:up -d
+          sleep 10
+
+      - name: 📊 Run performance tests
+        run: npx playwright test performance-low-connectivity.spec.ts --reporter=html
+        timeout-minutes: 25
+
+      - name: 📤 Upload performance test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-test-results
+          path: playwright-report/
+
+      - name: 🛑 Stop services
+        if: always()
+        run: npm run docker:down
+
+  # Compliance Tests
+  compliance:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'compliance'
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm install --save-dev @types/supertest
+
+      - name: 🔧 Setup test environment
+        run: |
+          cp backend/.env.example backend/.env.test
+          echo "MONGO_URI=mongodb://localhost:27017/testdb" >> backend/.env.test
+          echo "JWT_SECRET=test-jwt-secret-for-testing" >> backend/.env.test
+          echo "NODE_ENV=test" >> backend/.env.test
+
+      - name: 🏗️ Build application
+        working-directory: ./backend
+        run: npm run build
+
+      - name: 🧪 Run compliance tests
+        working-directory: ./backend
+        run: npm run test:compliance
+        timeout-minutes: 15
+
+      - name: 📊 Generate compliance report
+        if: always()
+        working-directory: ./backend
+        run: npm run test:compliance:report
+
+      - name: 📤 Upload compliance test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: compliance-test-results
+          path: backend/compliance-reports/
+
+  # Security Audit
+  security:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'all' || github.event.inputs.test_type == 'security' || github.event.inputs.test_type == ''
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Run security audit
+        working-directory: .
+        run: npm audit --audit-level high
+
+      - name: 📦 Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: 🔍 Backend security audit
+        working-directory: ./backend
+        run: npm audit --audit-level high
+
+      - name: 📦 Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: 🔍 Frontend security audit
+        working-directory: ./frontend
+        run: npm audit --audit-level high
+
+      - name: 📤 Upload security scan results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-scan-results
+          path: security-reports/
+
+  # Test Results Summary
+  test-summary:
+    runs-on: ubuntu-latest
+    if: always() && (needs.backend-unit.result == 'success' || needs.frontend-unit.result == 'success' || needs.integration.result == 'success' || needs.e2e.result == 'success' || needs.mobile.result == 'success' || needs.performance.result == 'success' || needs.compliance.result == 'success')
+
+    needs: [backend-unit, frontend-unit, integration, e2e, mobile, performance, compliance]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📊 Download test artifacts
+        uses: actions/download-artifact@v3
+        if: always()
+        with:
+          path: test-artifacts/
+
+      - name: 📋 Generate test summary
+        run: |
+          echo "## 🎬 Film Industry Time Tracking - Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status | Duration | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------|--------|----------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Unit | ${{ needs.backend-unit.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Unit | ${{ needs.frontend-unit.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration | ${{ needs.integration.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E | ${{ needs.e2e.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mobile | ${{ needs.mobile.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${{ needs.performance.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Compliance | ${{ needs.compliance.result }} | - | - |" >> $GITHUB_STEP_SUMMARY
+
+      - name: ✅ Generate badge
+        if: success()
+        uses: actions/create-badge@v1
+        with:
+          label: 'Pipeline Status'
+          message: 'Passing'
+          color: 'green'
+
+      - name: ❌ Generate failure badge
+        if: failure()
+        uses: actions/create-badge@v1
+        with:
+          label: 'Pipeline Status'
+          message: 'Failed'
+          color: 'red'
+
+  # Notification
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test-summary]
+
+    steps:
+      - name: 📧 Send notification
+        if: github.event_name == 'schedule' || failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            const runId = context.runId;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+
+            const message = context.workflow === '🎬 Film Industry Time Tracking - Test Pipeline'
+              ? `🎬 Film Industry Time Tracking Pipeline ${context.job.status}
+                 (${runUrl})`
+              : `Test Pipeline ${context.job.status} (${runUrl})`;
+
+            console.log(message);
+
+  # Cleanup
+  cleanup:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test-summary]
+
+    steps:
+      - name: 🧹 Cleanup workspace
+        run: |
+          echo "Cleaning up workspace..."
+          docker system prune -f
+          echo "Cleanup complete"
+
+# Cache management
+cache:
+  npm: ${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json') }}
+  npm: ${{ runner.os }}-backend-${{ hashFiles('backend/package-lock.json') }}

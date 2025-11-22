@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+Never use mock data, demo data, or any fabricated or artificial data created by yourself or others. Always source and use only real, live, production data from actual external systems or services.
