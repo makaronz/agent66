@@ -15,7 +15,7 @@ Key Features:
 - Configuration management for deployment stages
 
 Usage:
-    from smc_trading_agent.decision_engine import get_ml_decision_engine, get_adaptive_model_selector
+    from decision_engine import get_ml_decision_engine, get_adaptive_model_selector
 
     # Enhanced ML Engine
     ml_engine = get_ml_decision_engine()

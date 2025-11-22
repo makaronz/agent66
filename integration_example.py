@@ -147,7 +147,7 @@ def run_integration_example():
     # Step 2: Initialize the enhanced decision engine
     logger.info("Initializing enhanced decision engine with ensemble models...")
     try:
-        from smc_trading_agent.decision_engine.model_ensemble import AdaptiveModelSelector
+        from decision_engine.model_ensemble import AdaptiveModelSelector
         
         decision_engine = AdaptiveModelSelector(input_size=6)  # 6 features: OHLCV + 1 indicator
         logger.info("Decision engine initialized successfully")

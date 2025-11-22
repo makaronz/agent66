@@ -14,7 +14,7 @@ Key Features:
 - Regulatory change management and updates
 
 Usage:
-    from smc_trading_agent.compliance import ComplianceEngine
+    from compliance import ComplianceEngine
     
     engine = ComplianceEngine()
     report = engine.generate_regulatory_report(period_start, period_end)

@@ -2,7 +2,6 @@
 
 ## Code Organization
 ```
-smc_trading_agent/
 ├── decision_engine/          # ML models and decision logic
 │   ├── model_ensemble.py     # LSTM, Transformer, PPO ensemble
 │   ├── ml_decision_engine.py # Production-ready ML engine
@@ -46,18 +45,18 @@ cp env.example .env
 pip install -r requirements.txt
 
 # Run tests
-pytest smc_trading_agent/tests/ -v --cov=smc_trading_agent
+pytest tests/ -v --cov=.
 
 # Code formatting
-black smc_trading_agent/
-isort smc_trading_agent/
-flake8 smc_trading_agent/
+black .
+isort .
+flake8 .
 
 # Run application
-python smc_trading_agent/main.py
+python main.py
 
 # Docker deployment
-docker-compose -f smc_trading_agent/deployment/docker-compose.yml up -d
+docker-compose -f deployment/docker-compose.yml up -d
 ```
 
 ## Configuration Management

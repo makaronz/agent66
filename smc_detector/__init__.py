@@ -12,7 +12,7 @@ Key Features:
 - Pattern recognition and signal generation
 
 Usage:
-    from smc_trading_agent.smc_detector import get_smc_indicators
+    from smc_detector import get_smc_indicators
     
     indicators = get_smc_indicators()
     patterns = indicators.detect_patterns(market_data)

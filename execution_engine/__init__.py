@@ -21,7 +21,7 @@ Implementation:
 Usage:
     # Rust implementation provides high-performance execution
     # Python integration available through FFI bindings
-    from smc_trading_agent.execution_engine import executor
+    from execution_engine import executor
     
     # Order execution through Rust backend
     result = executor.execute_order(order_params)
