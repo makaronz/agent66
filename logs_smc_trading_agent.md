@@ -16,3 +16,4 @@
 14 2025-11-21 01:52:27 Fixed AttributeError in quick_start_training.py - changed config from dict to TrainingConfig dataclass object using create_training_config(), fixed date handling to use datetime objects instead of ISO strings
 15 2025-11-22 10:47:24 Completed repository reorganization - moved all content from smc_trading_agent/ to root directory, archived old files, updated all hardcoded paths and imports, merged .gitignore files, updated documentation
 16 2025-11-22 12:29:24 Fixed code review issues - updated import paths in __init__.py files, fixed integration_example.py import, added .env* to .gitignore, updated .serena/ documentation with new paths
+17 2025-11-22 12:35:00 Fixed CI/CD workflow - removed smc_trading_agent working-directory references from .github/.github/workflows/ci.yml to fix merge blocking issues
